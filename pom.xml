@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project 
+  xmlns="http://maven.apache.org/POM/4.0.0" 
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>fi.haju</groupId>
+  <artifactId>Haju3d</artifactId>
+  <version>0.1-SNAPSHOT</version>
+  <packaging>jar</packaging>
+
+  <name>Haju3d</name>
+  <url>https://github.com/jvmakine/haju3d</url>
+
+  <dependencies>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.8.2</version>
+      <scope>test</scope>
+    </dependency>
+      <dependency>
+        <groupId>net.java.dev.jogl</groupId>
+        <artifactId>jogl</artifactId>
+        <version>1.1.1-rc6</version>
+      </dependency>
+  </dependencies>
+</project>
