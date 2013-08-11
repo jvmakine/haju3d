@@ -68,7 +68,7 @@ public class ClientWindow implements Runnable, WindowListener {
   }
 
   public void windowDestroyNotify(WindowEvent event) {
-    running = false;
+    close();
   }
 
   public void windowDestroyed(WindowEvent event) {
@@ -99,6 +99,14 @@ public class ClientWindow implements Runnable, WindowListener {
 
   public void setMouseListeners(List<MouseListener> mouseListeners) {
     this.mouseListeners = mouseListeners;
+  }
+
+  public void close() {
+    running = false;
+  }
+
+  public void switchFullscreen() {
+    window.setFullscreen(!window.isFullscreen());
   }
   
 }
