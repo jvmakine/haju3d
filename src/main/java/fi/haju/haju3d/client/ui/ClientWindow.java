@@ -1,9 +1,13 @@
 package fi.haju.haju3d.client.ui;
 
+import java.util.List;
+
 import javax.media.nativewindow.WindowClosingProtocol.WindowClosingMode;
 import javax.media.opengl.GLCapabilities;
+import javax.media.opengl.GLEventListener;
 import javax.media.opengl.GLProfile;
 
+import com.google.common.collect.Lists;
 import com.jogamp.newt.Display;
 import com.jogamp.newt.NewtFactory;
 import com.jogamp.newt.Screen;
@@ -12,9 +16,6 @@ import com.jogamp.newt.event.WindowListener;
 import com.jogamp.newt.event.WindowUpdateEvent;
 import com.jogamp.newt.opengl.GLWindow;
 
-import fi.haju.haju3d.client.ui.render.Ortho2DViewportRenderer;
-import fi.haju.haju3d.client.ui.render.TriangleRenderer;
-
 public class ClientWindow implements Runnable, WindowListener {
 
   private static final String TITLE = "Haju3D";
@@ -22,7 +23,8 @@ public class ClientWindow implements Runnable, WindowListener {
   private GLWindow window;
   private Screen screen;
   private Display display;
-  private boolean running = false; 
+  private boolean running = false;
+  private List<GLEventListener> glListeners = Lists.newArrayList();
   
   private void setup() {
     GLCapabilities caps = new GLCapabilities(GLProfile.get(GLProfile.GL2));
@@ -39,8 +41,9 @@ public class ClientWindow implements Runnable, WindowListener {
     window.setSize(800, 600);
     window.addWindowListener(this);
     window.setDefaultCloseOperation(WindowClosingMode.DISPOSE_ON_CLOSE);
-    window.addGLEventListener(new Ortho2DViewportRenderer());
-    window.addGLEventListener(new TriangleRenderer());
+    for (GLEventListener listener : glListeners) {
+      window.addGLEventListener(listener);
+    }
   }
 
   public void run() {
@@ -73,6 +76,10 @@ public class ClientWindow implements Runnable, WindowListener {
   }
 
   public void windowResized(WindowEvent event) {
-  }  
+  }
+
+  public void setGlListeners(List<GLEventListener> glListeners) {
+    this.glListeners = glListeners;
+  }
   
 }
