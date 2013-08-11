@@ -23,8 +23,8 @@ public class ClientRunner {
         new Ortho2DViewportRenderer(),
         new TriangleRenderer()
     ));
-    window.setKeyListeners(Lists.newArrayList(
-        (KeyListener)basicOperationsKeyListener
+    window.setKeyListeners(Lists.<KeyListener>newArrayList(
+        basicOperationsKeyListener
     ));
     
     window.run();
