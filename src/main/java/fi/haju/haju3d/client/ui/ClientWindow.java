@@ -11,6 +11,8 @@ import com.google.common.collect.Lists;
 import com.jogamp.newt.Display;
 import com.jogamp.newt.NewtFactory;
 import com.jogamp.newt.Screen;
+import com.jogamp.newt.event.KeyListener;
+import com.jogamp.newt.event.MouseListener;
 import com.jogamp.newt.event.WindowEvent;
 import com.jogamp.newt.event.WindowListener;
 import com.jogamp.newt.event.WindowUpdateEvent;
@@ -24,7 +26,10 @@ public class ClientWindow implements Runnable, WindowListener {
   private Screen screen;
   private Display display;
   private boolean running = false;
+  
   private List<GLEventListener> glListeners = Lists.newArrayList();
+  private List<KeyListener> keyListeners = Lists.newArrayList();
+  private List<MouseListener> mouseListeners = Lists.newArrayList();
   
   private void setup() {
     GLCapabilities caps = new GLCapabilities(GLProfile.get(GLProfile.GL2));
@@ -43,6 +48,12 @@ public class ClientWindow implements Runnable, WindowListener {
     window.setDefaultCloseOperation(WindowClosingMode.DISPOSE_ON_CLOSE);
     for (GLEventListener listener : glListeners) {
       window.addGLEventListener(listener);
+    }
+    for(KeyListener listener : keyListeners) {
+      window.addKeyListener(listener);
+    }
+    for(MouseListener listener : mouseListeners) {
+      window.addMouseListener(listener);
     }
   }
 
@@ -80,6 +91,14 @@ public class ClientWindow implements Runnable, WindowListener {
 
   public void setGlListeners(List<GLEventListener> glListeners) {
     this.glListeners = glListeners;
+  }
+
+  public void setKeyListeners(List<KeyListener> keyListeners) {
+    this.keyListeners = keyListeners;
+  }
+
+  public void setMouseListeners(List<MouseListener> mouseListeners) {
+    this.mouseListeners = mouseListeners;
   }
   
 }
