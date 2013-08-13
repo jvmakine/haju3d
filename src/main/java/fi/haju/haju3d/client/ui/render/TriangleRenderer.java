@@ -8,12 +8,13 @@ import javax.media.opengl.GLEventListener;
 public class TriangleRenderer implements GLEventListener {
 
   public void display(GLAutoDrawable glAutoDrawable) {
-    int width = glAutoDrawable.getWidth();
-    int height = glAutoDrawable.getHeight();
-    GL2 gl2 = (GL2)glAutoDrawable.getGL();
-    gl2.glClear( GL.GL_COLOR_BUFFER_BIT );
+    drawTriangle(glAutoDrawable.getWidth(), glAutoDrawable.getHeight(), (GL2)glAutoDrawable.getGL());    
+  }
 
-    // draw a triangle filling the window
+  /**
+   * draw a triangle filling the window
+   */
+  private void drawTriangle(int width, int height, GL2 gl2) {
     gl2.glLoadIdentity();
     gl2.glBegin( GL.GL_TRIANGLES );
     gl2.glColor3f( 1, 0, 0 );
@@ -22,7 +23,7 @@ public class TriangleRenderer implements GLEventListener {
     gl2.glVertex2f( width, 0 );
     gl2.glColor3f( 0, 0, 1 );
     gl2.glVertex2f( width / 2, height );
-    gl2.glEnd();    
+    gl2.glEnd();
   }
 
   public void dispose(GLAutoDrawable glAutoDrawable) {

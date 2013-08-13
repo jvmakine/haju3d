@@ -1,5 +1,6 @@
 package fi.haju.haju3d.client.ui.render;
 
+import javax.media.opengl.GL;
 import javax.media.opengl.GL2;
 import javax.media.opengl.GLAutoDrawable;
 import javax.media.opengl.GLEventListener;
@@ -8,6 +9,8 @@ import javax.media.opengl.glu.GLU;
 public class Ortho2DViewportRenderer implements GLEventListener {
 
   public void display(GLAutoDrawable glAutoDrawable) {
+    GL2 gl2 = (GL2)glAutoDrawable.getGL();
+    gl2.glClear( GL.GL_COLOR_BUFFER_BIT );
   }
 
   public void dispose(GLAutoDrawable glAutoDrawable) {
