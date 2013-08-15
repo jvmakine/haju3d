@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>fi.haju</groupId>
+  <artifactId>haju3d-common</artifactId>
+  <version>0.1-SNAPSHOT</version>
+  <packaging>jar</packaging>
+
+  <name>Haju3dCommon</name>
+  
+  <description>Classes shared between the client and the server</description>
+  
+  <url>https://github.com/jvmakine/haju3d</url>
+  
+  <parent>
+    <groupId>fi.haju</groupId>
+    <artifactId>haju3d</artifactId>
+    <version>0.1-SNAPSHOT</version>
+  </parent>
+
+  <dependencies></dependencies> 
+  
+</project>

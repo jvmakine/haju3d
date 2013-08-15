@@ -1,4 +1,4 @@
-package fi.haju.haju3d.client.world;
+package fi.haju.haju3d.protocol.world;
 
 import java.io.Serializable;
 
