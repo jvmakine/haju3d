@@ -14,7 +14,7 @@
 
   <name>Haju3dClient</name>
   <url>https://github.com/jvmakine/haju3d</url>
-  
+
   <properties>
     <jMonkeyEngine.version>2013-05-26</jMonkeyEngine.version>
     <maven.compiler.target>1.7</maven.compiler.target>
@@ -31,18 +31,18 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.jmonkeyengine</groupId>
+      <groupId>org.bushe</groupId>
       <artifactId>eventbus</artifactId>
-      <version>${jMonkeyEngine.version}</version>
+      <version>1.4</version>
     </dependency>
-    
-    <!-- gluegen-rt causes conflicts with ClientRunner, comment out for now, not sure
-     if some features of jMonkeyEngine need it -->
-<!--     <dependency> -->
-<!--       <groupId>org.jmonkeyengine</groupId> -->
-<!--       <artifactId>gluegen-rt</artifactId> -->
-<!--       <version>${jMonkeyEngine.version}</version> -->
-<!--     </dependency> -->
+
+    <!-- gluegen-rt causes conflicts with ClientRunner, comment out for now, not sure if some features of jMonkeyEngine need 
+      it -->
+    <!-- <dependency> -->
+    <!-- <groupId>org.jmonkeyengine</groupId> -->
+    <!-- <artifactId>gluegen-rt</artifactId> -->
+    <!-- <version>${jMonkeyEngine.version}</version> -->
+    <!-- </dependency> -->
     <dependency>
       <groupId>org.jmonkeyengine</groupId>
       <artifactId>j-ogg-oggd</artifactId>
@@ -105,11 +105,6 @@
     </dependency>
     <dependency>
       <groupId>org.jmonkeyengine</groupId>
-      <artifactId>jME3-openal-soft-natives-android</artifactId>
-      <version>${jMonkeyEngine.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.jmonkeyengine</groupId>
       <artifactId>jME3-plugins</artifactId>
       <version>${jMonkeyEngine.version}</version>
     </dependency>
@@ -129,20 +124,21 @@
       <version>${jMonkeyEngine.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.jmonkeyengine</groupId>
+      <groupId>net.java.jinput</groupId>
       <artifactId>jinput</artifactId>
-      <version>${jMonkeyEngine.version}</version>
+      <version>2.0.5</version>
     </dependency>
     <dependency>
-      <groupId>org.jmonkeyengine</groupId>
+      <groupId>org.jogamp.joal</groupId>
       <artifactId>joal</artifactId>
-      <version>${jMonkeyEngine.version}</version>
+      <version>2.0.2</version>
     </dependency>
     <dependency>
-      <groupId>org.jmonkeyengine</groupId>
+      <groupId>org.lwjgl.lwjgl</groupId>
       <artifactId>lwjgl</artifactId>
-      <version>${jMonkeyEngine.version}</version>
+      <version>2.9.0</version>
     </dependency>
+
     <dependency>
       <groupId>org.jmonkeyengine</groupId>
       <artifactId>nifty-default-controls</artifactId>
