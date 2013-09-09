@@ -3,39 +3,192 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>fi.haju</groupId>
-  <artifactId>haju3d-client</artifactId>
-  <version>0.1-SNAPSHOT</version>
-  <packaging>jar</packaging>
-
-  <name>Haju3dClient</name>
-  <url>https://github.com/jvmakine/haju3d</url>
-  
   <parent>
     <groupId>fi.haju</groupId>
     <artifactId>haju3d</artifactId>
     <version>0.1-SNAPSHOT</version>
   </parent>
 
+  <artifactId>haju3d-client</artifactId>
+  <packaging>jar</packaging>
+
+  <name>Haju3dClient</name>
+  <url>https://github.com/jvmakine/haju3d</url>
+  
+  <properties>
+    <jMonkeyEngine.version>2013-05-26</jMonkeyEngine.version>
+    <maven.compiler.target>1.7</maven.compiler.target>
+    <maven.compiler.source>1.7</maven.compiler.source>
+  </properties>
+
+  <repositories>
+    <repository>
+      <id>project-lib</id>
+      <name>project-local libraries</name>
+      <url>file:${basedir}${file.separator}libs</url>
+    </repository>
+  </repositories>
+
   <dependencies>
-    
     <dependency>
-     <groupId>org.jogamp.gluegen</groupId>
-     <artifactId>gluegen-rt-main</artifactId>
-     <version>2.0.2</version>
-   </dependency>
-   
-   <dependency>
-     <groupId>org.jogamp.jogl</groupId>
-     <artifactId>jogl-all-main</artifactId>
-     <version>2.0.2</version>
-   </dependency>
-        
+      <groupId>org.jmonkeyengine</groupId>
+      <artifactId>eventbus</artifactId>
+      <version>${jMonkeyEngine.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jmonkeyengine</groupId>
+      <artifactId>gluegen-rt</artifactId>
+      <version>${jMonkeyEngine.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jmonkeyengine</groupId>
+      <artifactId>j-ogg-oggd</artifactId>
+      <version>${jMonkeyEngine.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jmonkeyengine</groupId>
+      <artifactId>j-ogg-vorbisd</artifactId>
+      <version>${jMonkeyEngine.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jmonkeyengine</groupId>
+      <artifactId>jME3-blender</artifactId>
+      <version>${jMonkeyEngine.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jmonkeyengine</groupId>
+      <artifactId>jME3-core</artifactId>
+      <version>${jMonkeyEngine.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jmonkeyengine</groupId>
+      <artifactId>jME3-desktop</artifactId>
+      <version>${jMonkeyEngine.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jmonkeyengine</groupId>
+      <artifactId>jME3-effects</artifactId>
+      <version>${jMonkeyEngine.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jmonkeyengine</groupId>
+      <artifactId>jME3-jbullet</artifactId>
+      <version>${jMonkeyEngine.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jmonkeyengine</groupId>
+      <artifactId>jME3-jogg</artifactId>
+      <version>${jMonkeyEngine.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jmonkeyengine</groupId>
+      <artifactId>jME3-lwjgl-natives</artifactId>
+      <version>${jMonkeyEngine.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jmonkeyengine</groupId>
+      <artifactId>jME3-lwjgl</artifactId>
+      <version>${jMonkeyEngine.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jmonkeyengine</groupId>
+      <artifactId>jME3-networking</artifactId>
+      <version>${jMonkeyEngine.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jmonkeyengine</groupId>
+      <artifactId>jME3-niftygui</artifactId>
+      <version>${jMonkeyEngine.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jmonkeyengine</groupId>
+      <artifactId>jME3-openal-soft-natives-android</artifactId>
+      <version>${jMonkeyEngine.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jmonkeyengine</groupId>
+      <artifactId>jME3-plugins</artifactId>
+      <version>${jMonkeyEngine.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jmonkeyengine</groupId>
+      <artifactId>jME3-terrain</artifactId>
+      <version>${jMonkeyEngine.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jmonkeyengine</groupId>
+      <artifactId>jbullet</artifactId>
+      <version>${jMonkeyEngine.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jmonkeyengine</groupId>
+      <artifactId>jglfont-core</artifactId>
+      <version>${jMonkeyEngine.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jmonkeyengine</groupId>
+      <artifactId>jinput</artifactId>
+      <version>${jMonkeyEngine.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jmonkeyengine</groupId>
+      <artifactId>joal</artifactId>
+      <version>${jMonkeyEngine.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jmonkeyengine</groupId>
+      <artifactId>lwjgl</artifactId>
+      <version>${jMonkeyEngine.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jmonkeyengine</groupId>
+      <artifactId>nifty-default-controls</artifactId>
+      <version>${jMonkeyEngine.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jmonkeyengine</groupId>
+      <artifactId>nifty-style-black</artifactId>
+      <version>${jMonkeyEngine.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jmonkeyengine</groupId>
+      <artifactId>nifty</artifactId>
+      <version>${jMonkeyEngine.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jmonkeyengine</groupId>
+      <artifactId>stack-alloc</artifactId>
+      <version>${jMonkeyEngine.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jmonkeyengine</groupId>
+      <artifactId>vecmath</artifactId>
+      <version>${jMonkeyEngine.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jmonkeyengine</groupId>
+      <artifactId>xmlpull-xpp3</artifactId>
+      <version>${jMonkeyEngine.version}</version>
+    </dependency>
+
+
+    <dependency>
+      <groupId>org.jogamp.gluegen</groupId>
+      <artifactId>gluegen-rt-main</artifactId>
+      <version>2.0.2</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.jogamp.jogl</groupId>
+      <artifactId>jogl-all-main</artifactId>
+      <version>2.0.2</version>
+    </dependency>
+
   </dependencies>
 
   <build>
     <plugins>
-       <plugin>
+      <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
         <version>1.2.1</version>
@@ -55,7 +208,7 @@
       </plugin>
     </plugins>
   </build>
-  
-  
+
+
 
 </project>
