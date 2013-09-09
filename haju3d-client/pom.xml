@@ -35,11 +35,14 @@
       <artifactId>eventbus</artifactId>
       <version>${jMonkeyEngine.version}</version>
     </dependency>
-    <dependency>
-      <groupId>org.jmonkeyengine</groupId>
-      <artifactId>gluegen-rt</artifactId>
-      <version>${jMonkeyEngine.version}</version>
-    </dependency>
+    
+    <!-- gluegen-rt causes conflicts with ClientRunner, comment out for now, not sure
+     if some features of jMonkeyEngine need it -->
+<!--     <dependency> -->
+<!--       <groupId>org.jmonkeyengine</groupId> -->
+<!--       <artifactId>gluegen-rt</artifactId> -->
+<!--       <version>${jMonkeyEngine.version}</version> -->
+<!--     </dependency> -->
     <dependency>
       <groupId>org.jmonkeyengine</groupId>
       <artifactId>j-ogg-oggd</artifactId>
