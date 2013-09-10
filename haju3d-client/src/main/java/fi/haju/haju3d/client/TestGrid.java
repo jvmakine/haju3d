@@ -241,6 +241,8 @@ public class TestGrid extends SimpleApplication {
         batch.setShadowMode(ShadowMode.CastAndReceive);
         
         Random rnd = new Random(0L);
+        Material red = makeColorMaterial(ColorRGBA.Red);
+        Material blue = makeColorMaterial(ColorRGBA.Blue);
         for (int i = 0; i < 50; i++) {
             CollisionResults res = new CollisionResults();
             float x = (float)((rnd.nextDouble() * WIDTH) - WIDTH * 0.5);
@@ -249,9 +251,9 @@ public class TestGrid extends SimpleApplication {
             int collideWith = groundObject.collideWith(r, res);
             if (collideWith != 0) {
                 Vector3f pt = res.getClosestCollision().getContactPoint().subtract(0f, 0.1f, 0f);
-                Geometry t = new Geometry("torus", torus);
+                Geometry t = new Geometry("torus" + i, torus);
                 int col = rnd.nextInt(2);
-                t.setMaterial(makeColorMaterial(col == 0 ? ColorRGBA.Red : ColorRGBA.Blue));
+                t.setMaterial(col == 0 ? red : blue);
                 float angle = (float) (rnd.nextDouble() * Math.PI);
                 t.setLocalRotation(new Quaternion(new float[] {0, angle, 0}));
                 t.setLocalTranslation(pt);
@@ -585,8 +587,6 @@ public class TestGrid extends SimpleApplication {
         mat.setBoolean("UseMaterialColors",true);
         mat.setColor("Ambient", color);
         mat.setColor("Diffuse", color);
-        mat.setBoolean("UseVertexColor", true);
-        
 //        for (MatParam m : mat.getMaterialDef().getMaterialParams()) {
 //            System.out.println(m.getName());
 //        }
