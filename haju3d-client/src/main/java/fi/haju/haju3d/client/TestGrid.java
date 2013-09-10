@@ -286,25 +286,46 @@ public class TestGrid extends SimpleApplication {
         for (int z = 0; z < d; z++) {
           if (grid.get(x, y, z) == Tile.GROUND) {
             if (grid.get(x, y - 1, z) == Tile.AIR) {
-              myMesh.addFace(new Vector3f(x, y, z), new Vector3f(x + 1, y, z), new Vector3f(x + 1, y, z + 1), new Vector3f(x, y, z + 1));
+              myMesh.addFace(
+                  new Vector3f(x, y, z),
+                  new Vector3f(x + 1, y, z),
+                  new Vector3f(x + 1, y, z + 1),
+                  new Vector3f(x, y, z + 1));
             }
             if (grid.get(x, y + 1, z) == Tile.AIR) {
-              myMesh.addFace(new Vector3f(x, y + 1, z + 1), new Vector3f(x + 1, y + 1, z + 1), new Vector3f(x + 1, y + 1, z), new Vector3f(
-                  x, y + 1, z));
+              myMesh.addFace(
+                  new Vector3f(x, y + 1, z + 1),
+                  new Vector3f(x + 1, y + 1, z + 1),
+                  new Vector3f(x + 1, y + 1, z),
+                  new Vector3f(x, y + 1, z));
             }
             if (grid.get(x - 1, y, z) == Tile.AIR) {
-              myMesh.addFace(new Vector3f(x, y, z + 1), new Vector3f(x, y + 1, z + 1), new Vector3f(x, y + 1, z), new Vector3f(x, y, z));
+              myMesh.addFace(
+                  new Vector3f(x, y, z + 1),
+                  new Vector3f(x, y + 1, z + 1),
+                  new Vector3f(x, y + 1, z),
+                  new Vector3f(x, y, z));
             }
             if (grid.get(x + 1, y, z) == Tile.AIR) {
-              myMesh.addFace(new Vector3f(x + 1, y, z), new Vector3f(x + 1, y + 1, z), new Vector3f(x + 1, y + 1, z + 1), new Vector3f(
-                  x + 1, y, z + 1));
+              myMesh.addFace(
+                  new Vector3f(x + 1, y, z),
+                  new Vector3f(x + 1, y + 1, z),
+                  new Vector3f(x + 1, y + 1, z + 1),
+                  new Vector3f(x + 1, y, z + 1));
             }
             if (grid.get(x, y, z - 1) == Tile.AIR) {
-              myMesh.addFace(new Vector3f(x, y, z), new Vector3f(x, y + 1, z), new Vector3f(x + 1, y + 1, z), new Vector3f(x + 1, y, z));
+              myMesh.addFace(
+                  new Vector3f(x, y, z),
+                  new Vector3f(x, y + 1, z),
+                  new Vector3f(x + 1, y + 1, z),
+                  new Vector3f(x + 1, y, z));
             }
             if (grid.get(x, y, z + 1) == Tile.AIR) {
-              myMesh.addFace(new Vector3f(x + 1, y, z + 1), new Vector3f(x + 1, y + 1, z + 1), new Vector3f(x, y + 1, z + 1), new Vector3f(
-                  x, y, z + 1));
+              myMesh.addFace(
+                  new Vector3f(x + 1, y, z + 1),
+                  new Vector3f(x + 1, y + 1, z + 1),
+                  new Vector3f(x, y + 1, z + 1),
+                  new Vector3f(x, y, z + 1));
             }
           }
         }
@@ -394,6 +415,7 @@ public class TestGrid extends SimpleApplication {
 
     groundObject = new Geometry("ColoredMesh", m);
     Material mat = makeColorMaterial(ColorRGBA.White);
+    mat.setBoolean("UseVertexColor", true);
     groundObject.setMaterial(mat);
     groundObject.setShadowMode(ShadowMode.CastAndReceive);
 
@@ -411,15 +433,24 @@ public class TestGrid extends SimpleApplication {
     float zt = tz - z;
 
     if (x >= 0 && x < tw - 1 && y >= 0 && y < th - 1 && z >= 0 && z < td - 1) {
-      return interpolateLinear3d(xt, yt, zt, noise[x + y * tw + z * tw * td], noise[x + 1 + y * tw + z * tw * td], noise[x + y * tw + tw
-          + z * tw * td], noise[x + 1 + y * tw + tw + z * tw * td], noise[x + y * tw + (z + 1) * tw * td], noise[x + 1 + y * tw + (z + 1)
-          * tw * td], noise[x + y * tw + tw + (z + 1) * tw * td], noise[x + 1 + y * tw + tw + (z + 1) * tw * td]);
+      return interpolateLinear3d(
+          xt, yt, zt,
+          noise[x + y * tw + z * tw * td],
+          noise[x + 1 + y * tw + z * tw * td],
+          noise[x + y * tw + tw + z * tw * td],
+          noise[x + 1 + y * tw + tw + z * tw * td],
+          noise[x + y * tw + (z + 1) * tw * td],
+          noise[x + 1 + y * tw + (z + 1) * tw * td],
+          noise[x + y * tw + tw + (z + 1) * tw * td],
+          noise[x + 1 + y * tw + tw + (z + 1) * tw * td]);
     } else {
       return 0;
     }
   }
 
-  private void addQuad(List<Integer> indexes, Map<MyVertex, Integer> vertexIndex, MyVertex vector3f1, MyVertex vector3f2,
+  private void addQuad(
+      List<Integer> indexes, Map<MyVertex, Integer> vertexIndex,
+      MyVertex vector3f1, MyVertex vector3f2,
       MyVertex vector3f3, MyVertex vector3f4) {
     indexes.add(getVertexIndex(vertexIndex, vector3f1));
     indexes.add(getVertexIndex(vertexIndex, vector3f2));
@@ -536,14 +567,16 @@ public class TestGrid extends SimpleApplication {
     return v1 + (v2 - v1) * t;
   }
 
-  private static float interpolateLinear2d(float xt, float yt, float n1, float n2, float n3, float n4) {
+  private static float interpolateLinear2d(
+      float xt, float yt, float n1, float n2, float n3, float n4) {
     float x1 = interpolateLinear(xt, n1, n2);
     float x2 = interpolateLinear(xt, n3, n4);
     return interpolateLinear(yt, x1, x2);
   }
 
-  private static float interpolateLinear3d(float xt, float yt, float zt, float n1, float n2, float n3, float n4, float n5, float n6,
-      float n7, float n8) {
+  private static float interpolateLinear3d(
+      float xt, float yt, float zt,
+      float n1, float n2, float n3, float n4, float n5, float n6, float n7, float n8) {
 
     float z1 = interpolateLinear2d(xt, yt, n1, n2, n3, n4);
     float z2 = interpolateLinear2d(xt, yt, n5, n6, n7, n8);
