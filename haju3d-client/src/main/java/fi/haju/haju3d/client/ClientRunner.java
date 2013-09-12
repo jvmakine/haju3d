@@ -6,13 +6,8 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 
-import com.google.common.collect.Lists;
-import com.jogamp.newt.event.KeyListener;
+import com.jme3.system.AppSettings;
 
-import fi.haju.haju3d.client.ui.ClientWindow;
-import fi.haju.haju3d.client.ui.input.BasicOperationsKeyListener;
-import fi.haju.haju3d.client.ui.render.Ortho2DViewportRenderer;
-import fi.haju.haju3d.client.ui.render.TriangleRenderer;
 import fi.haju.haju3d.protocol.Client;
 import fi.haju.haju3d.protocol.Server;
 
@@ -34,20 +29,15 @@ public class ClientRunner {
       throw new RuntimeException(e);
     }
     
-    ClientWindow window = new ClientWindow();
-    BasicOperationsKeyListener basicOperationsKeyListener = new BasicOperationsKeyListener();
+    TestGrid app = new TestGrid();
+    AppSettings settings = new AppSettings(true);
+    settings.setVSync(true);
+    settings.setResolution(1024, 768);
+    settings.setAudioRenderer(null);
+    app.setSettings(settings);
+    app.setShowSettings(false);
+    app.start();
     
-    basicOperationsKeyListener.setClientWindow(window);
-    
-    window.setGlListeners(Lists.newArrayList(
-        new Ortho2DViewportRenderer(),
-        new TriangleRenderer()
-    ));
-    window.setKeyListeners(Lists.<KeyListener>newArrayList(
-        basicOperationsKeyListener
-    ));
-    
-    window.run();
   }
 
 }

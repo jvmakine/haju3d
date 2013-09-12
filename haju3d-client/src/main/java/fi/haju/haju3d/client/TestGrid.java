@@ -29,7 +29,6 @@ import com.jme3.scene.shape.Box;
 import com.jme3.scene.shape.Torus;
 import com.jme3.shadow.DirectionalLightShadowRenderer;
 import com.jme3.shadow.EdgeFilteringMode;
-import com.jme3.system.AppSettings;
 import com.jme3.util.BufferUtils;
 
 /**
@@ -44,17 +43,6 @@ public class TestGrid extends SimpleApplication {
   private Grid grid = new Grid(WIDTH, HEIGHT, DEPTH);
   private Spatial groundObject;
   private Spatial characterObject;
-
-  public static void main(String[] args) {
-    TestGrid app = new TestGrid();
-    AppSettings settings = new AppSettings(true);
-    settings.setVSync(true);
-    settings.setResolution(1024, 768);
-    settings.setAudioRenderer(null);
-    app.setSettings(settings);
-    app.setShowSettings(false);
-    app.start();
-  }
 
   private static float[] make3dPerlinNoise(long seed, int w, int h, int d) {
     Random random = new Random(seed);
