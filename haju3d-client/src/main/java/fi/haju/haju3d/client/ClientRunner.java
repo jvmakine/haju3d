@@ -25,18 +25,18 @@ public class ClientRunner {
       Registry registry = LocateRegistry.getRegistry(5250);
       Server server = (Server)registry.lookup("haju3d_server");
       server.login(stub);
+      
+      TestGrid app = new TestGrid(server.getChunk());
+      AppSettings settings = new AppSettings(true);
+      settings.setVSync(true);
+      settings.setResolution(1024, 768);
+      settings.setAudioRenderer(null);
+      app.setSettings(settings);
+      app.setShowSettings(false);
+      app.start();
     } catch (RemoteException | NotBoundException e) {
       throw new RuntimeException(e);
     }
-    
-    TestGrid app = new TestGrid();
-    AppSettings settings = new AppSettings(true);
-    settings.setVSync(true);
-    settings.setResolution(1024, 768);
-    settings.setAudioRenderer(null);
-    app.setSettings(settings);
-    app.setShowSettings(false);
-    app.start();
     
   }
 

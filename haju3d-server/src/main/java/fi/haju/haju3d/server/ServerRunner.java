@@ -18,7 +18,6 @@ public class ServerRunner {
       System.out.println("Haju3d bound");
       while(true) {
         Thread.sleep(100);
-        server.messageToClients();
       }
     } catch (RemoteException | InterruptedException e) {
       System.err.println("Haju3d exception:");

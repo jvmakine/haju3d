@@ -1,6 +1,6 @@
-package fi.haju.haju3d.client;
+package fi.haju.haju3d.protocol;
 
-class Vector3i {
+public class Vector3i {
     public int x;
     public int y;
     public int z;

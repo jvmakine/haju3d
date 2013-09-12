@@ -2,11 +2,9 @@ package fi.haju.haju3d.client;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 
 import com.jme3.app.SimpleApplication;
 import com.jme3.collision.CollisionResults;
@@ -33,71 +31,23 @@ import com.jme3.util.BufferUtils;
 
 import fi.haju.haju3d.protocol.world.Chunk;
 import fi.haju.haju3d.protocol.world.Tile;
+import fi.haju.haju3d.util.noise.PerlinNoiseUtil;
 
 /**
  * Testing application that builds a smoothed grid mesh.
  */
 public class TestGrid extends SimpleApplication {
 
-  private static final int WIDTH = 120;
-  private static final int HEIGHT = 120;
-  private static final int DEPTH = 120;
-
-  private Chunk grid = new Chunk(WIDTH, HEIGHT, DEPTH);
+  private Chunk grid = null;
   private Spatial groundObject;
   private Spatial characterObject;
-
-  private static float[] make3dPerlinNoise(long seed, int w, int h, int d) {
-    Random random = new Random(seed);
-    float[] data = new float[w * h * d];
-    for (int sc = 4; sc != 128; sc *= 2) {
-      add3dNoise(random, data, w, h, d, sc, FastMath.pow(0.5f * sc * 1.0f, 1.0f));
-    }
-    return data;
-  }
-
-  private static void add3dNoise(Random random, float[] data, int w, int h, int d, int scale, float amp) {
-    int nw = w / scale + 2;
-    int nh = h / scale + 2;
-    int nd = d / scale + 2;
-    int n = nw * nh * nd;
-    float noise[] = new float[n];
-    for (int i = 0; i < n; i++) {
-      noise[i] = (float) (random.nextDouble() - 0.5) * amp;
-    }
-
-    int nwh = nw * nh;
-
-    for (int z = 0; z < d; z++) {
-      float zt = (float) (z % scale) / scale;
-      int zs = z / scale;
-      for (int y = 0; y < h; y++) {
-        float yt = (float) (y % scale) / scale;
-        int ys = y / scale;
-        for (int x = 0; x < w; x++) {
-          float xt = (float) (x % scale) / scale;
-          int xs = x / scale;
-
-          float n1 = noise[xs + ys * nw + zs * nwh];
-          float n2 = noise[xs + 1 + ys * nw + zs * nwh];
-          float n3 = noise[xs + ys * nw + nw + zs * nwh];
-          float n4 = noise[xs + 1 + ys * nw + nw + zs * nwh];
-
-          float n5 = noise[xs + ys * nw + zs * nwh + nwh];
-          float n6 = noise[xs + 1 + ys * nw + zs * nwh + nwh];
-          float n7 = noise[xs + ys * nw + nw + zs * nwh + nwh];
-          float n8 = noise[xs + 1 + ys * nw + nw + zs * nwh + nwh];
-
-          data[x + y * w + z * w * h] += interpolateLinear3d(xt, yt, zt, n1, n2, n3, n4, n5, n6, n7, n8);
-        }
-      }
-    }
+  
+  public TestGrid(Chunk grid) {
+    this.grid = grid;
   }
 
   @Override
   public void simpleInitApp() {
-    initGrid();
-
     getFlyByCamera().setMoveSpeed(20 * 2);
     getFlyByCamera().setRotationSpeed(3);
 
@@ -118,9 +68,9 @@ public class TestGrid extends SimpleApplication {
     Material blue = makeColorMaterial(ColorRGBA.Blue);
     for (int i = 0; i < 50; i++) {
       CollisionResults res = new CollisionResults();
-      float x = (float) ((rnd.nextDouble() * WIDTH) - WIDTH * 0.5);
-      float z = (float) (-(rnd.nextDouble() * DEPTH));
-      Ray r = new Ray(new Vector3f(x, HEIGHT, z), Vector3f.UNIT_Y.negate());
+      float x = (float) ((rnd.nextDouble() * grid.getWidth()) - grid.getHeight() * 0.5);
+      float z = (float) (-(rnd.nextDouble() * grid.getDepth()));
+      Ray r = new Ray(new Vector3f(x, grid.getHeight(), z), Vector3f.UNIT_Y.negate());
       int collideWith = groundObject.collideWith(r, res);
       if (collideWith != 0) {
         Vector3f pt = res.getClosestCollision().getContactPoint().subtract(0f, 0.1f, 0f);
@@ -316,8 +266,8 @@ public class TestGrid extends SimpleApplication {
     int tw = 40;
     int th = 40;
     int td = 40;
-    float[] noiseR = make3dPerlinNoise(1, tw, th, td);
-    float[] noiseG = make3dPerlinNoise(2, tw, th, td);
+    float[] noiseR = PerlinNoiseUtil.make3dPerlinNoise(1, tw, th, td);
+    float[] noiseG = PerlinNoiseUtil.make3dPerlinNoise(2, tw, th, td);
 
     float[] cArray = new float[vertexIndex.size() * 4];
     for (Map.Entry<MyVertex, Integer> e : vertexIndex.entrySet()) {
@@ -367,7 +317,7 @@ public class TestGrid extends SimpleApplication {
     float zt = tz - z;
 
     if (x >= 0 && x < tw - 1 && y >= 0 && y < th - 1 && z >= 0 && z < td - 1) {
-      return interpolateLinear3d(
+      return PerlinNoiseUtil.interpolateLinear3d(
           xt, yt, zt,
           noise[x + y * tw + z * tw * td],
           noise[x + 1 + y * tw + z * tw * td],
@@ -429,92 +379,6 @@ public class TestGrid extends SimpleApplication {
     dlsr.setShadowIntensity(0.4f);
     dlsr.setEdgeFilteringMode(EdgeFilteringMode.PCF4);
     viewPort.addProcessor(dlsr);
-  }
-
-  private void initGrid() {
-    int w = grid.getWidth();
-    int h = grid.getHeight();
-    int d = grid.getDepth();
-
-    float[] noise = make3dPerlinNoise(12, w, h, d);
-    float thres = h / 3;
-    for (int x = 0; x < w; x++) {
-      for (int y = 0; y < h; y++) {
-        for (int z = 0; z < d; z++) {
-          float v = FastMath.abs(y);
-          if (y < h / 5) {
-            v += interpolateLinear(y / (h / 5), -10, 0);
-          }
-          v += noise[x + y * w + z * w * h] * 3;
-          grid.set(x, y, z, v < thres ? Tile.GROUND : Tile.AIR);
-        }
-      }
-    }
-
-    filterFloaters();
-  }
-
-  private void filterFloaters() {
-    Chunk ground = new Chunk(grid.getWidth(), grid.getHeight(), grid.getDepth());
-    new FloodFill(ground, grid).fill();
-    grid = ground;
-  }
-
-  private static class FloodFill {
-    private List<Vector3i> front = new ArrayList<>();
-    private Set<Vector3i> visited = new HashSet<>();
-    private Chunk ground;
-    private Chunk orig;
-
-    public FloodFill(Chunk ground, Chunk orig) {
-      this.ground = ground;
-      this.orig = orig;
-    }
-
-    public void fill() {
-      test(new Vector3i(0, 0, 0));
-      while (!front.isEmpty()) {
-        Vector3i v = front.remove(front.size() - 1);
-        test(v.add(1, 0, 0));
-        test(v.add(-1, 0, 0));
-        test(v.add(0, 1, 0));
-        test(v.add(0, -1, 0));
-        test(v.add(0, 0, 1));
-        test(v.add(0, 0, -1));
-      }
-    }
-
-    private void test(Vector3i n) {
-      if (visited.contains(n)) {
-        return;
-      }
-      if (orig.get(n.x, n.y, n.z) == Tile.AIR) {
-        return;
-      }
-      ground.set(n.x, n.y, n.z, Tile.GROUND);
-      visited.add(n);
-      front.add(n);
-    }
-  }
-
-  private static float interpolateLinear(float t, float v1, float v2) {
-    return v1 + (v2 - v1) * t;
-  }
-
-  private static float interpolateLinear2d(
-      float xt, float yt, float n1, float n2, float n3, float n4) {
-    float x1 = interpolateLinear(xt, n1, n2);
-    float x2 = interpolateLinear(xt, n3, n4);
-    return interpolateLinear(yt, x1, x2);
-  }
-
-  private static float interpolateLinear3d(
-      float xt, float yt, float zt,
-      float n1, float n2, float n3, float n4, float n5, float n6, float n7, float n8) {
-
-    float z1 = interpolateLinear2d(xt, yt, n1, n2, n3, n4);
-    float z2 = interpolateLinear2d(xt, yt, n5, n6, n7, n8);
-    return interpolateLinear(zt, z1, z2);
   }
 
   @Override
