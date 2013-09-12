@@ -29,8 +29,8 @@ public class ClientRunner {
       ChunkRenderer app = new ChunkRenderer(server.getChunk());
       AppSettings settings = new AppSettings(true);
       settings.setVSync(true);
-      settings.setResolution(1024, 768);
       settings.setAudioRenderer(null);
+      settings.setFullscreen(true);
       app.setSettings(settings);
       app.setShowSettings(false);
       app.start();
