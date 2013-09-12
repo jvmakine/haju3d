@@ -10,11 +10,13 @@ public final class Chunk implements Serializable {
   int width;
   int height;
   int depth;
+  int seed;
 
-  public Chunk(int width, int height, int depth) {
+  public Chunk(int width, int height, int depth, int seed) {
     this.width = width;
     this.height = height;
     this.depth = depth;
+    this.seed = seed;
 
     int n = width * height * depth;
     this.data = new Tile[n];
@@ -56,4 +58,9 @@ public final class Chunk implements Serializable {
   public int getDepth() {
     return depth;
   }
+
+  public int getSeed() {
+    return seed;
+  }
+  
 }

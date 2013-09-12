@@ -63,7 +63,7 @@ public class ChunkRenderer extends SimpleApplication {
     BatchNode batch = new BatchNode("batch");
     batch.setShadowMode(ShadowMode.CastAndReceive);
 
-    Random rnd = new Random(0L);
+    Random rnd = new Random(chunk.getSeed());
     Material red = makeColorMaterial(ColorRGBA.Red);
     Material blue = makeColorMaterial(ColorRGBA.Blue);
     for (int i = 0; i < 50; i++) {

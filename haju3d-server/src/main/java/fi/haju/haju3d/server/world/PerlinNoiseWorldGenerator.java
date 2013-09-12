@@ -59,13 +59,13 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
   }
   
   private static Chunk filterFloaters(Chunk chunk) {
-    Chunk ground = new Chunk(chunk.getWidth(), chunk.getHeight(), chunk.getDepth());
+    Chunk ground = new Chunk(chunk.getWidth(), chunk.getHeight(), chunk.getDepth(), chunk.getSeed());
     new FloodFill(ground, chunk).fill();
     return ground;
   }
   
   private Chunk makeChunk(int seed) {
-    Chunk chunk = new Chunk(WIDTH, HEIGHT, DEPTH);
+    Chunk chunk = new Chunk(WIDTH, HEIGHT, DEPTH, seed);
     int w = chunk.getWidth();
     int h = chunk.getHeight();
     int d = chunk.getDepth();
