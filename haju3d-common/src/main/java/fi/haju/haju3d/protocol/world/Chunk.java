@@ -2,35 +2,58 @@ package fi.haju.haju3d.protocol.world;
 
 import java.io.Serializable;
 
-/**
- * 64 x 64 x 64 set of blocks
- */
-public abstract class Chunk implements Serializable {
-  
+
+public final class Chunk implements Serializable {
   private static final long serialVersionUID = 1L;
   
-  private int x;
-  private int y;
-  private int z;
-  
-  public abstract Block getBlockAt(int x, int y, int z);
-  
-  public Chunk(int x, int y, int z) {
-    this.x = x;
-    this.y = y;
-    this.z = z;
+  private Tile[] data;
+  int width;
+  int height;
+  int depth;
+
+  public Chunk(int width, int height, int depth) {
+    this.width = width;
+    this.height = height;
+    this.depth = depth;
+
+    int n = width * height * depth;
+    this.data = new Tile[n];
+    for (int i = 0; i < n; i++) {
+      data[i] = Tile.AIR;
+    }
   }
 
-  public int getXCoord() {
-    return x;
+  public void set(int x, int y, int z, Tile value) {
+    if (isInside(x, y, z)) {
+      data[getIndex(x, y, z)] = value;
+    }
   }
-  
-  public int getYCoord() {
-    return y;
+
+  private int getIndex(int x, int y, int z) {
+    return x + y * width + z * width * height;
   }
-  
-  public int getZCoord() {
-    return z;
+
+  private boolean isInside(int x, int y, int z) {
+    return x >= 0 && x < width && y >= 0 && y < height && z >= 0 && z < depth;
   }
-  
+
+  public Tile get(int x, int y, int z) {
+    if (isInside(x, y, z)) {
+      return data[getIndex(x, y, z)];
+    } else {
+      return Tile.AIR;
+    }
+  }
+
+  public int getWidth() {
+    return width;
+  }
+
+  public int getHeight() {
+    return height;
+  }
+
+  public int getDepth() {
+    return depth;
+  }
 }

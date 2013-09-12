@@ -31,6 +31,9 @@ import com.jme3.shadow.DirectionalLightShadowRenderer;
 import com.jme3.shadow.EdgeFilteringMode;
 import com.jme3.util.BufferUtils;
 
+import fi.haju.haju3d.protocol.world.Chunk;
+import fi.haju.haju3d.protocol.world.Tile;
+
 /**
  * Testing application that builds a smoothed grid mesh.
  */
@@ -40,7 +43,7 @@ public class TestGrid extends SimpleApplication {
   private static final int HEIGHT = 120;
   private static final int DEPTH = 120;
 
-  private Grid grid = new Grid(WIDTH, HEIGHT, DEPTH);
+  private Chunk grid = new Chunk(WIDTH, HEIGHT, DEPTH);
   private Spatial groundObject;
   private Spatial characterObject;
 
@@ -88,63 +91,6 @@ public class TestGrid extends SimpleApplication {
           data[x + y * w + z * w * h] += interpolateLinear3d(xt, yt, zt, n1, n2, n3, n4, n5, n6, n7, n8);
         }
       }
-    }
-  }
-
-  private static enum Tile {
-    AIR, GROUND
-  }
-
-  private static final class Grid {
-    private Tile[] data;
-    private int width;
-    private int height;
-    private int depth;
-
-    public Grid(int width, int height, int depth) {
-      this.width = width;
-      this.height = height;
-      this.depth = depth;
-
-      int n = width * height * depth;
-      this.data = new Tile[n];
-      for (int i = 0; i < n; i++) {
-        data[i] = Tile.AIR;
-      }
-    }
-
-    public void set(int x, int y, int z, Tile value) {
-      if (isInside(x, y, z)) {
-        data[getIndex(x, y, z)] = value;
-      }
-    }
-
-    private int getIndex(int x, int y, int z) {
-      return x + y * width + z * width * height;
-    }
-
-    private boolean isInside(int x, int y, int z) {
-      return x >= 0 && x < width && y >= 0 && y < height && z >= 0 && z < depth;
-    }
-
-    public Tile get(int x, int y, int z) {
-      if (isInside(x, y, z)) {
-        return data[getIndex(x, y, z)];
-      } else {
-        return Tile.AIR;
-      }
-    }
-
-    public int getWidth() {
-      return width;
-    }
-
-    public int getHeight() {
-      return height;
-    }
-
-    public int getDepth() {
-      return depth;
     }
   }
 
@@ -377,9 +323,9 @@ public class TestGrid extends SimpleApplication {
     for (Map.Entry<MyVertex, Integer> e : vertexIndex.entrySet()) {
       int vi = e.getValue();
       Vector3f pos = e.getKey().v;
-      float tx = pos.x / grid.width * tw;
-      float ty = pos.y / grid.height * th;
-      float tz = pos.z / grid.depth * td;
+      float tx = pos.x / grid.getWidth() * tw;
+      float ty = pos.y / grid.getHeight() * th;
+      float tz = pos.z / grid.getDepth() * td;
 
       float n0r = Math.abs(getNoise(noiseR, tw, th, td, tx, ty, tz)) * 0.1f + 0.7f;
       float nr = FastMath.clamp(n0r, 0.6f, 1.0f);
@@ -407,7 +353,7 @@ public class TestGrid extends SimpleApplication {
     groundObject.setMaterial(mat);
     groundObject.setShadowMode(ShadowMode.CastAndReceive);
 
-    groundObject.setLocalTranslation(-grid.width * scale * 0.5f, -grid.height * scale * 0.5f, -grid.depth * scale);
+    groundObject.setLocalTranslation(-grid.getWidth() * scale * 0.5f, -grid.getHeight() * scale * 0.5f, -grid.getDepth() * scale);
     rootNode.attachChild(groundObject);
   }
 
@@ -509,7 +455,7 @@ public class TestGrid extends SimpleApplication {
   }
 
   private void filterFloaters() {
-    Grid ground = new Grid(grid.getWidth(), grid.getHeight(), grid.getDepth());
+    Chunk ground = new Chunk(grid.getWidth(), grid.getHeight(), grid.getDepth());
     new FloodFill(ground, grid).fill();
     grid = ground;
   }
@@ -517,10 +463,10 @@ public class TestGrid extends SimpleApplication {
   private static class FloodFill {
     private List<Vector3i> front = new ArrayList<>();
     private Set<Vector3i> visited = new HashSet<>();
-    private Grid ground;
-    private Grid orig;
+    private Chunk ground;
+    private Chunk orig;
 
-    public FloodFill(Grid ground, Grid orig) {
+    public FloodFill(Chunk ground, Chunk orig) {
       this.ground = ground;
       this.orig = orig;
     }
