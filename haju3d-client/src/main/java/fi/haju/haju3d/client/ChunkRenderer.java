@@ -31,6 +31,7 @@ import com.jme3.util.BufferUtils;
 
 import fi.haju.haju3d.protocol.world.Chunk;
 import fi.haju.haju3d.protocol.world.Tile;
+import fi.haju.haju3d.util.noise.InterpolationUtil;
 import fi.haju.haju3d.util.noise.PerlinNoiseUtil;
 
 /**
@@ -317,7 +318,7 @@ public class ChunkRenderer extends SimpleApplication {
     float zt = tz - z;
 
     if (x >= 0 && x < tw - 1 && y >= 0 && y < th - 1 && z >= 0 && z < td - 1) {
-      return PerlinNoiseUtil.interpolateLinear3d(
+      return InterpolationUtil.interpolateLinear3d(
           xt, yt, zt,
           noise[x + y * tw + z * tw * td],
           noise[x + 1 + y * tw + z * tw * td],

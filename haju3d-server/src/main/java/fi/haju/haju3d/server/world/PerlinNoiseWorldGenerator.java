@@ -8,6 +8,7 @@ import java.util.Set;
 import fi.haju.haju3d.protocol.Vector3i;
 import fi.haju.haju3d.protocol.world.Chunk;
 import fi.haju.haju3d.protocol.world.Tile;
+import fi.haju.haju3d.util.noise.InterpolationUtil;
 import fi.haju.haju3d.util.noise.PerlinNoiseUtil;
 
 public class PerlinNoiseWorldGenerator implements WorldGenerator {
@@ -77,7 +78,7 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
         for (int z = 0; z < d; z++) {
           float v = Math.abs(y);
           if (y < h / 5) {
-            v += PerlinNoiseUtil.interpolateLinear(y / (h / 5), -10, 0);
+            v += InterpolationUtil.interpolateLinear(y / (h / 5), -10, 0);
           }
           v += noise[x + y * w + z * w * h] * 3;
           chunk.set(x, y, z, v < thres ? Tile.GROUND : Tile.AIR);
