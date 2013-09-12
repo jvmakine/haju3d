@@ -2,6 +2,7 @@ package fi.haju.haju3d.server;
 
 import java.rmi.RemoteException;
 import java.util.List;
+import java.util.Random;
 
 import com.google.common.collect.Lists;
 
@@ -17,7 +18,7 @@ public class ServerImpl implements Server {
   List<Client> loggedInClients = Lists.newArrayList(); 
   
   public ServerImpl() {
-    chunk = new PerlinNoiseWorldGenerator().generateChunk();
+    chunk = new PerlinNoiseWorldGenerator().generateChunk(new Random().nextInt());
   }
 
   @Override

@@ -17,8 +17,8 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
   private static final int DEPTH = 120;
   
   @Override
-  public Chunk generateChunk() {
-    return makeChunk();
+  public Chunk generateChunk(int seed) {
+    return makeChunk(seed);
   }
   
   private static class FloodFill {
@@ -64,13 +64,13 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
     return ground;
   }
   
-  private Chunk makeChunk() {
+  private Chunk makeChunk(int seed) {
     Chunk chunk = new Chunk(WIDTH, HEIGHT, DEPTH);
     int w = chunk.getWidth();
     int h = chunk.getHeight();
     int d = chunk.getDepth();
 
-    float[] noise = PerlinNoiseUtil.make3dPerlinNoise(12, w, h, d);
+    float[] noise = PerlinNoiseUtil.make3dPerlinNoise(seed, w, h, d);
     float thres = h / 3;
     for (int x = 0; x < w; x++) {
       for (int y = 0; y < h; y++) {
