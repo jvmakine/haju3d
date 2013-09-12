@@ -26,7 +26,7 @@ public class ClientRunner {
       Server server = (Server)registry.lookup("haju3d_server");
       server.login(stub);
       
-      TestGrid app = new TestGrid(server.getChunk());
+      ChunkRenderer app = new ChunkRenderer(server.getChunk());
       AppSettings settings = new AppSettings(true);
       settings.setVSync(true);
       settings.setResolution(1024, 768);

@@ -34,16 +34,16 @@ import fi.haju.haju3d.protocol.world.Tile;
 import fi.haju.haju3d.util.noise.PerlinNoiseUtil;
 
 /**
- * Testing application that builds a smoothed grid mesh.
+ * Renderer application for rendering chunks from the server
  */
-public class TestGrid extends SimpleApplication {
+public class ChunkRenderer extends SimpleApplication {
 
-  private Chunk grid = null;
+  private Chunk chunk = null;
   private Spatial groundObject;
   private Spatial characterObject;
   
-  public TestGrid(Chunk grid) {
-    this.grid = grid;
+  public ChunkRenderer(Chunk chunk) {
+    this.chunk = chunk;
   }
 
   @Override
@@ -51,7 +51,7 @@ public class TestGrid extends SimpleApplication {
     getFlyByCamera().setMoveSpeed(20 * 2);
     getFlyByCamera().setRotationSpeed(3);
 
-    setupGridAsMesh();
+    setupChunkAsMesh();
     setupLighting();
     setupCharacter();
     setupToruses();
@@ -68,9 +68,9 @@ public class TestGrid extends SimpleApplication {
     Material blue = makeColorMaterial(ColorRGBA.Blue);
     for (int i = 0; i < 50; i++) {
       CollisionResults res = new CollisionResults();
-      float x = (float) ((rnd.nextDouble() * grid.getWidth()) - grid.getHeight() * 0.5);
-      float z = (float) (-(rnd.nextDouble() * grid.getDepth()));
-      Ray r = new Ray(new Vector3f(x, grid.getHeight(), z), Vector3f.UNIT_Y.negate());
+      float x = (float) ((rnd.nextDouble() * chunk.getWidth()) - chunk.getHeight() * 0.5);
+      float z = (float) (-(rnd.nextDouble() * chunk.getDepth()));
+      Ray r = new Ray(new Vector3f(x, chunk.getHeight(), z), Vector3f.UNIT_Y.negate());
       int collideWith = groundObject.collideWith(r, res);
       if (collideWith != 0) {
         Vector3f pt = res.getClosestCollision().getContactPoint().subtract(0f, 0.1f, 0f);
@@ -157,54 +157,54 @@ public class TestGrid extends SimpleApplication {
     }
   }
 
-  private void setupGridAsMesh() {
+  private void setupChunkAsMesh() {
     float scale = 1;
 
     MyMesh myMesh = new MyMesh();
 
-    int w = grid.getWidth();
-    int h = grid.getHeight();
-    int d = grid.getDepth();
+    int w = chunk.getWidth();
+    int h = chunk.getHeight();
+    int d = chunk.getDepth();
     for (int x = 0; x < w; x++) {
       for (int y = 0; y < h; y++) {
         for (int z = 0; z < d; z++) {
-          if (grid.get(x, y, z) == Tile.GROUND) {
-            if (grid.get(x, y - 1, z) == Tile.AIR) {
+          if (chunk.get(x, y, z) == Tile.GROUND) {
+            if (chunk.get(x, y - 1, z) == Tile.AIR) {
               myMesh.addFace(
                   new Vector3f(x, y, z),
                   new Vector3f(x + 1, y, z),
                   new Vector3f(x + 1, y, z + 1),
                   new Vector3f(x, y, z + 1));
             }
-            if (grid.get(x, y + 1, z) == Tile.AIR) {
+            if (chunk.get(x, y + 1, z) == Tile.AIR) {
               myMesh.addFace(
                   new Vector3f(x, y + 1, z + 1),
                   new Vector3f(x + 1, y + 1, z + 1),
                   new Vector3f(x + 1, y + 1, z),
                   new Vector3f(x, y + 1, z));
             }
-            if (grid.get(x - 1, y, z) == Tile.AIR) {
+            if (chunk.get(x - 1, y, z) == Tile.AIR) {
               myMesh.addFace(
                   new Vector3f(x, y, z + 1),
                   new Vector3f(x, y + 1, z + 1),
                   new Vector3f(x, y + 1, z),
                   new Vector3f(x, y, z));
             }
-            if (grid.get(x + 1, y, z) == Tile.AIR) {
+            if (chunk.get(x + 1, y, z) == Tile.AIR) {
               myMesh.addFace(
                   new Vector3f(x + 1, y, z),
                   new Vector3f(x + 1, y + 1, z),
                   new Vector3f(x + 1, y + 1, z + 1),
                   new Vector3f(x + 1, y, z + 1));
             }
-            if (grid.get(x, y, z - 1) == Tile.AIR) {
+            if (chunk.get(x, y, z - 1) == Tile.AIR) {
               myMesh.addFace(
                   new Vector3f(x, y, z),
                   new Vector3f(x, y + 1, z),
                   new Vector3f(x + 1, y + 1, z),
                   new Vector3f(x + 1, y, z));
             }
-            if (grid.get(x, y, z + 1) == Tile.AIR) {
+            if (chunk.get(x, y, z + 1) == Tile.AIR) {
               myMesh.addFace(
                   new Vector3f(x + 1, y, z + 1),
                   new Vector3f(x + 1, y + 1, z + 1),
@@ -273,9 +273,9 @@ public class TestGrid extends SimpleApplication {
     for (Map.Entry<MyVertex, Integer> e : vertexIndex.entrySet()) {
       int vi = e.getValue();
       Vector3f pos = e.getKey().v;
-      float tx = pos.x / grid.getWidth() * tw;
-      float ty = pos.y / grid.getHeight() * th;
-      float tz = pos.z / grid.getDepth() * td;
+      float tx = pos.x / chunk.getWidth() * tw;
+      float ty = pos.y / chunk.getHeight() * th;
+      float tz = pos.z / chunk.getDepth() * td;
 
       float n0r = Math.abs(getNoise(noiseR, tw, th, td, tx, ty, tz)) * 0.1f + 0.7f;
       float nr = FastMath.clamp(n0r, 0.6f, 1.0f);
@@ -303,7 +303,7 @@ public class TestGrid extends SimpleApplication {
     groundObject.setMaterial(mat);
     groundObject.setShadowMode(ShadowMode.CastAndReceive);
 
-    groundObject.setLocalTranslation(-grid.getWidth() * scale * 0.5f, -grid.getHeight() * scale * 0.5f, -grid.getDepth() * scale);
+    groundObject.setLocalTranslation(-chunk.getWidth() * scale * 0.5f, -chunk.getHeight() * scale * 0.5f, -chunk.getDepth() * scale);
     rootNode.attachChild(groundObject);
   }
 
