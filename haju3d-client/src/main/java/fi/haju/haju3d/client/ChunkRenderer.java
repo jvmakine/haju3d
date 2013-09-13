@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.jme3.app.SimpleApplication;
 import com.jme3.collision.CollisionResults;
 import com.jme3.light.AmbientLight;
@@ -161,81 +163,14 @@ public class ChunkRenderer extends SimpleApplication {
   private void setupChunkAsMesh() {
     float scale = 1;
 
-    MyMesh myMesh = new MyMesh();
-
     int w = chunk.getWidth();
-    int h = chunk.getHeight();
     int d = chunk.getDepth();
-    for (int x = 0; x < w; x++) {
-      for (int y = 0; y < h; y++) {
-        for (int z = 0; z < d; z++) {
-          if (chunk.get(x, y, z) == Tile.GROUND) {
-            if (chunk.get(x, y - 1, z) == Tile.AIR) {
-              myMesh.addFace(
-                  new Vector3f(x, y, z),
-                  new Vector3f(x + 1, y, z),
-                  new Vector3f(x + 1, y, z + 1),
-                  new Vector3f(x, y, z + 1));
-            }
-            if (chunk.get(x, y + 1, z) == Tile.AIR) {
-              myMesh.addFace(
-                  new Vector3f(x, y + 1, z + 1),
-                  new Vector3f(x + 1, y + 1, z + 1),
-                  new Vector3f(x + 1, y + 1, z),
-                  new Vector3f(x, y + 1, z));
-            }
-            if (chunk.get(x - 1, y, z) == Tile.AIR) {
-              myMesh.addFace(
-                  new Vector3f(x, y, z + 1),
-                  new Vector3f(x, y + 1, z + 1),
-                  new Vector3f(x, y + 1, z),
-                  new Vector3f(x, y, z));
-            }
-            if (chunk.get(x + 1, y, z) == Tile.AIR) {
-              myMesh.addFace(
-                  new Vector3f(x + 1, y, z),
-                  new Vector3f(x + 1, y + 1, z),
-                  new Vector3f(x + 1, y + 1, z + 1),
-                  new Vector3f(x + 1, y, z + 1));
-            }
-            if (chunk.get(x, y, z - 1) == Tile.AIR) {
-              myMesh.addFace(
-                  new Vector3f(x, y, z),
-                  new Vector3f(x, y + 1, z),
-                  new Vector3f(x + 1, y + 1, z),
-                  new Vector3f(x + 1, y, z));
-            }
-            if (chunk.get(x, y, z + 1) == Tile.AIR) {
-              myMesh.addFace(
-                  new Vector3f(x + 1, y, z + 1),
-                  new Vector3f(x + 1, y + 1, z + 1),
-                  new Vector3f(x, y + 1, z + 1),
-                  new Vector3f(x, y, z + 1));
-            }
-          }
-        }
-      }
-    }
+    
+    MyMesh myMesh = makeCubeMesh(chunk);
+    smoothMesh(myMesh);
 
-    // mesh smoothing
-    for (int i = 0; i < 3; i++) {
-      Map<MyVertex, Vector3f> newPos = new HashMap<>();
-      for (Map.Entry<MyVertex, List<MyFace>> e : myMesh.vertexFaces.entrySet()) {
-        Vector3f sum = Vector3f.ZERO.clone();
-        List<MyFace> faces = e.getValue();
-        for (MyFace f : faces) {
-          sum.addLocal(f.getCenter());
-        }
-        sum.divideLocal(faces.size());
-        newPos.put(e.getKey(), sum);
-      }
-      for (Map.Entry<MyVertex, Vector3f> e : newPos.entrySet()) {
-        e.getKey().v.set(e.getValue());
-      }
-    }
-
-    Map<MyVertex, Integer> vertexIndex = new HashMap<>();
-    List<Integer> indexes = new ArrayList<>();
+    Map<MyVertex, Integer> vertexIndex = Maps.newHashMap();
+    List<Integer> indexes = Lists.newArrayList();
 
     for (MyFace face : myMesh.faces) {
       face.normal = face.v2.v.subtract(face.v1.v).cross(face.v4.v.subtract(face.v1.v)).normalize();
@@ -306,6 +241,82 @@ public class ChunkRenderer extends SimpleApplication {
 
     groundObject.setLocalTranslation(-chunk.getWidth() * scale * 0.5f, -chunk.getHeight() * scale * 0.5f, -chunk.getDepth() * scale);
     rootNode.attachChild(groundObject);
+  }
+
+  private static MyMesh makeCubeMesh(Chunk chunk) {
+    MyMesh myMesh = new MyMesh();
+    int w = chunk.getWidth();
+    int h = chunk.getHeight();
+    int d = chunk.getDepth();
+    for (int x = 0; x < w; x++) {
+      for (int y = 0; y < h; y++) {
+        for (int z = 0; z < d; z++) {
+          if (chunk.get(x, y, z) == Tile.GROUND) {
+            if (chunk.get(x, y - 1, z) == Tile.AIR) {
+              myMesh.addFace(
+                  new Vector3f(x, y, z),
+                  new Vector3f(x + 1, y, z),
+                  new Vector3f(x + 1, y, z + 1),
+                  new Vector3f(x, y, z + 1));
+            }
+            if (chunk.get(x, y + 1, z) == Tile.AIR) {
+              myMesh.addFace(
+                  new Vector3f(x, y + 1, z + 1),
+                  new Vector3f(x + 1, y + 1, z + 1),
+                  new Vector3f(x + 1, y + 1, z),
+                  new Vector3f(x, y + 1, z));
+            }
+            if (chunk.get(x - 1, y, z) == Tile.AIR) {
+              myMesh.addFace(
+                  new Vector3f(x, y, z + 1),
+                  new Vector3f(x, y + 1, z + 1),
+                  new Vector3f(x, y + 1, z),
+                  new Vector3f(x, y, z));
+            }
+            if (chunk.get(x + 1, y, z) == Tile.AIR) {
+              myMesh.addFace(
+                  new Vector3f(x + 1, y, z),
+                  new Vector3f(x + 1, y + 1, z),
+                  new Vector3f(x + 1, y + 1, z + 1),
+                  new Vector3f(x + 1, y, z + 1));
+            }
+            if (chunk.get(x, y, z - 1) == Tile.AIR) {
+              myMesh.addFace(
+                  new Vector3f(x, y, z),
+                  new Vector3f(x, y + 1, z),
+                  new Vector3f(x + 1, y + 1, z),
+                  new Vector3f(x + 1, y, z));
+            }
+            if (chunk.get(x, y, z + 1) == Tile.AIR) {
+              myMesh.addFace(
+                  new Vector3f(x + 1, y, z + 1),
+                  new Vector3f(x + 1, y + 1, z + 1),
+                  new Vector3f(x, y + 1, z + 1),
+                  new Vector3f(x, y, z + 1));
+            }
+          }
+        }
+      }
+    }
+    return myMesh;
+  }
+
+  private static void smoothMesh(MyMesh myMesh) {
+    for (int i = 0; i < 3; i++) {
+      Map<MyVertex, Vector3f> newPos = new HashMap<>();
+      for (Map.Entry<MyVertex, List<MyFace>> e : myMesh.vertexFaces.entrySet()) {
+        Vector3f sum = Vector3f.ZERO.clone();
+        List<MyFace> faces = e.getValue();
+        for (MyFace f : faces) {
+          sum.addLocal(f.getCenter());
+        }
+        sum.divideLocal(faces.size());
+        newPos.put(e.getKey(), sum);
+      }
+      for (Map.Entry<MyVertex, Vector3f> e : newPos.entrySet()) {
+        e.getKey().v.set(e.getValue());
+      }
+    }
   }
 
   private float getNoise(float[] noise, int tw, int th, int td, float tx, float ty, float tz) {

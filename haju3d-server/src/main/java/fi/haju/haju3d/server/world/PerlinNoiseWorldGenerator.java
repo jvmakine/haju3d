@@ -13,9 +13,9 @@ import fi.haju.haju3d.util.noise.PerlinNoiseUtil;
 
 public class PerlinNoiseWorldGenerator implements WorldGenerator {
 
-  private static final int WIDTH = 120;
-  private static final int HEIGHT = 120;
-  private static final int DEPTH = 120;
+  private static final int WIDTH = 128;
+  private static final int HEIGHT = 128;
+  private static final int DEPTH = 128;
   
   @Override
   public Chunk generateChunk(int seed) {
