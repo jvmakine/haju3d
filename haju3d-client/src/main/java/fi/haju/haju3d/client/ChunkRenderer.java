@@ -44,6 +44,7 @@ public class ChunkRenderer extends SimpleApplication {
   private Chunk chunk = null;
   private Spatial groundObject;
   private Spatial characterObject;
+  private Vector3f lastLocation = null;
   
   public ChunkRenderer(Chunk chunk) {
     this.chunk = chunk;
@@ -396,10 +397,13 @@ public class ChunkRenderer extends SimpleApplication {
   @Override
   public void simpleUpdate(float tpf) {
     CollisionResults res = new CollisionResults();
-    Ray r = new Ray(cam.getLocation(), Vector3f.UNIT_Y.negate());
-    int collideWith = groundObject.collideWith(r, res);
-    if (collideWith != 0) {
-      Vector3f pt = res.getClosestCollision().getContactPoint();
+    if(lastLocation != null) {
+      Ray r = new Ray(cam.getLocation(), Vector3f.UNIT_Y);
+      int collideWith = groundObject.collideWith(r, res);
+      if (collideWith != 0) {
+        getCamera().setLocation(lastLocation);
+      } 
     }
+    lastLocation = getCamera().getLocation().clone();
   }
 }
