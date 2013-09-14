@@ -17,9 +17,16 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
   private static final int HEIGHT = 128;
   private static final int DEPTH = 128;
   
+  private int seed;
+  
   @Override
-  public Chunk generateChunk(int seed) {
-    return makeChunk(seed);
+  public Chunk generateChunk(Vector3i position) {
+    return makeChunk(seed, position);
+  }
+  
+  @Override
+  public void setSeed(int seed) {
+    this.seed = seed;
   }
   
   private static class FloodFill {
@@ -60,13 +67,13 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
   }
   
   private static Chunk filterFloaters(Chunk chunk) {
-    Chunk ground = new Chunk(chunk.getWidth(), chunk.getHeight(), chunk.getDepth(), chunk.getSeed());
+    Chunk ground = new Chunk(chunk.getWidth(), chunk.getHeight(), chunk.getDepth(), chunk.getSeed(), chunk.getPosition());
     new FloodFill(ground, chunk).fill();
     return ground;
   }
   
-  private Chunk makeChunk(int seed) {
-    Chunk chunk = new Chunk(WIDTH, HEIGHT, DEPTH, seed);
+  private static Chunk makeChunk(int seed, Vector3i position) {
+    Chunk chunk = new Chunk(WIDTH, HEIGHT, DEPTH, seed, position);
     int w = chunk.getWidth();
     int h = chunk.getHeight();
     int d = chunk.getDepth();

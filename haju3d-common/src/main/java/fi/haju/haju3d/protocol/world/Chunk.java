@@ -2,21 +2,25 @@ package fi.haju.haju3d.protocol.world;
 
 import java.io.Serializable;
 
+import fi.haju.haju3d.protocol.Vector3i;
+
 
 public final class Chunk implements Serializable {
   private static final long serialVersionUID = 1L;
   
   private Tile[] data;
-  int width;
-  int height;
-  int depth;
-  int seed;
+  private final int width;
+  private final int height;
+  private final int depth;
+  private final int seed;
+  private final Vector3i position;
 
-  public Chunk(int width, int height, int depth, int seed) {
+  public Chunk(int width, int height, int depth, int seed, Vector3i position) {
     this.width = width;
     this.height = height;
     this.depth = depth;
     this.seed = seed;
+    this.position = position;
 
     int n = width * height * depth;
     this.data = new Tile[n];
@@ -62,5 +66,8 @@ public final class Chunk implements Serializable {
   public int getSeed() {
     return seed;
   }
-  
+
+  public Vector3i getPosition() {
+    return position;
+  }  
 }
