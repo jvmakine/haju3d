@@ -8,6 +8,7 @@ import java.rmi.server.UnicastRemoteObject;
 
 import com.jme3.system.AppSettings;
 
+import fi.haju.haju3d.client.ui.ChunkRenderer;
 import fi.haju.haju3d.protocol.Client;
 import fi.haju.haju3d.protocol.Server;
 
