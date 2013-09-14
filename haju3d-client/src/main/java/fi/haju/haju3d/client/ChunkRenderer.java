@@ -9,6 +9,7 @@ import java.util.Random;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.jme3.app.SimpleApplication;
+import com.jme3.asset.plugins.ClasspathLocator;
 import com.jme3.collision.CollisionResults;
 import com.jme3.light.AmbientLight;
 import com.jme3.light.DirectionalLight;
@@ -30,6 +31,7 @@ import com.jme3.scene.shape.Torus;
 import com.jme3.shadow.DirectionalLightShadowRenderer;
 import com.jme3.shadow.EdgeFilteringMode;
 import com.jme3.util.BufferUtils;
+import com.jme3.util.SkyFactory;
 
 import fi.haju.haju3d.protocol.world.Chunk;
 import fi.haju.haju3d.protocol.world.Tile;
@@ -59,6 +61,7 @@ public class ChunkRenderer extends SimpleApplication {
     setupLighting();
     setupCharacter();
     setupToruses();
+    assetManager.registerLocator("assets", new ClasspathLocator().getClass());
   }
 
   private void setupToruses() {
@@ -203,8 +206,8 @@ public class ChunkRenderer extends SimpleApplication {
     int tw = 40;
     int th = 40;
     int td = 40;
-    float[] noiseR = PerlinNoiseUtil.make3dPerlinNoise(1, tw, th, td);
-    float[] noiseG = PerlinNoiseUtil.make3dPerlinNoise(2, tw, th, td);
+    float[] noiseR = PerlinNoiseUtil.make3dPerlinNoise(chunk.getSeed(), tw, th, td);
+    float[] noiseG = PerlinNoiseUtil.make3dPerlinNoise(chunk.getSeed()/2, tw, th, td);
 
     float[] cArray = new float[vertexIndex.size() * 4];
     for (Map.Entry<MyVertex, Integer> e : vertexIndex.entrySet()) {
