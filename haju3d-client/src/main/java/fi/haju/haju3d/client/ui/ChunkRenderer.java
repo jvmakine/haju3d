@@ -1,7 +1,5 @@
 package fi.haju.haju3d.client.ui;
 
-import java.util.Random;
-
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.plugins.ClasspathLocator;
 import com.jme3.collision.CollisionResults;
@@ -9,30 +7,28 @@ import com.jme3.light.AmbientLight;
 import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
-import com.jme3.math.Quaternion;
 import com.jme3.math.Ray;
 import com.jme3.math.Vector3f;
 import com.jme3.renderer.queue.RenderQueue.ShadowMode;
-import com.jme3.scene.BatchNode;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Mesh;
 import com.jme3.scene.Spatial;
 import com.jme3.scene.shape.Box;
-import com.jme3.scene.shape.Torus;
 import com.jme3.shadow.DirectionalLightShadowRenderer;
 import com.jme3.shadow.EdgeFilteringMode;
 import com.jme3.system.AppSettings;
 
+import fi.haju.haju3d.client.ChunkProcessor;
+import fi.haju.haju3d.client.ChunkProvider;
 import fi.haju.haju3d.client.CloseEventHandler;
 import fi.haju.haju3d.client.ui.mesh.ChunkMeshBuilder;
+import fi.haju.haju3d.protocol.Vector3i;
 import fi.haju.haju3d.protocol.world.Chunk;
 
 /**
  * Renderer application for rendering chunks from the server
  */
-public class ChunkRenderer extends SimpleApplication {
-
-  private Chunk chunk = null;
+public class ChunkRenderer extends SimpleApplication implements ChunkProcessor {
   private ChunkMeshBuilder builder;
   private Spatial groundObject;
   private Spatial characterObject;
@@ -40,9 +36,10 @@ public class ChunkRenderer extends SimpleApplication {
   private DirectionalLight light;
   private boolean useVertexColor;
   private CloseEventHandler closeEventHandler;
+  private ChunkProvider chunkProvider;
   
-  public ChunkRenderer(Chunk chunk) {
-    this.chunk = chunk;
+  public ChunkRenderer(ChunkProvider chunkProvider) {
+    this.chunkProvider = chunkProvider;
     
     setUseVertexColor(false);
     AppSettings settings = new AppSettings(true);
@@ -62,18 +59,18 @@ public class ChunkRenderer extends SimpleApplication {
     assetManager.registerLocator("assets", new ClasspathLocator().getClass());
     
     builder = new ChunkMeshBuilder();
-    builder.setUseVertexColor(useVertexColor);
+    builder.setUseVertexColor(useVertexColor);    
+    chunkProvider.requestChunk(new Vector3i(0, 0, 0), this);
     
     getFlyByCamera().setMoveSpeed(20 * 2);
     getFlyByCamera().setRotationSpeed(3);
 
-    setupChunkAsMesh();
     setupLighting();
     setupCharacter();
 //    setupToruses();
   }
 
-  private void setupToruses() {
+ /* private void setupToruses() {
     Torus torus = new Torus(20, 20, 0.5f, 1.0f);
 
     BatchNode batch = new BatchNode("batch");
@@ -102,7 +99,7 @@ public class ChunkRenderer extends SimpleApplication {
 
     batch.batch();
     rootNode.attachChild(batch);
-  }
+  }*/
 
   private void setupCharacter() {
     Box characterMesh = new Box(1, 0.5f, 1);
@@ -112,7 +109,7 @@ public class ChunkRenderer extends SimpleApplication {
     rootNode.attachChild(characterObject);
   }
 
-  private void setupChunkAsMesh() {
+  private void setupChunkAsMesh(Chunk chunk) {
     float scale = 1;
     
     Mesh m = builder.makeMesh(chunk);
@@ -181,5 +178,10 @@ public class ChunkRenderer extends SimpleApplication {
 
   public void setCloseEventHandler(CloseEventHandler closeEventHandler) {
     this.closeEventHandler = closeEventHandler;
+  }
+
+  @Override
+  public void chunkLoaded(Chunk chunk) {
+    setupChunkAsMesh(chunk);
   }
 }

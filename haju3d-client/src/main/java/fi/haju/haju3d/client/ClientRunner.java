@@ -8,7 +8,6 @@ import java.rmi.server.UnicastRemoteObject;
 import fi.haju.haju3d.client.ui.ChunkRenderer;
 import fi.haju.haju3d.protocol.Client;
 import fi.haju.haju3d.protocol.Server;
-import fi.haju.haju3d.protocol.Vector3i;
 
 /**
  * Class to start the client
@@ -21,8 +20,8 @@ public class ClientRunner {
     Registry registry = LocateRegistry.getRegistry(5250);
     Server server = (Server)registry.lookup("haju3d_server");
     server.login(stub);
-
-    ChunkRenderer app = new ChunkRenderer(server.getChunk(new Vector3i(0, 0, 0)));
+  
+    ChunkRenderer app = new ChunkRenderer(new ChunkProvider(server));
     app.setCloseEventHandler(new CloseEventHandler() {
       @Override
       public void onClose() {
