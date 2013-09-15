@@ -22,6 +22,8 @@ import com.jme3.scene.shape.Torus;
 import com.jme3.shadow.DirectionalLightShadowRenderer;
 import com.jme3.shadow.EdgeFilteringMode;
 
+import fi.haju.haju3d.client.CloseEventHandler;
+import fi.haju.haju3d.client.Timer;
 import fi.haju.haju3d.client.ui.mesh.ChunkMeshBuilder;
 import fi.haju.haju3d.protocol.world.Chunk;
 
@@ -36,9 +38,15 @@ public class ChunkRenderer extends SimpleApplication {
   private Spatial characterObject;
   private Vector3f lastLocation = null;
   private DirectionalLight light;
+  private boolean useVertexColor;
+  private CloseEventHandler closeEventHandler;
   
   public ChunkRenderer(Chunk chunk) {
     this.chunk = chunk;
+  }
+  
+  public void setUseVertexColor(boolean useVertexColor) {
+    this.useVertexColor = useVertexColor;
   }
 
   @Override
@@ -46,6 +54,7 @@ public class ChunkRenderer extends SimpleApplication {
     assetManager.registerLocator("assets", new ClasspathLocator().getClass());
     
     builder = new ChunkMeshBuilder();
+    builder.setUseVertexColor(useVertexColor);
     
     getFlyByCamera().setMoveSpeed(20 * 2);
     getFlyByCamera().setRotationSpeed(3);
@@ -53,7 +62,7 @@ public class ChunkRenderer extends SimpleApplication {
     setupChunkAsMesh();
     setupLighting();
     setupCharacter();
-    setupToruses();
+//    setupToruses();
   }
 
   private void setupToruses() {
@@ -101,8 +110,14 @@ public class ChunkRenderer extends SimpleApplication {
     Mesh m = builder.makeMesh(chunk);
     
     groundObject = new Geometry("ColoredMesh", m);
-    Material mat = makeColorMaterial(ColorRGBA.White);
-    mat.setBoolean("UseVertexColor", true);
+    ColorRGBA color = ColorRGBA.White;
+    Material mat = new Material(assetManager, "fi/haju/haju3d/client/shaders/Lighting.j3md");
+    mat.setBoolean("UseMaterialColors", true);
+    mat.setColor("Ambient", color);
+    mat.setColor("Diffuse", color);
+    if (useVertexColor) {
+      mat.setBoolean("UseVertexColor", true);
+    }
     groundObject.setMaterial(mat);
     groundObject.setShadowMode(ShadowMode.CastAndReceive);
 
@@ -143,8 +158,20 @@ public class ChunkRenderer extends SimpleApplication {
       int collideWith = groundObject.collideWith(r, res);
       if (collideWith != 0) {
         getCamera().setLocation(lastLocation);
-      } 
+      }
     }
     lastLocation = getCamera().getLocation().clone();
+  }
+  
+  @Override
+  public void destroy() {
+    super.destroy();
+    if (closeEventHandler != null) {
+      this.closeEventHandler.onClose();
+    }
+  }
+
+  public void setCloseEventHandler(CloseEventHandler closeEventHandler) {
+    this.closeEventHandler = closeEventHandler;
   }
 }

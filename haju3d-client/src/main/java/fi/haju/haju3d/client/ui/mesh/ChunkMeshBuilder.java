@@ -19,8 +19,13 @@ import fi.haju.haju3d.util.noise.InterpolationUtil;
 import fi.haju.haju3d.util.noise.PerlinNoiseUtil;
 
 public class ChunkMeshBuilder {
+  private boolean useVertexColor = true;
   
   public ChunkMeshBuilder() {
+  }
+  
+  public void setUseVertexColor(boolean useVertexColor) {
+    this.useVertexColor = useVertexColor;
   }
 
   public Mesh makeMesh(Chunk chunk) {
@@ -62,38 +67,41 @@ public class ChunkMeshBuilder {
       iArray[i] = indexes.get(i);
     }
 
-    int tw = 40;
-    int th = 40;
-    int td = 40;
-    float[] noiseR = PerlinNoiseUtil.make3dPerlinNoise(chunk.getSeed(), tw, th, td);
-    float[] noiseG = PerlinNoiseUtil.make3dPerlinNoise(chunk.getSeed()/2, tw, th, td);
-
-    float[] cArray = new float[vertexIndex.size() * 4];
-    for (Map.Entry<MyVertex, Integer> e : vertexIndex.entrySet()) {
-      int vi = e.getValue();
-      Vector3f pos = e.getKey().v;
-      float tx = pos.x / chunk.getWidth() * tw;
-      float ty = pos.y / chunk.getHeight() * th;
-      float tz = pos.z / chunk.getDepth() * td;
-
-      float n0r = Math.abs(getNoise(noiseR, tw, th, td, tx, ty, tz)) * 0.1f + 0.7f;
-      float nr = FastMath.clamp(n0r, 0.6f, 1.0f);
-
-      float n0g = Math.abs(getNoise(noiseG, tw, th, td, tx, ty, tz)) * 0.1f + 0.7f;
-      float ng = FastMath.clamp(n0g, 0.3f, 1.0f);
-
-      cArray[vi * 4 + 0] = nr;
-      cArray[vi * 4 + 1] = ng;
-      cArray[vi * 4 + 2] = ng;
-      cArray[vi * 4 + 3] = 1.0f;
-    }
-
     Mesh m = new Mesh();
     m.setBuffer(Type.Position, 3, BufferUtils.createFloatBuffer(vArray));
     m.setBuffer(Type.Normal, 3, BufferUtils.createFloatBuffer(vnArray));
-    m.setBuffer(Type.Color, 4, BufferUtils.createFloatBuffer(cArray));
     m.setBuffer(Type.TexCoord, 2, BufferUtils.createFloatBuffer(texArray));
     m.setBuffer(Type.Index, 1, BufferUtils.createIntBuffer(iArray));
+    
+    if (useVertexColor) {
+      int tw = 40;
+      int th = 40;
+      int td = 40;
+      float[] noiseR = PerlinNoiseUtil.make3dPerlinNoise(chunk.getSeed(), tw, th, td);
+      float[] noiseG = PerlinNoiseUtil.make3dPerlinNoise(chunk.getSeed()/2, tw, th, td);
+  
+      float[] cArray = new float[vertexIndex.size() * 4];
+      for (Map.Entry<MyVertex, Integer> e : vertexIndex.entrySet()) {
+        int vi = e.getValue();
+        Vector3f pos = e.getKey().v;
+        float tx = pos.x / chunk.getWidth() * tw;
+        float ty = pos.y / chunk.getHeight() * th;
+        float tz = pos.z / chunk.getDepth() * td;
+  
+        float n0r = Math.abs(getNoise(noiseR, tw, th, td, tx, ty, tz)) * 0.1f + 0.7f;
+        float nr = FastMath.clamp(n0r, 0.6f, 1.0f);
+  
+        float n0g = Math.abs(getNoise(noiseG, tw, th, td, tx, ty, tz)) * 0.1f + 0.7f;
+        float ng = FastMath.clamp(n0g, 0.3f, 1.0f);
+  
+        cArray[vi * 4 + 0] = nr;
+        cArray[vi * 4 + 1] = ng;
+        cArray[vi * 4 + 2] = ng;
+        cArray[vi * 4 + 3] = 1.0f;
+      }
+      m.setBuffer(Type.Color, 4, BufferUtils.createFloatBuffer(cArray));
+    }
+    
     m.updateBound();
     return m;
   }
@@ -174,7 +182,7 @@ public class ChunkMeshBuilder {
     }
   }
 
-  private float getNoise(float[] noise, int tw, int th, int td, float tx, float ty, float tz) {
+  private static float getNoise(float[] noise, int tw, int th, int td, float tx, float ty, float tz) {
     int x = (int) tx;
     int y = (int) ty;
     int z = (int) tz;
@@ -199,7 +207,7 @@ public class ChunkMeshBuilder {
     }
   }
 
-  private void addQuad(
+  private static void addQuad(
       List<Integer> indexes, Map<MyVertex, Integer> vertexIndex,
       MyVertex vector3f1, MyVertex vector3f2,
       MyVertex vector3f3, MyVertex vector3f4) {
@@ -212,7 +220,7 @@ public class ChunkMeshBuilder {
     indexes.add(getVertexIndex(vertexIndex, vector3f4));
   }
 
-  private Integer getVertexIndex(Map<MyVertex, Integer> vertexIndex, MyVertex v) {
+  private static Integer getVertexIndex(Map<MyVertex, Integer> vertexIndex, MyVertex v) {
     Integer i = vertexIndex.get(v);
     if (i == null) {
       i = vertexIndex.size();
