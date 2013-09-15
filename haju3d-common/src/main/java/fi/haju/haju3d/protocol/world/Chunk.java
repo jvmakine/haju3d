@@ -61,12 +61,16 @@ public final class Chunk implements Serializable {
     if (isInside(x, y, z)) {
       return data[getIndex(x, y, z)];
     } else if(x == -1) {
+      if(z < 0 || z >= depth || y < 0 || y >= height) return Tile.AIR;
       return x_minus_side[y + z*height];
     } else if(x == width) {
+      if(z < 0 || z >= depth || y < 0 || y >= height) return Tile.AIR;
       return x_plus_side[y + z*height];
     } else if(z == depth) {
+      if(x < 0 || x >= width || y < 0 || y >= height) return Tile.AIR;
       return z_plus_side[x + y*width];
     } else if(z == -1) {
+      if(x < 0 || x >= width || y < 0 || y >= height) return Tile.AIR;
       return z_minus_side[x + y*width];
     } else {
       return Tile.AIR;
