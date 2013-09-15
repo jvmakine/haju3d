@@ -21,7 +21,8 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
   
   @Override
   public Chunk generateChunk(Vector3i position) {
-    return makeChunk(seed, position);
+    int realseed = seed ^ position.hashCode();
+    return makeChunk(realseed, position);
   }
   
   @Override
@@ -29,7 +30,7 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
     this.seed = seed;
   }
   
-  private static class FloodFill {
+  private static final class FloodFill {
     private List<Vector3i> front = new ArrayList<>();
     private Set<Vector3i> visited = new HashSet<>();
     private Chunk ground;
