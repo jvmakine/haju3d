@@ -51,4 +51,9 @@ public class Vector3i implements Serializable {
   public Vector3i add(int x, int y, int z) {
     return new Vector3i(this.x + x, this.y + y, this.z + z);
   }
+  
+  public String toString() {
+    return "[" + x + "," + y + "," + z + "]";
+  }
+  
 }
