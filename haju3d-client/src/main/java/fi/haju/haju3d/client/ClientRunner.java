@@ -5,8 +5,6 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 
-import com.jme3.system.AppSettings;
-
 import fi.haju.haju3d.client.ui.ChunkRenderer;
 import fi.haju.haju3d.protocol.Client;
 import fi.haju.haju3d.protocol.Server;
@@ -25,12 +23,6 @@ public class ClientRunner {
     server.login(stub);
 
     ChunkRenderer app = new ChunkRenderer(server.getChunk(new Vector3i(0, 0, 0)));
-    AppSettings settings = new AppSettings(true);
-    settings.setVSync(true);
-    settings.setAudioRenderer(null);
-    settings.setFullscreen(true);
-    app.setSettings(settings);
-    app.setShowSettings(false);
     app.setCloseEventHandler(new CloseEventHandler() {
       @Override
       public void onClose() {

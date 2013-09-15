@@ -17,13 +17,6 @@ public class LocalClientRunner {
     server.login(client);
     
     ChunkRenderer app = new ChunkRenderer(server.getChunk(new Vector3i(0, 0, 0)));
-    app.setUseVertexColor(false);
-    AppSettings settings = new AppSettings(true);
-    settings.setVSync(true);
-    settings.setAudioRenderer(null);
-    settings.setFullscreen(false);
-    app.setSettings(settings);
-    app.setShowSettings(false);
     app.start();
   }
 }

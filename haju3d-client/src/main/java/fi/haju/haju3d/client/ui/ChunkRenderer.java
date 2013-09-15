@@ -21,9 +21,9 @@ import com.jme3.scene.shape.Box;
 import com.jme3.scene.shape.Torus;
 import com.jme3.shadow.DirectionalLightShadowRenderer;
 import com.jme3.shadow.EdgeFilteringMode;
+import com.jme3.system.AppSettings;
 
 import fi.haju.haju3d.client.CloseEventHandler;
-import fi.haju.haju3d.client.Timer;
 import fi.haju.haju3d.client.ui.mesh.ChunkMeshBuilder;
 import fi.haju.haju3d.protocol.world.Chunk;
 
@@ -43,6 +43,14 @@ public class ChunkRenderer extends SimpleApplication {
   
   public ChunkRenderer(Chunk chunk) {
     this.chunk = chunk;
+    
+    setUseVertexColor(false);
+    AppSettings settings = new AppSettings(true);
+    settings.setVSync(true);
+    settings.setAudioRenderer(null);
+    settings.setFullscreen(false);
+    setSettings(settings);
+    setShowSettings(false);
   }
   
   public void setUseVertexColor(boolean useVertexColor) {
