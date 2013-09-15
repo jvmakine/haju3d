@@ -8,5 +8,5 @@ import fi.haju.haju3d.protocol.world.Chunk;
 public interface Server extends Remote {
   void login(Client client) throws RemoteException;
   void logout(Client client) throws RemoteException;
-  Chunk getChunk() throws RemoteException;
+  Chunk getChunk(Vector3i position) throws RemoteException;
 }
