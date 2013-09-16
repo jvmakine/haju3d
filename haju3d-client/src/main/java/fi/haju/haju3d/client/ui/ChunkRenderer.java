@@ -1,5 +1,8 @@
 package fi.haju.haju3d.client.ui;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.plugins.ClasspathLocator;
 import com.jme3.collision.CollisionResults;
@@ -17,6 +20,10 @@ import com.jme3.scene.shape.Box;
 import com.jme3.shadow.DirectionalLightShadowRenderer;
 import com.jme3.shadow.EdgeFilteringMode;
 import com.jme3.system.AppSettings;
+import com.jme3.texture.Image;
+import com.jme3.texture.Texture;
+import com.jme3.texture.Texture.WrapMode;
+import com.jme3.texture.TextureArray;
 
 import fi.haju.haju3d.client.ChunkProcessor;
 import fi.haju.haju3d.client.ChunkProvider;
@@ -59,7 +66,7 @@ public class ChunkRenderer extends SimpleApplication implements ChunkProcessor {
     assetManager.registerLocator("assets", new ClasspathLocator().getClass());
     
     builder = new ChunkMeshBuilder();
-    builder.setUseVertexColor(useVertexColor);    
+    builder.setUseVertexColor(useVertexColor);
     chunkProvider.requestChunk(new Vector3i(0, 0, 0), this);
     
     getFlyByCamera().setMoveSpeed(20 * 2);
@@ -114,10 +121,22 @@ public class ChunkRenderer extends SimpleApplication implements ChunkProcessor {
     
     Mesh m = builder.makeMesh(chunk);
     
+    Texture tex1 = assetManager.loadTexture("fi/haju/haju3d/client/textures/grass.png");
+    Texture tex2 = assetManager.loadTexture("fi/haju/haju3d/client/textures/rock.png");
+    tex1.setWrap(WrapMode.Repeat);
+    tex2.setWrap(WrapMode.Repeat);
+    List<Image> images = new ArrayList<Image>();
+    images.add(tex1.getImage());
+    images.add(tex2.getImage());
+    TextureArray tex3 = new TextureArray(images);
+    tex3.setWrap(WrapMode.Repeat);
+    
     groundObject = new Geometry("ColoredMesh", m);
     ColorRGBA color = ColorRGBA.White;
     Material mat = new Material(assetManager, "fi/haju/haju3d/client/shaders/Lighting.j3md");
+//    Material mat = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
     mat.setBoolean("UseMaterialColors", true);
+    mat.setTexture("DiffuseMap", tex3);
     mat.setColor("Ambient", color);
     mat.setColor("Diffuse", color);
     if (useVertexColor) {

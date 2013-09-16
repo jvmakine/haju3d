@@ -1,11 +1,17 @@
+#extension GL_EXT_texture_array : enable
+#extension GL_EXT_gpu_shader4 : enable
+#if !defined(GL_EXT_texture_array) && !defined(GL_EXT_gpu_shader4)
+    #error Texture arrays are not supported, but required for this shader.
+#endif
+
 #import "Common/ShaderLib/Parallax.glsllib"
 #import "Common/ShaderLib/Optics.glsllib"
 #define ATTENUATION
 //#define HQ_ATTENUATION
 
-varying vec2 texCoord;
+varying vec3 texCoord;
 #ifdef SEPARATE_TEXCOORD
-  varying vec2 texCoord2;
+  varying vec3 texCoord2;
 #endif
 
 varying vec3 AmbientSum;
@@ -23,36 +29,36 @@ varying vec3 SpecularSum;
 #endif
 
 #ifdef DIFFUSEMAP
-  uniform sampler2D m_DiffuseMap;
+  uniform sampler2DArray m_DiffuseMap;
 #endif
 
 #ifdef SPECULARMAP
-  uniform sampler2D m_SpecularMap;
+  uniform sampler2DArray m_SpecularMap;
 #endif
 
 #ifdef PARALLAXMAP
-  uniform sampler2D m_ParallaxMap;  
+  uniform sampler2DArray m_ParallaxMap;  
 #endif
 #if (defined(PARALLAXMAP) || (defined(NORMALMAP_PARALLAX) && defined(NORMALMAP))) && !defined(VERTEX_LIGHTING) 
     uniform float m_ParallaxHeight;
 #endif
 
 #ifdef LIGHTMAP
-  uniform sampler2D m_LightMap;
+  uniform sampler2DArray m_LightMap;
 #endif
   
 #ifdef NORMALMAP
-  uniform sampler2D m_NormalMap;   
+  uniform sampler2DArray m_NormalMap;   
 #else
   varying vec3 vNormal;
 #endif
 
 #ifdef ALPHAMAP
-  uniform sampler2D m_AlphaMap;
+  uniform sampler2DArray m_AlphaMap;
 #endif
 
 #ifdef COLORRAMP
-  uniform sampler2D m_ColorRamp;
+  uniform sampler2DArray m_ColorRamp;
 #endif
 
 uniform float m_AlphaDiscardThreshold;
@@ -137,7 +143,7 @@ vec2 computeLighting(in vec3 wvNorm, in vec3 wvViewDir, in vec3 wvLightDir){
 #endif
 
 void main(){
-    vec2 newTexCoord;
+    vec3 newTexCoord;
      
     #if (defined(PARALLAXMAP) || (defined(NORMALMAP_PARALLAX) && defined(NORMALMAP))) && !defined(VERTEX_LIGHTING) 
      
@@ -163,14 +169,14 @@ void main(){
     #endif
     
    #ifdef DIFFUSEMAP
-      vec4 diffuseColor = texture2D(m_DiffuseMap, newTexCoord);
+      vec4 diffuseColor = texture2DArray(m_DiffuseMap, newTexCoord);
     #else
-      vec4 diffuseColor = vec4(1.0);
+        vec4 diffuseColor = vec4(1.0);
     #endif
 
     float alpha = DiffuseSum.a * diffuseColor.a;
     #ifdef ALPHAMAP
-       alpha = alpha * texture2D(m_AlphaMap, newTexCoord).r;
+       alpha = alpha * texture2DArray(m_AlphaMap, newTexCoord).r;
     #endif
     if(alpha < m_AlphaDiscardThreshold){
         discard;
@@ -210,7 +216,7 @@ void main(){
     // Read from textures
     // ***********************
     #if defined(NORMALMAP) && !defined(VERTEX_LIGHTING)
-      vec4 normalHeight = texture2D(m_NormalMap, newTexCoord);
+      vec4 normalHeight = texture2DArray(m_NormalMap, newTexCoord);
       vec3 normal = normalize((normalHeight.xyz * vec3(2.0) - vec3(1.0)));
       #ifdef LATC
         normal.z = sqrt(1.0 - (normal.x * normal.x) - (normal.y * normal.y));
@@ -224,7 +230,7 @@ void main(){
     #endif
 
     #ifdef SPECULARMAP
-      vec4 specularColor = texture2D(m_SpecularMap, newTexCoord);
+      vec4 specularColor = texture2DArray(m_SpecularMap, newTexCoord);
     #else
       vec4 specularColor = vec4(1.0);
     #endif
@@ -232,9 +238,9 @@ void main(){
     #ifdef LIGHTMAP
        vec3 lightMapColor;
        #ifdef SEPARATE_TEXCOORD
-          lightMapColor = texture2D(m_LightMap, texCoord2).rgb;
+          lightMapColor = texture2DArray(m_LightMap, texCoord2).rgb;
        #else
-          lightMapColor = texture2D(m_LightMap, texCoord).rgb;
+          lightMapColor = texture2DArray(m_LightMap, texCoord).rgb;
        #endif
        specularColor.rgb *= lightMapColor;
        diffuseColor.rgb  *= lightMapColor;

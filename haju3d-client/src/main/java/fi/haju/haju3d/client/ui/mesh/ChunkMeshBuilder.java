@@ -50,7 +50,7 @@ public class ChunkMeshBuilder {
 
     Vector3f[] vArray = new Vector3f[vertexIndex.size()];
     Vector3f[] vnArray = new Vector3f[vertexIndex.size()];
-    Vector2f[] texArray = new Vector2f[vertexIndex.size()];
+    Vector3f[] texArray = new Vector3f[vertexIndex.size()];
     for (Map.Entry<MyVertex, Integer> e : vertexIndex.entrySet()) {
       Vector3f sum = Vector3f.ZERO.clone();
       for (MyFace f : myMesh.vertexFaces.get(e.getKey())) {
@@ -60,7 +60,7 @@ public class ChunkMeshBuilder {
       Vector3f v = e.getKey().v;
       vArray[e.getValue()] = v.mult(scale);
       vnArray[e.getValue()] = sum;
-      texArray[e.getValue()] = new Vector2f(v.x / w * 8, v.z / d * 8);
+      texArray[e.getValue()] = new Vector3f(v.x / w * 8, v.z / d * 8, e.getValue() % 2);
     }
     int[] iArray = new int[indexes.size()];
     for (int i = 0; i < indexes.size(); i++) {
@@ -70,7 +70,7 @@ public class ChunkMeshBuilder {
     Mesh m = new Mesh();
     m.setBuffer(Type.Position, 3, BufferUtils.createFloatBuffer(vArray));
     m.setBuffer(Type.Normal, 3, BufferUtils.createFloatBuffer(vnArray));
-    m.setBuffer(Type.TexCoord, 2, BufferUtils.createFloatBuffer(texArray));
+    m.setBuffer(Type.TexCoord, 3, BufferUtils.createFloatBuffer(texArray));
     m.setBuffer(Type.Index, 1, BufferUtils.createIntBuffer(iArray));
     
     if (useVertexColor) {

@@ -17,10 +17,10 @@ uniform vec4 g_LightColor;
 uniform vec4 g_LightPosition;
 uniform vec4 g_AmbientLightColor;
 
-varying vec2 texCoord;
+varying vec3 texCoord;
 #ifdef SEPARATE_TEXCOORD
-  varying vec2 texCoord2;
-  attribute vec2 inTexCoord2;
+  varying vec3 texCoord2;
+  attribute vec3 inTexCoord2;
 #endif
 
 varying vec3 AmbientSum;
@@ -28,7 +28,7 @@ varying vec4 DiffuseSum;
 varying vec3 SpecularSum;
 
 attribute vec3 inPosition;
-attribute vec2 inTexCoord;
+attribute vec3 inTexCoord;
 attribute vec3 inNormal;
 
 varying vec3 lightVec;

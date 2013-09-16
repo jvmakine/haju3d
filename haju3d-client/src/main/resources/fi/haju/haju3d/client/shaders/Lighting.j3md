@@ -50,16 +50,16 @@ MaterialDef Phong Lighting {
         Float Shininess (MaterialShininess) : 1
 
         // Diffuse map
-        Texture2D DiffuseMap
+        TextureArray DiffuseMap
 
         // Normal map
-        Texture2D NormalMap
+        TextureArray NormalMap
 
         // Specular/gloss map
-        Texture2D SpecularMap
+        TextureArray SpecularMap
 
         // Parallax/height map
-        Texture2D ParallaxMap
+        TextureArray ParallaxMap
 
         //Set to true is parallax map is stored in the alpha channel of the normal map
         Boolean PackedNormalParallax   
@@ -71,16 +71,16 @@ MaterialDef Phong Lighting {
         Boolean SteepParallax
 
         // Texture that specifies alpha values
-        Texture2D AlphaMap
+        TextureArray AlphaMap
 
         // Color ramp, will map diffuse and specular values through it.
-        Texture2D ColorRamp
+        TextureArray ColorRamp
 
         // Texture of the glowing parts of the material
-        Texture2D GlowMap
+        TextureArray GlowMap
 
         // Set to Use Lightmap
-        Texture2D LightMap
+        TextureArray LightMap
 
         // Set to use TexCoord2 for the lightmap sampling
         Boolean SeparateTexCoord
