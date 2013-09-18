@@ -78,6 +78,7 @@ public class ChunkRenderer extends SimpleApplication {
     textureToFilename.put(MyTexture.DIRT, "mc-dirt.png");
     textureToFilename.put(MyTexture.GRASS, "mc-grass.png");
     textureToFilename.put(MyTexture.ROCK, "mc-rock.png");
+    textureToFilename.put(MyTexture.BRICK, "mc-brick.png");
     
     List<Image> images = new ArrayList<Image>();
     for (MyTexture tex : MyTexture.values()) {

@@ -58,10 +58,17 @@ public class ChunkMeshBuilder {
       putVector(vertexes, face.v3.v);
       putVector(vertexes, face.v4.v);
       
-      putVector(vertexNormals, vertexToNormal.get(face.v1));
-      putVector(vertexNormals, vertexToNormal.get(face.v2));
-      putVector(vertexNormals, vertexToNormal.get(face.v3));
-      putVector(vertexNormals, vertexToNormal.get(face.v4));
+      if (face.texture == MyTexture.BRICK) {
+        putVector(vertexNormals, face.normal);
+        putVector(vertexNormals, face.normal);
+        putVector(vertexNormals, face.normal);
+        putVector(vertexNormals, face.normal);
+      } else {
+        putVector(vertexNormals, vertexToNormal.get(face.v1));
+        putVector(vertexNormals, vertexToNormal.get(face.v2));
+        putVector(vertexNormals, vertexToNormal.get(face.v3));
+        putVector(vertexNormals, vertexToNormal.get(face.v4));
+      }
       
       int ti = face.texture.ordinal();
       textures.put(0).put(0).put(ti);
@@ -202,6 +209,8 @@ public class ChunkMeshBuilder {
       return MyTexture.DIRT;
     case ROCK:
       return MyTexture.ROCK;
+    case BRICK:
+      return MyTexture.BRICK;
     case AIR:
     }
     throw new IllegalStateException("Unknown case: " + tile);
@@ -213,6 +222,8 @@ public class ChunkMeshBuilder {
       return MyTexture.DIRT;
     case ROCK:
       return MyTexture.ROCK;
+    case BRICK:
+      return MyTexture.BRICK;
     case AIR:
     }
     throw new IllegalStateException("Unknown case: " + tile);
@@ -224,6 +235,8 @@ public class ChunkMeshBuilder {
       return MyTexture.GRASS;
     case ROCK:
       return MyTexture.ROCK;
+    case BRICK:
+      return MyTexture.BRICK;
     case AIR:
     }
     throw new IllegalStateException("Unknown case: " + tile);
@@ -235,11 +248,15 @@ public class ChunkMeshBuilder {
       for (Map.Entry<MyVertex, List<MyFace>> e : myMesh.vertexFaces.entrySet()) {
         Vector3f sum = Vector3f.ZERO.clone();
         List<MyFace> faces = e.getValue();
+        boolean hasBrick = false;
         for (MyFace f : faces) {
           sum.addLocal(f.getCenter());
+          hasBrick = hasBrick | (f.texture == MyTexture.BRICK);
         }
         sum.divideLocal(faces.size());
-        newPos.put(e.getKey(), sum);
+        if (!hasBrick) {
+          newPos.put(e.getKey(), sum);
+        }
       }
       for (Map.Entry<MyVertex, Vector3f> e : newPos.entrySet()) {
         e.getKey().v.set(e.getValue());

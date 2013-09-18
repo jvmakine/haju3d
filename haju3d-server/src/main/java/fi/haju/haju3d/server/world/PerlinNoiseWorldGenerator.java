@@ -111,11 +111,36 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
         }
       }
     }
+    
+    // add a "building" in the middle of chunk
+    int midX = w / 2;
+    int midZ = d / 2;
+    int groundY = findGround(chunk, h, midX, midZ);
+    if (groundY >= 0 && groundY < h - 10) {
+      for (int x = 0; x < 10; x++) {
+        for (int y = 0; y < 10; y++) {
+          for (int z = 0; z < 10; z++) {
+            chunk.set(x + midX, y + groundY, z + midZ, Tile.BRICK);
+          }
+        }
+      }
+    }
+    
     if (fastMode) {
       return chunk;
     } else {
       return filterFloaters(chunk);
     }
+  }
+
+  private int findGround(Chunk chunk, int h, int midX, int midZ) {
+    for (int y = 0; y < h; y++) {
+      int testY = h - 1 - y;
+      if (chunk.get(midX, testY, midZ) != Tile.AIR) {
+        return testY;
+      }
+    }
+    return -1;
   }
 
 }

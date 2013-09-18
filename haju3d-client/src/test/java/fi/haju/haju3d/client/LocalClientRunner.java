@@ -14,7 +14,7 @@ public class LocalClientRunner {
     PerlinNoiseWorldGenerator wg = new PerlinNoiseWorldGenerator();
     wg.setFastMode(true);
     server.setGenerator(wg);
-    server.setFileMode(true);
+//    server.setFileMode(true);
     server.login(client);
     
     ChunkRenderer app = new ChunkRenderer(new ChunkProvider(server));
