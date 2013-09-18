@@ -12,6 +12,7 @@ import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector3f;
+import com.jme3.renderer.Camera;
 import com.jme3.renderer.queue.RenderQueue.ShadowMode;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Mesh;
@@ -85,7 +86,21 @@ public class ChunkRenderer extends SimpleApplication {
   }
 
   private void updateWorldMesh() {
-    Vector3i worldPosition = getWorldPosition(getCamera().getLocation());
+    Camera camera = getCamera();
+    Vector3f camLoc = camera.getLocation();
+    Vector3f camDir = camera.getDirection().mult(50);
+    Vector3f camLeft = camera.getLeft().mult(30);
+    Vector3f camUp = camera.getUp().mult(30);
+    loadWorldMeshForLocation(camLoc);
+    loadWorldMeshForLocation(camLoc.add(camDir));
+    loadWorldMeshForLocation(camLoc.add(camDir).add(camLeft));
+    loadWorldMeshForLocation(camLoc.add(camDir).subtract(camLeft));
+    loadWorldMeshForLocation(camLoc.add(camDir).add(camUp));
+    loadWorldMeshForLocation(camLoc.add(camDir).subtract(camUp));
+  }
+
+  private void loadWorldMeshForLocation(Vector3f location) {
+    Vector3i worldPosition = getWorldPosition(location);
     final Vector3i chunkIndex = world.getChunkIndex(worldPosition);
     if (meshed.contains(chunkIndex)) {
       return;
