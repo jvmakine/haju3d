@@ -114,13 +114,14 @@ public class ChunkRenderer extends SimpleApplication {
     }
     meshed.add(chunkIndex);
     List<Vector3i> positions = new ArrayList<>();
-    positions.add(chunkIndex);
-    positions.add(chunkIndex.add(1, 0, 0));
-    positions.add(chunkIndex.add(-1, 0, 0));
-    positions.add(chunkIndex.add(0, 0, 1));
-    positions.add(chunkIndex.add(0, 0, -1));
-    positions.add(chunkIndex.add(0, 1, 0));
-    positions.add(chunkIndex.add(0, -1, 0));
+    // need 3x3 chunks around meshing area so that mesh borders can be handled correctly
+    for (int x = -1; x < 2; x++) {
+      for (int y = -1; y < 2; y++) {
+        for (int z = -1; z < 2; z++) {
+          positions.add(chunkIndex.add(x, y, z));
+        }
+      }
+    }
     chunkProvider.requestChunks(positions, new ChunkProcessor() {
       @Override
       public void chunksLoaded(List<Chunk> chunks) {

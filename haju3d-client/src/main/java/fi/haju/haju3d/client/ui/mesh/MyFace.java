@@ -10,14 +10,16 @@ class MyFace {
   Vector3f normal;
   MyTexture texture;
   float color;
+  boolean realTile;
 
-  public MyFace(MyVertex v1, MyVertex v2, MyVertex v3, MyVertex v4, MyTexture texture, float color) {
+  public MyFace(MyVertex v1, MyVertex v2, MyVertex v3, MyVertex v4, MyTexture texture, float color, boolean realTile) {
     this.v1 = v1;
     this.v2 = v2;
     this.v3 = v3;
     this.v4 = v4;
     this.texture = texture;
     this.color = color;
+    this.realTile = realTile;
   }
 
   public Vector3f getCenter() {

@@ -2,6 +2,7 @@ package fi.haju.haju3d.client.ui.mesh;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,6 +17,8 @@ import fi.haju.haju3d.protocol.world.Tile;
 import fi.haju.haju3d.protocol.world.World;
 
 public class ChunkMeshBuilder {
+  private static final int SMOOTH_BUFFER = 2;
+  
   public ChunkMeshBuilder() {
   }
   
@@ -23,27 +26,33 @@ public class ChunkMeshBuilder {
     MyMesh myMesh = makeCubeMesh(chunk, chunkIndex);
     smoothMesh(myMesh);
 
-    List<MyFace> faces = myMesh.faces;
-    for (MyFace face : faces) {
+    // only faces based on a real tile should be meshed; the other ones were used for smoothing context
+    List<MyFace> realFaces = new ArrayList<>();
+    for (MyFace face : myMesh.faces)  {
+      if (face.realTile) {
+        realFaces.add(face);
+      }
+    }
+    for (MyFace face : myMesh.faces) {
       face.normal = face.v2.v.subtract(face.v1.v).cross(face.v4.v.subtract(face.v1.v)).normalize();
     }
     
     Map<MyVertex, Vector3f> vertexToNormal = new HashMap<>();
-    for (MyFace face : faces) {
+    for (MyFace face : realFaces) {
       calcVertexNormal(myMesh.vertexFaces, vertexToNormal, face.v1);
       calcVertexNormal(myMesh.vertexFaces, vertexToNormal, face.v2);
       calcVertexNormal(myMesh.vertexFaces, vertexToNormal, face.v3);
       calcVertexNormal(myMesh.vertexFaces, vertexToNormal, face.v4);
     }
     
-    FloatBuffer vertexes = BufferUtils.createFloatBuffer(faces.size() * 4 * 3);
-    FloatBuffer vertexNormals = BufferUtils.createFloatBuffer(faces.size() * 4 * 3);
-    FloatBuffer textures = BufferUtils.createFloatBuffer(faces.size() * 4 * 3);
-    IntBuffer indexes = BufferUtils.createIntBuffer(faces.size() * 6);
-    FloatBuffer colors = BufferUtils.createFloatBuffer(faces.size() * 4 * 4);
+    FloatBuffer vertexes = BufferUtils.createFloatBuffer(realFaces.size() * 4 * 3);
+    FloatBuffer vertexNormals = BufferUtils.createFloatBuffer(realFaces.size() * 4 * 3);
+    FloatBuffer textures = BufferUtils.createFloatBuffer(realFaces.size() * 4 * 3);
+    IntBuffer indexes = BufferUtils.createIntBuffer(realFaces.size() * 6);
+    FloatBuffer colors = BufferUtils.createFloatBuffer(realFaces.size() * 4 * 4);
     
     int i = 0;
-    for (MyFace face : faces) {
+    for (MyFace face : realFaces) {
       putVector(vertexes, face.v1.v);
       putVector(vertexes, face.v2.v);
       putVector(vertexes, face.v3.v);
@@ -110,13 +119,20 @@ public class ChunkMeshBuilder {
   private static MyMesh makeCubeMesh(World chunk, Vector3i chunkIndex) {
     MyMesh myMesh = new MyMesh();
     
-    Vector3i w1 = chunk.getWorldPosition(chunkIndex);
-    Vector3i w2 = chunk.getWorldPosition(chunkIndex.add(1, 1, 1));
+    Vector3i w1o = chunk.getWorldPosition(chunkIndex);
+    Vector3i w2o = chunk.getWorldPosition(chunkIndex.add(1, 1, 1));
+    
+    Vector3i w1 = w1o.add(-SMOOTH_BUFFER, -SMOOTH_BUFFER, -SMOOTH_BUFFER);
+    Vector3i w2 = w2o.add(SMOOTH_BUFFER, SMOOTH_BUFFER, SMOOTH_BUFFER);
     
     for (int x = w1.x; x < w2.x; x++) {
       for (int y = w1.y; y < w2.y; y++) {
         for (int z = w1.z; z < w2.z; z++) {
           Tile tile = chunk.get(x, y, z);
+          boolean realTile =
+              x >= w1o.x && x < w2o.x &&
+              y >= w1o.y && y < w2o.y &&
+              z >= w1o.z && z < w2o.z;
           if (tile != Tile.AIR) {
             float color = chunk.getColor(x, y, z);
             if (chunk.get(x, y - 1, z) == Tile.AIR) {
@@ -125,7 +141,8 @@ public class ChunkMeshBuilder {
                   new Vector3f(x + 1, y, z),
                   new Vector3f(x + 1, y, z + 1),
                   new Vector3f(x, y, z + 1),
-                  bottomTexture(tile), color);
+                  bottomTexture(tile), color,
+                  realTile);
             }
             if (chunk.get(x, y + 1, z) == Tile.AIR) {
               myMesh.addFace(
@@ -133,7 +150,8 @@ public class ChunkMeshBuilder {
                   new Vector3f(x + 1, y + 1, z + 1),
                   new Vector3f(x + 1, y + 1, z),
                   new Vector3f(x, y + 1, z),
-                  topTexture(tile), color);
+                  topTexture(tile), color,
+                  realTile);
             }
             if (chunk.get(x - 1, y, z) == Tile.AIR) {
               myMesh.addFace(
@@ -141,7 +159,8 @@ public class ChunkMeshBuilder {
                   new Vector3f(x, y + 1, z + 1),
                   new Vector3f(x, y + 1, z),
                   new Vector3f(x, y, z),
-                  sideTexture(tile), color);
+                  sideTexture(tile), color,
+                  realTile);
             }
             if (chunk.get(x + 1, y, z) == Tile.AIR) {
               myMesh.addFace(
@@ -149,7 +168,8 @@ public class ChunkMeshBuilder {
                   new Vector3f(x + 1, y + 1, z),
                   new Vector3f(x + 1, y + 1, z + 1),
                   new Vector3f(x + 1, y, z + 1),
-                  sideTexture(tile), color);
+                  sideTexture(tile), color,
+                  realTile);
             }
             if (chunk.get(x, y, z - 1) == Tile.AIR) {
               myMesh.addFace(
@@ -157,7 +177,8 @@ public class ChunkMeshBuilder {
                   new Vector3f(x, y + 1, z),
                   new Vector3f(x + 1, y + 1, z),
                   new Vector3f(x + 1, y, z),
-                  sideTexture(tile), color);
+                  sideTexture(tile), color,
+                  realTile);
             }
             if (chunk.get(x, y, z + 1) == Tile.AIR) {
               myMesh.addFace(
@@ -165,7 +186,8 @@ public class ChunkMeshBuilder {
                   new Vector3f(x + 1, y + 1, z + 1),
                   new Vector3f(x, y + 1, z + 1),
                   new Vector3f(x, y, z + 1),
-                  sideTexture(tile), color);
+                  sideTexture(tile), color,
+                  realTile);
             }
           }
         }
@@ -208,7 +230,7 @@ public class ChunkMeshBuilder {
   }
 
   private static void smoothMesh(MyMesh myMesh) {
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < SMOOTH_BUFFER; i++) {
       Map<MyVertex, Vector3f> newPos = new HashMap<>();
       for (Map.Entry<MyVertex, List<MyFace>> e : myMesh.vertexFaces.entrySet()) {
         Vector3f sum = Vector3f.ZERO.clone();
