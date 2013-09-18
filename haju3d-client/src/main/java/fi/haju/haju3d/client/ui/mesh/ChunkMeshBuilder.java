@@ -32,9 +32,7 @@ public class ChunkMeshBuilder {
     int d = 64;//chunk.getDepth();
     
     MyMesh myMesh = makeCubeMesh(chunk, chunkIndex);
-    
-    System.out.println(myMesh.faces.size());
-    smoothMesh(myMesh);
+//    smoothMesh(myMesh);
 
     Map<MyVertex, Integer> vertexIndex = Maps.newHashMap();
     List<Integer> indexes = Lists.newArrayList();

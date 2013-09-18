@@ -1,7 +1,9 @@
 package fi.haju.haju3d.client.ui;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.plugins.ClasspathLocator;
@@ -36,10 +38,10 @@ import fi.haju.haju3d.protocol.world.World;
 /**
  * Renderer application for rendering chunks from the server
  */
-public class ChunkRenderer extends SimpleApplication implements ChunkProcessor {
+public class ChunkRenderer extends SimpleApplication {
   private static final float scale = 1;
   private ChunkMeshBuilder builder;
-  private Spatial groundObject;
+//  private Spatial groundObject;
   private Spatial characterObject;
   private Vector3f lastLocation = null;
   private DirectionalLight light;
@@ -48,8 +50,8 @@ public class ChunkRenderer extends SimpleApplication implements ChunkProcessor {
   private ChunkProvider chunkProvider;
   
   private World world = new World();
-  private Vector3i chunkIndex = new Vector3i(0, 0, 0);
   private TextureArray textures;
+  private Set<Vector3i> meshed = new HashSet<>();
 
   public ChunkRenderer(ChunkProvider chunkProvider) {
     this.chunkProvider = chunkProvider;
@@ -74,19 +76,9 @@ public class ChunkRenderer extends SimpleApplication implements ChunkProcessor {
     builder = new ChunkMeshBuilder();
     builder.setUseVertexColor(useVertexColor);
     
-    List<Vector3i> positions = new ArrayList<>();
-    positions.add(chunkIndex);
-    positions.add(chunkIndex.add(1, 0, 0));
-    positions.add(chunkIndex.add(-1, 0, 0));
-    positions.add(chunkIndex.add(0, 0, 1));
-    positions.add(chunkIndex.add(0, 0, -1));
-    positions.add(chunkIndex.add(0, 1, 0));
-    positions.add(chunkIndex.add(0, -1, 0));
-    chunkProvider.requestChunks(positions, this);
-    
     getFlyByCamera().setMoveSpeed(20 * 2);
     getFlyByCamera().setRotationSpeed(3);
-    getCamera().setLocation(getGlobalPosition(world.getWorldPosition(chunkIndex).add(32, 64, 64)));
+    getCamera().setLocation(getGlobalPosition(new Vector3i().add(32, 62, 62)));
 
     Texture tex1 = assetManager.loadTexture("fi/haju/haju3d/client/textures/grass.png");
     Texture tex2 = assetManager.loadTexture("fi/haju/haju3d/client/textures/rock.png");
@@ -101,7 +93,34 @@ public class ChunkRenderer extends SimpleApplication implements ChunkProcessor {
 //    setupToruses();
   }
 
- /* private void setupToruses() {
+  private void updateWorldMesh() {
+    Vector3i worldPosition = getWorldPosition(getCamera().getLocation());
+    final Vector3i chunkIndex = world.getChunkIndex(worldPosition);
+    if (meshed.contains(chunkIndex)) {
+      return;
+    }
+    meshed.add(chunkIndex);
+    List<Vector3i> positions = new ArrayList<>();
+    positions.add(chunkIndex);
+    positions.add(chunkIndex.add(1, 0, 0));
+    positions.add(chunkIndex.add(-1, 0, 0));
+    positions.add(chunkIndex.add(0, 0, 1));
+    positions.add(chunkIndex.add(0, 0, -1));
+    positions.add(chunkIndex.add(0, 1, 0));
+    positions.add(chunkIndex.add(0, -1, 0));
+    chunkProvider.requestChunks(positions, new ChunkProcessor() {
+      @Override
+      public void chunksLoaded(List<Chunk> chunks) {
+        for (Chunk c : chunks) {
+          world.setChunk(c.getPosition(), c);
+        }
+        setupChunkAsMesh(chunkIndex);
+      }
+    });
+  }
+
+
+/* private void setupToruses() {
     Torus torus = new Torus(20, 20, 0.5f, 1.0f);
 
     BatchNode batch = new BatchNode("batch");
@@ -140,10 +159,10 @@ public class ChunkRenderer extends SimpleApplication implements ChunkProcessor {
     rootNode.attachChild(characterObject);
   }
 
-  private void setupChunkAsMesh() {
+  private void setupChunkAsMesh(Vector3i chunkIndex) {
     Mesh m = builder.makeMesh(world, chunkIndex);
     
-    groundObject = new Geometry("ColoredMesh", m);
+    Geometry groundObject = new Geometry("ColoredMesh", m);
     ColorRGBA color = ColorRGBA.White;
     Material mat = new Material(assetManager, "fi/haju/haju3d/client/shaders/Lighting.j3md");
 //    Material mat = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
@@ -156,15 +175,20 @@ public class ChunkRenderer extends SimpleApplication implements ChunkProcessor {
     }
     groundObject.setMaterial(mat);
     groundObject.setShadowMode(ShadowMode.CastAndReceive);
-    
-    Vector3i pos = world.getWorldPosition(chunkIndex);
-    groundObject.setLocalTranslation(pos.x * scale, pos.y * scale, pos.z * scale);
     rootNode.attachChild(groundObject);
   }
   
   public Vector3f getGlobalPosition(Vector3i worldPosition) {
     return new Vector3f(worldPosition.x * scale, worldPosition.y * scale, worldPosition.z * scale);
   }
+  
+  private Vector3i getWorldPosition(Vector3f location) {
+    return new Vector3i(
+        (int) Math.floor(location.x / scale),
+        (int) Math.floor(location.y / scale),
+        (int) Math.floor(location.z / scale));
+  }
+  
 
   private Material makeColorMaterial(ColorRGBA color) {
     Material mat = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
@@ -193,6 +217,8 @@ public class ChunkRenderer extends SimpleApplication implements ChunkProcessor {
 
   @Override
   public void simpleUpdate(float tpf) {
+    // collision with ground, currently disabled
+    /*
     CollisionResults res = new CollisionResults();
     if(lastLocation != null) {
       Ray r = new Ray(cam.getLocation(), Vector3f.UNIT_Y);
@@ -201,7 +227,9 @@ public class ChunkRenderer extends SimpleApplication implements ChunkProcessor {
         getCamera().setLocation(lastLocation);
       }
     }
+      */
     lastLocation = getCamera().getLocation().clone();
+    updateWorldMesh();
   }
   
   @Override
@@ -214,13 +242,5 @@ public class ChunkRenderer extends SimpleApplication implements ChunkProcessor {
 
   public void setCloseEventHandler(CloseEventHandler closeEventHandler) {
     this.closeEventHandler = closeEventHandler;
-  }
-
-  @Override
-  public void chunksLoaded(List<Chunk> chunks) {
-    for (Chunk c : chunks) {
-      world.setChunk(c.getPosition(), c);
-    }
-    setupChunkAsMesh();
   }
 }
