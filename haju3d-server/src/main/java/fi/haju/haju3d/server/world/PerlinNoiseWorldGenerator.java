@@ -13,27 +13,28 @@ import fi.haju.haju3d.util.noise.InterpolationUtil;
 import fi.haju.haju3d.util.noise.PerlinNoiseUtil;
 
 public class PerlinNoiseWorldGenerator implements WorldGenerator {
-
-  private static final int WIDTH = 128;
-  private static final int HEIGHT = 128;
-  private static final int DEPTH = 128;
-  
   private int seed;
+  private boolean fastMode;
   
   @Override
-  public Chunk generateChunk(Vector3i position) {
+  public Chunk generateChunk(Vector3i position, int width, int height, int depth) {
     int realseed = seed ^ position.hashCode();
+    Chunk chunk = new Chunk(width, height, depth, realseed, position);
     if (position.y < 0) {
-      Chunk chunk = new Chunk(WIDTH, HEIGHT, DEPTH, realseed, position);
       chunk.fill(Tile.GROUND);
       return chunk;
     } else if (position.y > 0) {
-      Chunk chunk = new Chunk(WIDTH, HEIGHT, DEPTH, realseed, position);
+      return chunk;
+    } else if (fastMode && !position.equals(new Vector3i())) {
       return chunk;
     }
-    return makeChunk(realseed, position);
+    return makeChunk(chunk, realseed, position);
   }
-  
+
+  public void setFastMode(boolean fastMode) {
+    this.fastMode = fastMode;
+  }
+
   @Override
   public void setSeed(int seed) {
     this.seed = seed;
@@ -82,8 +83,7 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
     return ground;
   }
   
-  private static Chunk makeChunk(int seed, Vector3i position) {
-    Chunk chunk = new Chunk(WIDTH, HEIGHT, DEPTH, seed, position);
+  private static Chunk makeChunk(Chunk chunk, int seed, Vector3i position) {
     int w = chunk.getWidth();
     int h = chunk.getHeight();
     int d = chunk.getDepth();

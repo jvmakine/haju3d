@@ -7,7 +7,7 @@ import fi.haju.haju3d.protocol.Vector3i;
 
 public final class Chunk implements Serializable {
   private static final long serialVersionUID = 1L;
-  
+
   private final ObjArray3d<Tile> data;
   private final int seed;
   private final Vector3i position;
