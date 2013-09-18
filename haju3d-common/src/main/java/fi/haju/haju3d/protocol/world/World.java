@@ -27,15 +27,15 @@ public class World implements Serializable {
     return chunks.get(c).getColor(x - wp.x, y - wp.y, z - wp.z);
   }
   
-  public void setChunk(Vector3i position, Chunk chunk) {
+  public synchronized void setChunk(Vector3i position, Chunk chunk) {
     chunks.put(position, chunk);
   }
   
-  public Chunk getChunk(Vector3i position) {
+  public synchronized Chunk getChunk(Vector3i position) {
     return chunks.get(position);
   }
   
-  public boolean hasChunk(Vector3i position) {
+  public synchronized boolean hasChunk(Vector3i position) {
     return chunks.get(position) != null;
   }
   

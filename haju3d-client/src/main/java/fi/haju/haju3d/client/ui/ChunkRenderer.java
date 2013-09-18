@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
 
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.TextureKey;
@@ -63,7 +64,7 @@ public class ChunkRenderer extends SimpleApplication {
     this.chunkProvider = chunkProvider;
     
     AppSettings settings = new AppSettings(true);
-    settings.setResolution(1024, 768);
+//    settings.setResolution(1024, 768);
     settings.setVSync(true);
     settings.setAudioRenderer(null);
     settings.setFullscreen(false);
@@ -188,7 +189,7 @@ public class ChunkRenderer extends SimpleApplication {
   private void setupChunkAsMesh(Vector3i chunkIndex) {
     Mesh m = builder.makeMesh(world, chunkIndex);
     
-    Geometry groundObject = new Geometry("ColoredMesh", m);
+    final Geometry groundObject = new Geometry("ColoredMesh", m);
     ColorRGBA color = ColorRGBA.White;
     Material mat = new Material(assetManager, "fi/haju/haju3d/client/shaders/Lighting.j3md");
 //    Material mat = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
@@ -199,7 +200,13 @@ public class ChunkRenderer extends SimpleApplication {
     mat.setBoolean("UseVertexColor", true);
     groundObject.setMaterial(mat);
     groundObject.setShadowMode(ShadowMode.CastAndReceive);
-    rootNode.attachChild(groundObject);
+    enqueue(new Callable<Void>() {
+      @Override
+      public Void call() throws Exception {
+        rootNode.attachChild(groundObject);
+        return null;
+      }
+    });
   }
   
   public Vector3f getGlobalPosition(Vector3i worldPosition) {

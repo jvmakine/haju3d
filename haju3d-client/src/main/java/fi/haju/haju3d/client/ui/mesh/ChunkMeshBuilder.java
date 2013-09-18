@@ -7,6 +7,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Mesh;
 import com.jme3.scene.VertexBuffer.Type;
@@ -18,12 +21,18 @@ import fi.haju.haju3d.protocol.world.World;
 
 public class ChunkMeshBuilder {
   private static final int SMOOTH_BUFFER = 2;
+  private static final Logger LOGGER = LoggerFactory.getLogger(ChunkMeshBuilder.class);
   
   public ChunkMeshBuilder() {
   }
   
   public Mesh makeMesh(World world, Vector3i chunkIndex) {
-    MyMesh myMesh = makeCubeMesh(world, chunkIndex);
+    LOGGER.info("makeMesh:" + chunkIndex);
+    
+    MyMesh myMesh;
+    synchronized (world) {
+      myMesh = makeCubeMesh(world, chunkIndex);
+    }
     smoothMesh(myMesh);
 
     // only faces based on a real tile should be meshed; the other ones were used for smoothing context

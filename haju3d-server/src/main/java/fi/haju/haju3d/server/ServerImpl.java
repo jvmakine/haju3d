@@ -12,6 +12,8 @@ import java.util.Random;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.SerializationException;
 import org.apache.commons.lang3.SerializationUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import fi.haju.haju3d.protocol.Client;
 import fi.haju.haju3d.protocol.Server;
@@ -23,6 +25,7 @@ import fi.haju.haju3d.server.world.PerlinNoiseWorldGenerator;
 import fi.haju.haju3d.server.world.WorldGenerator;
 
 public class ServerImpl implements Server {
+  private static final Logger LOGGER = LoggerFactory.getLogger(ServerImpl.class);
    
   private WorldGenerator generator;
   private List<Client> loggedInClients = new ArrayList<>();
@@ -40,8 +43,10 @@ public class ServerImpl implements Server {
   }
   
   private void createAndSaveWorld() {
+    LOGGER.info("createAndSaveWorld");
+    
     int sz = world.getChunkSize();
-    int chunks = 5;
+    int chunks = 10;
     Chunk worldChunk = generator.generateChunk(new Vector3i(), sz * chunks, sz, sz * chunks);
     
     HashSet<Vector3i> validChunks = new HashSet<>();
@@ -115,7 +120,9 @@ public class ServerImpl implements Server {
     return getOrGenerateChunk(position);
   }
   
-  private Chunk getOrGenerateChunk(Vector3i position) {
+  private synchronized Chunk getOrGenerateChunk(Vector3i position) {
+    LOGGER.info("getOrGenerateChunk: " + position);
+    
     if (fileMode) {
       int sz = world.getChunkSize();
       Chunk chunk = new Chunk(sz, sz, sz, 0, position);

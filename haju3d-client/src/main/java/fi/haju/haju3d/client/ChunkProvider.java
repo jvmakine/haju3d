@@ -8,13 +8,17 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import fi.haju.haju3d.protocol.Server;
 import fi.haju.haju3d.protocol.Vector3i;
 import fi.haju.haju3d.protocol.world.Chunk;
 
 public class ChunkProvider {
+  private static final Logger LOGGER = LoggerFactory.getLogger(ChunkProvider.class);
+    
   private final Server server;
-
   private Map<Vector3i, Chunk> chunkCache = new ConcurrentHashMap<Vector3i, Chunk>();
   private Set<List<Vector3i>> requests = Collections.newSetFromMap(new ConcurrentHashMap<List<Vector3i>, Boolean>());
   
@@ -23,7 +27,8 @@ public class ChunkProvider {
   }
   
   public void requestChunks(final List<Vector3i> positions, final ChunkProcessor processor) {
-    System.out.println("Requested " + positions);
+    LOGGER.info("Requested " + positions);
+    
     requests.add(positions);
     new Thread(new Runnable() {
       @Override
@@ -35,7 +40,7 @@ public class ChunkProvider {
         processor.chunksLoaded(chunks);
         requests.remove(positions);
       }
-    }).run();
+    }).start();
   }
   
   public boolean hasChunk(Vector3i position) {
