@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.jme3.app.SimpleApplication;
+import com.jme3.asset.TextureKey;
 import com.jme3.asset.plugins.ClasspathLocator;
 import com.jme3.light.AmbientLight;
 import com.jme3.light.DirectionalLight;
@@ -24,6 +25,7 @@ import com.jme3.shadow.DirectionalLightShadowRenderer;
 import com.jme3.shadow.EdgeFilteringMode;
 import com.jme3.system.AppSettings;
 import com.jme3.texture.Image;
+import com.jme3.texture.Texture.MinFilter;
 import com.jme3.texture.Texture.WrapMode;
 import com.jme3.texture.TextureArray;
 
@@ -83,10 +85,14 @@ public class ChunkRenderer extends SimpleApplication {
     List<Image> images = new ArrayList<Image>();
     for (MyTexture tex : MyTexture.values()) {
       String textureResource = "fi/haju/haju3d/client/textures/" + textureToFilename.get(tex);
-      images.add(assetManager.loadTexture(textureResource).getImage());
+      TextureKey key = new TextureKey(textureResource);
+      key.setGenerateMips(true);
+      images.add(assetManager.loadTexture(key).getImage());
     }
     textures = new TextureArray(images);
     textures.setWrap(WrapMode.Repeat);
+    textures.setMinFilter(MinFilter.BilinearNearestMipMap);
+    textures.setAnisotropicFilter(4);
     
     setupLighting();
     setupCharacter();
