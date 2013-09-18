@@ -1,7 +1,9 @@
 package fi.haju.haju3d.client;
 
 import java.rmi.RemoteException;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -14,26 +16,32 @@ public class ChunkProvider {
   private final Server server;
 
   private Map<Vector3i, Chunk> chunkCache = new ConcurrentHashMap<Vector3i, Chunk>();
-  private Set<Vector3i> requests = Collections.newSetFromMap(new ConcurrentHashMap<Vector3i, Boolean>());
+  private Set<List<Vector3i>> requests = Collections.newSetFromMap(new ConcurrentHashMap<List<Vector3i>, Boolean>());
   
   public ChunkProvider(Server server) {
     this.server = server;
   }
   
-  public void requestChunk(final Vector3i position, final ChunkProcessor processor) {
-    System.out.println("Requested " + position);
-    requests.add(position);
+  public void requestChunks(final List<Vector3i> positions, final ChunkProcessor processor) {
+    System.out.println("Requested " + positions);
+    requests.add(positions);
     new Thread(new Runnable() {
       @Override
       public void run() {
-        processor.chunkLoaded(getChunk(position));
-        requests.remove(position);
+        List<Chunk> chunks = new ArrayList<>();
+        for (Vector3i pos : positions) {
+          chunks.add(getChunk(pos));
+        }
+        processor.chunksLoaded(chunks);
+        requests.remove(positions);
       }
     }).run();
   }
   
   public boolean hasChunk(Vector3i position) {
-    if(requests.contains(position)) return true;
+    if(requests.contains(position)) {
+      return true;
+    }
     return chunkCache.containsKey(position);
   }
   

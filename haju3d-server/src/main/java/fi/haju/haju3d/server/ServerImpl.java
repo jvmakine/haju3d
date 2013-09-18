@@ -18,13 +18,12 @@ import fi.haju.haju3d.server.world.WorldGenerator;
 public class ServerImpl implements Server {
    
   private WorldGenerator generator;
-  
-  List<Client> loggedInClients = Lists.newArrayList(); 
-  Map<Vector3i, Chunk> chunks = Maps.newHashMap();
+  private List<Client> loggedInClients = Lists.newArrayList();
+  private Map<Vector3i, Chunk> chunks = Maps.newHashMap();
   
   public ServerImpl() {
     generator = new PerlinNoiseWorldGenerator();
-    generator.setSeed(new Random().nextInt());  
+    generator.setSeed(new Random().nextInt());
   }
 
   @Override
@@ -39,20 +38,11 @@ public class ServerImpl implements Server {
   
   @Override
   public Chunk getChunk(Vector3i position) throws RemoteException {
-    Chunk center = getOrGenerateChunk(position);
-    Chunk xp1 = getOrGenerateChunk(position.add(1, 0, 0));
-    Chunk xm1 = getOrGenerateChunk(position.add(-1, 0, 0));
-    Chunk zp1 = getOrGenerateChunk(position.add(0, 0, 1));
-    Chunk zm1 = getOrGenerateChunk(position.add(0, 0, -1));
-    center.setXMinusFrom(xm1);
-    center.setXPlusFrom(xp1);
-    center.setZMinusFrom(zm1);
-    center.setZPlusFrom(zp1);
-    return center;
+    return getOrGenerateChunk(position);
   }
   
   private Chunk getOrGenerateChunk(Vector3i position) {
-    if(chunks.keySet().contains(position)) {
+    if(chunks.containsKey(position)) {
       return chunks.get(position);
     } else {
       Chunk newChunk = generator.generateChunk(position);

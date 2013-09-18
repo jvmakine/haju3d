@@ -2,21 +2,27 @@ package fi.haju.haju3d.util.noise;
 
 import java.util.Random;
 
+import fi.haju.haju3d.protocol.world.FloatArray3d;
+
 public final class PerlinNoiseUtil {
   
   private PerlinNoiseUtil() {
   }
   
-  public static float[] make3dPerlinNoise(long seed, int w, int h, int d) {
+  public static FloatArray3d make3dPerlinNoise(long seed, int w, int h, int d) {
     Random random = new Random(seed);
-    float[] data = new float[w * h * d];
+    FloatArray3d data = new FloatArray3d(w, h, d);
     for (int sc = 4; sc != 128; sc *= 2) {
-      add3dNoise(random, data, w, h, d, sc, (float)Math.pow(0.5f * sc * 1.0f, 1.0f));
+      add3dNoise(random, data, sc, (float)Math.pow(0.5f * sc * 1.0f, 1.0f));
     }
     return data;
   }
     
-  private static void add3dNoise(Random random, float[] data, int w, int h, int d, int scale, float amp) {
+  private static void add3dNoise(Random random, FloatArray3d data, int scale, float amp) {
+    int w = data.getWidth();
+    int h = data.getHeight();
+    int d = data.getDepth();
+    
     int nw = w / scale + 2;
     int nh = h / scale + 2;
     int nd = d / scale + 2;
@@ -48,7 +54,7 @@ public final class PerlinNoiseUtil {
           float n7 = noise[xs + ys * nw + nw + zs * nwh + nwh];
           float n8 = noise[xs + 1 + ys * nw + nw + zs * nwh + nwh];
 
-          data[x + y * w + z * w * h] += InterpolationUtil.interpolateLinear3d(xt, yt, zt, n1, n2, n3, n4, n5, n6, n7, n8);
+          data.add(x, y, z, InterpolationUtil.interpolateLinear3d(xt, yt, zt, n1, n2, n3, n4, n5, n6, n7, n8));
         }
       }
     }

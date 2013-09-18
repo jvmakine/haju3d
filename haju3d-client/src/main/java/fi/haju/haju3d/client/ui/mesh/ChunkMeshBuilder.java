@@ -6,17 +6,14 @@ import java.util.Map;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.jme3.math.FastMath;
-import com.jme3.math.Vector2f;
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Mesh;
 import com.jme3.scene.VertexBuffer.Type;
 import com.jme3.util.BufferUtils;
 
-import fi.haju.haju3d.protocol.world.Chunk;
+import fi.haju.haju3d.protocol.Vector3i;
 import fi.haju.haju3d.protocol.world.Tile;
-import fi.haju.haju3d.util.noise.InterpolationUtil;
-import fi.haju.haju3d.util.noise.PerlinNoiseUtil;
+import fi.haju.haju3d.protocol.world.World;
 
 public class ChunkMeshBuilder {
   private boolean useVertexColor = true;
@@ -28,13 +25,15 @@ public class ChunkMeshBuilder {
     this.useVertexColor = useVertexColor;
   }
 
-  public Mesh makeMesh(Chunk chunk) {
+  public Mesh makeMesh(World chunk, Vector3i chunkIndex) {
     float scale = 1;
 
-    int w = chunk.getWidth();
-    int d = chunk.getDepth();
+    int w = 64;// chunk.getWidth();
+    int d = 64;//chunk.getDepth();
     
-    MyMesh myMesh = makeCubeMesh(chunk);
+    MyMesh myMesh = makeCubeMesh(chunk, chunkIndex);
+    
+    System.out.println(myMesh.faces.size());
     smoothMesh(myMesh);
 
     Map<MyVertex, Integer> vertexIndex = Maps.newHashMap();
@@ -74,11 +73,12 @@ public class ChunkMeshBuilder {
     m.setBuffer(Type.Index, 1, BufferUtils.createIntBuffer(iArray));
     
     if (useVertexColor) {
+      /*
       int tw = 40;
       int th = 40;
       int td = 40;
-      float[] noiseR = PerlinNoiseUtil.make3dPerlinNoise(chunk.getSeed(), tw, th, td);
-      float[] noiseG = PerlinNoiseUtil.make3dPerlinNoise(chunk.getSeed()/2, tw, th, td);
+      FloatArray3d noiseR = PerlinNoiseUtil.make3dPerlinNoise(chunk.getSeed(), tw, th, td);
+      FloatArray3d noiseG = PerlinNoiseUtil.make3dPerlinNoise(chunk.getSeed()/2, tw, th, td);
   
       float[] cArray = new float[vertexIndex.size() * 4];
       for (Map.Entry<MyVertex, Integer> e : vertexIndex.entrySet()) {
@@ -88,10 +88,10 @@ public class ChunkMeshBuilder {
         float ty = pos.y / chunk.getHeight() * th;
         float tz = pos.z / chunk.getDepth() * td;
   
-        float n0r = Math.abs(getNoise(noiseR, tw, th, td, tx, ty, tz)) * 0.1f + 0.7f;
+        float n0r = Math.abs(noiseR.getInterpolated(tx, ty, tz)) * 0.1f + 0.7f;
         float nr = FastMath.clamp(n0r, 0.6f, 1.0f);
   
-        float n0g = Math.abs(getNoise(noiseG, tw, th, td, tx, ty, tz)) * 0.1f + 0.7f;
+        float n0g = Math.abs(noiseG.getInterpolated(tx, ty, tz)) * 0.1f + 0.7f;
         float ng = FastMath.clamp(n0g, 0.3f, 1.0f);
   
         cArray[vi * 4 + 0] = nr;
@@ -100,21 +100,23 @@ public class ChunkMeshBuilder {
         cArray[vi * 4 + 3] = 1.0f;
       }
       m.setBuffer(Type.Color, 4, BufferUtils.createFloatBuffer(cArray));
+      */
     }
     
     m.updateBound();
     return m;
   }
   
-  private static MyMesh makeCubeMesh(Chunk chunk) {
+  private static MyMesh makeCubeMesh(World chunk, Vector3i chunkIndex) {
     MyMesh myMesh = new MyMesh();
-    int w = chunk.getWidth();
-    int h = chunk.getHeight();
-    int d = chunk.getDepth();
-    for (int x = 0; x < w; x++) {
-      for (int y = 0; y < h; y++) {
-        for (int z = 0; z < d; z++) {
-          if (chunk.get(x, y, z) == Tile.GROUND) {
+    
+    Vector3i w1 = chunk.getWorldPosition(chunkIndex);
+    Vector3i w2 = chunk.getWorldPosition(chunkIndex.add(1, 1, 1));
+    
+    for (int x = w1.x; x < w2.x; x++) {
+      for (int y = w1.y; y < w2.y; y++) {
+        for (int z = w1.z; z < w2.z; z++) {
+          if (chunk.get(x, y, z) != Tile.AIR) {
             if (chunk.get(x, y - 1, z) == Tile.AIR) {
               myMesh.addFace(
                   new Vector3f(x, y, z),
@@ -179,31 +181,6 @@ public class ChunkMeshBuilder {
       for (Map.Entry<MyVertex, Vector3f> e : newPos.entrySet()) {
         e.getKey().v.set(e.getValue());
       }
-    }
-  }
-
-  private static float getNoise(float[] noise, int tw, int th, int td, float tx, float ty, float tz) {
-    int x = (int) tx;
-    int y = (int) ty;
-    int z = (int) tz;
-
-    float xt = tx - x;
-    float yt = ty - y;
-    float zt = tz - z;
-
-    if (x >= 0 && x < tw - 1 && y >= 0 && y < th - 1 && z >= 0 && z < td - 1) {
-      return InterpolationUtil.interpolateLinear3d(
-          xt, yt, zt,
-          noise[x + y * tw + z * tw * td],
-          noise[x + 1 + y * tw + z * tw * td],
-          noise[x + y * tw + tw + z * tw * td],
-          noise[x + 1 + y * tw + tw + z * tw * td],
-          noise[x + y * tw + (z + 1) * tw * td],
-          noise[x + 1 + y * tw + (z + 1) * tw * td],
-          noise[x + y * tw + tw + (z + 1) * tw * td],
-          noise[x + 1 + y * tw + tw + (z + 1) * tw * td]);
-    } else {
-      return 0;
     }
   }
 

@@ -8,85 +8,42 @@ import fi.haju.haju3d.protocol.Vector3i;
 public final class Chunk implements Serializable {
   private static final long serialVersionUID = 1L;
   
-  private Tile[] data;
-  
-  private Tile[] x_minus_side;
-  private Tile[] x_plus_side;
-  private Tile[] z_minus_side;
-  private Tile[] z_plus_side;
-  
-  private final int width;
-  private final int height;
-  private final int depth;
+  private final ObjArray3d<Tile> data;
   private final int seed;
   private final Vector3i position;
 
   public Chunk(int width, int height, int depth, int seed, Vector3i position) {
-    this.width = width;
-    this.height = height;
-    this.depth = depth;
     this.seed = seed;
     this.position = position;
-
-    this.data = makeAirArray(width * height * depth);
-    this.x_minus_side = makeAirArray(height * depth);
-    this.x_plus_side = makeAirArray(height * depth);
-    this.z_minus_side = makeAirArray(width * height);
-    this.z_plus_side = makeAirArray(width * height);    
-  }
-
-  private Tile[] makeAirArray(int length) {
-    Tile[] result = new Tile[length];
-    for(int i = 0; i < length; ++i) {
-      result[i] = Tile.AIR;
-    }
-    return result;
+    this.data = new ObjArray3d<Tile>(width, height, depth, Tile.AIR);
   }
   
+  public void fill(Tile value) {
+    data.fill(value);
+  }
+
   public void set(int x, int y, int z, Tile value) {
-    if (isInside(x, y, z)) {
-      data[getIndex(x, y, z)] = value;
-    }
+    data.set(x, y, z, value);
   }
-
-  private int getIndex(int x, int y, int z) {
-    return x + y * width + z * width * height;
-  }
-
-  private boolean isInside(int x, int y, int z) {
-    return x >= 0 && x < width && y >= 0 && y < height && z >= 0 && z < depth;
+  
+  public boolean isInside(int x, int y, int z) {
+    return data.isInside(x, y, z);
   }
 
   public Tile get(int x, int y, int z) {
-    if (isInside(x, y, z)) {
-      return data[getIndex(x, y, z)];
-    } else if(x == -1) {
-      if(z < 0 || z >= depth || y < 0 || y >= height) return Tile.AIR;
-      return x_minus_side[y + z*height];
-    } else if(x == width) {
-      if(z < 0 || z >= depth || y < 0 || y >= height) return Tile.AIR;
-      return x_plus_side[y + z*height];
-    } else if(z == depth) {
-      if(x < 0 || x >= width || y < 0 || y >= height) return Tile.AIR;
-      return z_plus_side[x + y*width];
-    } else if(z == -1) {
-      if(x < 0 || x >= width || y < 0 || y >= height) return Tile.AIR;
-      return z_minus_side[x + y*width];
-    } else {
-      return Tile.AIR;
-    }
+    return data.get(x, y, z);
   }
 
   public int getWidth() {
-    return width;
+    return data.getWidth();
   }
 
   public int getHeight() {
-    return height;
+    return data.getHeight();
   }
 
   public int getDepth() {
-    return depth;
+    return data.getDepth();
   }
 
   public int getSeed() {
@@ -96,37 +53,4 @@ public final class Chunk implements Serializable {
   public Vector3i getPosition() {
     return position;
   }
-  
-  public void setXMinusFrom(Chunk chunk) {
-    for(int y = 0; y < height; ++y) {
-      for(int z = 0; z < depth; ++z) {
-        x_minus_side[y + z*height] = chunk.get(width-1, y, z);
-      }
-    }
-  }
-  
-  public void setXPlusFrom(Chunk chunk) {
-    for(int y = 0; y < height; ++y) {
-      for(int z = 0; z < depth; ++z) {
-        x_plus_side[y + z*height] = chunk.get(0, y, z);
-      }
-    }
-  }
-  
-  public void setZMinusFrom(Chunk chunk) {
-    for(int y = 0; y < height; ++y) {
-      for(int x = 0; x < width; ++x) {
-        z_minus_side[x + y*width] = chunk.get(x, y, depth-1);
-      }
-    }
-  }
-  
-  public void setZPlusFrom(Chunk chunk) {
-    for(int y = 0; y < height; ++y) {
-      for(int x = 0; x < width; ++x) {
-        z_plus_side[x + y*width] = chunk.get(x, y, 0);
-      }
-    }
-  }
-  
 }

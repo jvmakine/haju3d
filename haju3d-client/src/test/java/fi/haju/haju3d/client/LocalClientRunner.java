@@ -13,7 +13,7 @@ public class LocalClientRunner {
     Server server = new ServerImpl();
     server.login(client);
     
-    ChunkRenderer app = new ChunkRenderer(new ChunkProvider(server));;
+    ChunkRenderer app = new ChunkRenderer(new ChunkProvider(server));
     app.start();
   }
 }

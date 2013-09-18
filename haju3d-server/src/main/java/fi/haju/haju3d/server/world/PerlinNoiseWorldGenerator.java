@@ -7,6 +7,7 @@ import java.util.Set;
 
 import fi.haju.haju3d.protocol.Vector3i;
 import fi.haju.haju3d.protocol.world.Chunk;
+import fi.haju.haju3d.protocol.world.FloatArray3d;
 import fi.haju.haju3d.protocol.world.Tile;
 import fi.haju.haju3d.util.noise.InterpolationUtil;
 import fi.haju.haju3d.util.noise.PerlinNoiseUtil;
@@ -22,6 +23,14 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
   @Override
   public Chunk generateChunk(Vector3i position) {
     int realseed = seed ^ position.hashCode();
+    if (position.y < 0) {
+      Chunk chunk = new Chunk(WIDTH, HEIGHT, DEPTH, realseed, position);
+      chunk.fill(Tile.GROUND);
+      return chunk;
+    } else if (position.y > 0) {
+      Chunk chunk = new Chunk(WIDTH, HEIGHT, DEPTH, realseed, position);
+      return chunk;
+    }
     return makeChunk(realseed, position);
   }
   
@@ -58,10 +67,10 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
       if (visited.contains(n)) {
         return;
       }
-      if (orig.get(n.x, n.y, n.z) == Tile.AIR) {
+      if (!orig.isInside(n.x, n.y, n.z) || orig.get(n.x, n.y, n.z) == Tile.AIR) {
         return;
       }
-      ground.set(n.x, n.y, n.z, Tile.GROUND);
+      ground.set(n.x, n.y, n.z, orig.get(n.x, n.y, n.z));
       visited.add(n);
       front.add(n);
     }
@@ -79,7 +88,7 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
     int h = chunk.getHeight();
     int d = chunk.getDepth();
 
-    float[] noise = PerlinNoiseUtil.make3dPerlinNoise(seed, w, h, d);
+    FloatArray3d noise = PerlinNoiseUtil.make3dPerlinNoise(seed, w, h, d);
     float thres = h / 3;
     for (int x = 0; x < w; x++) {
       for (int y = 0; y < h; y++) {
@@ -88,7 +97,7 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
           if (y < h / 5) {
             v += InterpolationUtil.interpolateLinear(y / (h / 5), -10, 0);
           }
-          v += noise[x + y * w + z * w * h] * 3;
+          v += noise.get(x, y, z) * 3;
           chunk.set(x, y, z, v < thres ? Tile.GROUND : Tile.AIR);
         }
       }
