@@ -125,12 +125,10 @@ public class ServerImpl implements Server {
     
     if (fileMode) {
       int sz = world.getChunkSize();
-      Chunk chunk = new Chunk(sz, sz, sz, 0, position);
       if (position.y < 0) {
-        chunk.fill(Tile.GROUND);
-        return chunk;
+        return new Chunk(sz, sz, sz, 0, position, Tile.GROUND);
       } else if (position.y > 0) {
-        return chunk;
+        return new Chunk(sz, sz, sz, 0, position, Tile.AIR);
       }
       HashSet<Vector3i> validChunks;
       try {
@@ -140,7 +138,7 @@ public class ServerImpl implements Server {
         return getOrGenerateChunk(position);
       }
       if (!validChunks.contains(position)) {
-        return chunk;
+        return new Chunk(sz, sz, sz, 0, position, Tile.AIR);
       }
       try {
         return readObjectFromFile(chunkFile(position));

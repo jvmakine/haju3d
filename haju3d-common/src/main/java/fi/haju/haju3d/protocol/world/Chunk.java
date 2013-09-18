@@ -8,12 +8,13 @@ import fi.haju.haju3d.protocol.Vector3i;
 
 
 public final class Chunk implements Serializable {
-  private static final long serialVersionUID = 2L;
+  private static final long serialVersionUID = 3L;
 
   private final ByteArray3d tiles;
   private final ByteArray3d colors;
   private final int seed;
   private final Vector3i position;
+  private final Tile tile;
   
   private final static Map<Byte, Tile> byteToTile = new HashMap<>();
   private final static Map<Tile, Byte> tileToByte = new HashMap<>();
@@ -29,12 +30,20 @@ public final class Chunk implements Serializable {
     this.position = position;
     this.tiles = new ByteArray3d(width, height, depth);
     this.colors = new ByteArray3d(width, height, depth);
+    this.tile = null;
   }
   
-  public void fill(Tile value) {
-    tiles.fill(tileToByte.get(value));
+  /**
+   * Chunk that has constant tile value (typically AIR or GROUND).
+   */
+  public Chunk(int width, int height, int depth, int seed, Vector3i position, Tile tile) {
+    this.seed = seed;
+    this.position = position;
+    this.tiles = null;
+    this.colors = null;
+    this.tile = tile;
   }
-
+  
   public void set(int x, int y, int z, Tile value) {
     tiles.set(x, y, z, tileToByte.get(value));
   }
@@ -48,11 +57,11 @@ public final class Chunk implements Serializable {
   }
 
   public Tile get(int x, int y, int z) {
-    return byteToTile.get(tiles.get(x, y, z));
+    return tile != null ? tile : byteToTile.get(tiles.get(x, y, z));
   }
   
   public float getColor(int x, int y, int z) {
-    return colors.get(x, y, z) / 127f;
+    return tile != null ? 0.0f : colors.get(x, y, z) / 127f;
   }
 
   public int getWidth() {

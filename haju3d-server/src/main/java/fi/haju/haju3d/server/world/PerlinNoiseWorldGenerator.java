@@ -19,15 +19,14 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
   @Override
   public Chunk generateChunk(Vector3i position, int width, int height, int depth) {
     int realseed = seed ^ (position.x + position.y * 123 + position.z * 12347);
-    Chunk chunk = new Chunk(width, height, depth, realseed, position);
     if (position.y < 0) {
-      chunk.fill(Tile.GROUND);
-      return chunk;
+      return new Chunk(width, height, depth, realseed, position, Tile.GROUND);
     } else if (position.y > 0) {
-      return chunk;
+      return new Chunk(width, height, depth, realseed, position, Tile.AIR);
     } else if (fastMode && !position.equals(new Vector3i())) {
-      return chunk;
+      return new Chunk(width, height, depth, realseed, position, Tile.AIR);
     }
+    Chunk chunk = new Chunk(width, height, depth, realseed, position);
     return makeChunk(chunk, realseed, position);
   }
 
