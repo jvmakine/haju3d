@@ -1,8 +1,10 @@
 package fi.haju.haju3d.client.ui;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import com.jme3.app.SimpleApplication;
@@ -22,7 +24,6 @@ import com.jme3.shadow.DirectionalLightShadowRenderer;
 import com.jme3.shadow.EdgeFilteringMode;
 import com.jme3.system.AppSettings;
 import com.jme3.texture.Image;
-import com.jme3.texture.Texture;
 import com.jme3.texture.Texture.WrapMode;
 import com.jme3.texture.TextureArray;
 
@@ -30,6 +31,7 @@ import fi.haju.haju3d.client.ChunkProcessor;
 import fi.haju.haju3d.client.ChunkProvider;
 import fi.haju.haju3d.client.CloseEventHandler;
 import fi.haju.haju3d.client.ui.mesh.ChunkMeshBuilder;
+import fi.haju.haju3d.client.ui.mesh.MyTexture;
 import fi.haju.haju3d.protocol.Vector3i;
 import fi.haju.haju3d.protocol.world.Chunk;
 import fi.haju.haju3d.protocol.world.World;
@@ -71,12 +73,17 @@ public class ChunkRenderer extends SimpleApplication {
     getFlyByCamera().setMoveSpeed(20 * 2);
     getFlyByCamera().setRotationSpeed(3);
     getCamera().setLocation(getGlobalPosition(new Vector3i().add(32, 62, 62)));
-
-    Texture tex1 = assetManager.loadTexture("fi/haju/haju3d/client/textures/grass.png");
-    Texture tex2 = assetManager.loadTexture("fi/haju/haju3d/client/textures/rock.png");
+    
+    Map<MyTexture, String> textureToFilename = new HashMap<>();
+    textureToFilename.put(MyTexture.DIRT, "mc-dirt.png");
+    textureToFilename.put(MyTexture.GRASS, "mc-grass.png");
+    textureToFilename.put(MyTexture.ROCK, "mc-rock.png");
+    
     List<Image> images = new ArrayList<Image>();
-    images.add(tex1.getImage());
-    images.add(tex2.getImage());
+    for (MyTexture tex : MyTexture.values()) {
+      String textureResource = "fi/haju/haju3d/client/textures/" + textureToFilename.get(tex);
+      images.add(assetManager.loadTexture(textureResource).getImage());
+    }
     textures = new TextureArray(images);
     textures.setWrap(WrapMode.Repeat);
     
