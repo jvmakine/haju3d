@@ -1,14 +1,23 @@
 package fi.haju.haju3d.server;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.SerializationException;
+import org.apache.commons.lang3.SerializationUtils;
 
 import fi.haju.haju3d.protocol.Client;
 import fi.haju.haju3d.protocol.Server;
 import fi.haju.haju3d.protocol.Vector3i;
 import fi.haju.haju3d.protocol.world.Chunk;
+import fi.haju.haju3d.protocol.world.Tile;
 import fi.haju.haju3d.protocol.world.World;
 import fi.haju.haju3d.server.world.PerlinNoiseWorldGenerator;
 import fi.haju.haju3d.server.world.WorldGenerator;
@@ -18,10 +27,73 @@ public class ServerImpl implements Server {
   private WorldGenerator generator;
   private List<Client> loggedInClients = new ArrayList<>();
   private World world = new World();
+  private boolean fileMode;
+  private File hajuDir = getHajuDir();
   
   public ServerImpl() {
     generator = new PerlinNoiseWorldGenerator();
     generator.setSeed(new Random().nextInt());
+  }
+  
+  public void setFileMode(boolean fileMode) {
+    this.fileMode = fileMode;
+  }
+  
+  private void createAndSaveWorld() {
+    int sz = world.getChunkSize();
+    int chunks = 5;
+    Chunk worldChunk = generator.generateChunk(new Vector3i(), sz * chunks, sz, sz * chunks);
+    
+    HashSet<Vector3i> validChunks = new HashSet<>();
+    for (int x = 0; x < chunks; x++) {
+      for (int z = 0; z < chunks; z++) {
+        Vector3i position = new Vector3i(x - chunks / 2, 0, z - chunks / 2);
+        Chunk chunk = new Chunk(sz, sz, sz, x + z * 100, position);
+        for (int xx = 0; xx < sz; xx++) {
+          for (int yy = 0; yy < sz; yy++) {
+            for (int zz = 0; zz < sz; zz++) {
+              chunk.set(xx, yy, zz, worldChunk.get(xx + x * sz, yy, zz + z * sz));
+              chunk.setColor(xx, yy, zz, worldChunk.getColor(xx + x * sz, yy, zz + z * sz));
+            }
+          }
+        }
+        validChunks.add(position);
+        writeObjectToFile(chunkFile(position), chunk);
+      }
+    }
+    
+    writeObjectToFile(validChunksFile(), validChunks);
+  }
+  
+  private static void writeObjectToFile(File file, Serializable object) {
+    try {
+      FileUtils.writeByteArrayToFile(file, SerializationUtils.serialize(object));
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+  
+  @SuppressWarnings("unchecked")
+  private static <T> T readObjectFromFile(File file) throws IOException {
+    try {
+      return (T) SerializationUtils.deserialize(FileUtils.readFileToByteArray(file));
+    } catch (SerializationException e) {
+      throw new IOException(e);
+    }
+  }
+  
+  private File chunkFile(Vector3i position) {
+    return new File(hajuDir, "ch#" + position.x + "#" + position.z);
+  }
+
+  private File validChunksFile() {
+    return new File(hajuDir, "chunks");
+  }
+
+  private File getHajuDir() {
+    File hajuDir = new File(new File(System.getProperty("user.home")), ".haju3d");
+    hajuDir.mkdirs();
+    return hajuDir;
   }
   
   public void setGenerator(WorldGenerator generator) {
@@ -44,6 +116,33 @@ public class ServerImpl implements Server {
   }
   
   private Chunk getOrGenerateChunk(Vector3i position) {
+    if (fileMode) {
+      int sz = world.getChunkSize();
+      Chunk chunk = new Chunk(sz, sz, sz, 0, position);
+      if (position.y < 0) {
+        chunk.fill(Tile.GROUND);
+        return chunk;
+      } else if (position.y > 0) {
+        return chunk;
+      }
+      HashSet<Vector3i> validChunks;
+      try {
+        validChunks = readObjectFromFile(validChunksFile());
+      } catch (IOException | SerializationException e) {
+        createAndSaveWorld();
+        return getOrGenerateChunk(position);
+      }
+      if (!validChunks.contains(position)) {
+        return chunk;
+      }
+      try {
+        return readObjectFromFile(chunkFile(position));
+      } catch (IOException | SerializationException e) {
+        createAndSaveWorld();
+        return getOrGenerateChunk(position);
+      }
+    }
+    
     if(world.hasChunk(position)) {
       return world.getChunk(position);
     } else {

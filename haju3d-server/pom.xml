@@ -2,7 +2,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  
+
   <parent>
     <groupId>fi.haju</groupId>
     <artifactId>haju3d</artifactId>
@@ -13,7 +13,7 @@
   <packaging>jar</packaging>
 
   <name>Haju3dServer</name>
-  
+
   <url>https://github.com/jvmakine/haju3d</url>
 
   <dependencies>
@@ -22,8 +22,18 @@
       <artifactId>haju3d-common</artifactId>
       <version>0.1-SNAPSHOT</version>
     </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+      <version>3.1</version>
+    </dependency>
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <version>2.4</version>
+    </dependency>
   </dependencies>
-  
+
   <build>
     <plugins>
       <plugin>
@@ -45,6 +55,6 @@
         </configuration>
       </plugin>
     </plugins>
-  </build> 
-  
+  </build>
+
 </project>

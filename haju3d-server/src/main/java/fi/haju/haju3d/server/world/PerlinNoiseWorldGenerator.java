@@ -18,7 +18,7 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
   
   @Override
   public Chunk generateChunk(Vector3i position, int width, int height, int depth) {
-    int realseed = seed ^ position.hashCode();
+    int realseed = seed ^ (position.x + position.y * 123 + position.z * 12347);
     Chunk chunk = new Chunk(width, height, depth, realseed, position);
     if (position.y < 0) {
       chunk.fill(Tile.GROUND);
