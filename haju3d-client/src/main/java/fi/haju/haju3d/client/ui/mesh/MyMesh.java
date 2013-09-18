@@ -12,8 +12,8 @@ class MyMesh {
   Map<MyVertex, List<MyFace>> vertexFaces = new HashMap<>();
   List<MyFace> faces = new ArrayList<>();
 
-  public void addFace(Vector3f v1, Vector3f v2, Vector3f v3, Vector3f v4) {
-    MyFace face = new MyFace(getVertex(v1), getVertex(v2), getVertex(v3), getVertex(v4));
+  public void addFace(Vector3f v1, Vector3f v2, Vector3f v3, Vector3f v4, MyTexture texture, float color) {
+    MyFace face = new MyFace(getVertex(v1), getVertex(v2), getVertex(v3), getVertex(v4), texture, color);
 
     addVertexFace(face, face.v1);
     addVertexFace(face, face.v2);

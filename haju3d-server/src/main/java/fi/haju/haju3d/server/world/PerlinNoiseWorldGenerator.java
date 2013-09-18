@@ -72,6 +72,7 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
         return;
       }
       ground.set(n.x, n.y, n.z, orig.get(n.x, n.y, n.z));
+      ground.setColor(n.x, n.y, n.z, orig.getColor(n.x, n.y, n.z));
       visited.add(n);
       front.add(n);
     }
@@ -98,7 +99,15 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
             v += InterpolationUtil.interpolateLinear(y / (h / 5), -10, 0);
           }
           v += noise.get(x, y, z) * 3;
-          chunk.set(x, y, z, v < thres ? Tile.GROUND : Tile.AIR);
+          Tile terrain = noise.get(x, h - 1 - y, z) < 0 ? Tile.GROUND : Tile.ROCK;
+          chunk.set(x, y, z, v < thres ? terrain : Tile.AIR);
+          float col = 0.75f + noise.get(w - 1 - x, y, z) * 0.1f;
+          if (col < 0.5f) {
+            col = 0.5f;
+          } else if (col > 1.0f) {
+            col = 1.0f;
+          }
+          chunk.setColor(x, y, z, col);
         }
       }
     }

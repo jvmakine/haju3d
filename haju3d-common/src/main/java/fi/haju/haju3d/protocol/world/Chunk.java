@@ -8,42 +8,52 @@ import fi.haju.haju3d.protocol.Vector3i;
 public final class Chunk implements Serializable {
   private static final long serialVersionUID = 1L;
 
-  private final ObjArray3d<Tile> data;
+  private final ObjArray3d<Tile> tiles;
+  private final FloatArray3d colors;
   private final int seed;
   private final Vector3i position;
 
   public Chunk(int width, int height, int depth, int seed, Vector3i position) {
     this.seed = seed;
     this.position = position;
-    this.data = new ObjArray3d<Tile>(width, height, depth, Tile.AIR);
+    this.tiles = new ObjArray3d<Tile>(width, height, depth, Tile.AIR);
+    this.colors = new FloatArray3d(width, height, depth);
   }
   
   public void fill(Tile value) {
-    data.fill(value);
+    tiles.fill(value);
   }
 
   public void set(int x, int y, int z, Tile value) {
-    data.set(x, y, z, value);
+    tiles.set(x, y, z, value);
+  }
+  
+  public void setColor(int x, int y, int z, float color) {
+    colors.set(x, y, z, color);
   }
   
   public boolean isInside(int x, int y, int z) {
-    return data.isInside(x, y, z);
+    return tiles.isInside(x, y, z);
   }
 
   public Tile get(int x, int y, int z) {
-    return data.get(x, y, z);
+    return tiles.get(x, y, z);
+  }
+  
+  public float getColor(int x, int y, int z) {
+    return colors.get(x, y, z);
   }
 
   public int getWidth() {
-    return data.getWidth();
+    return tiles.getWidth();
   }
 
   public int getHeight() {
-    return data.getHeight();
+    return tiles.getHeight();
   }
 
   public int getDepth() {
-    return data.getDepth();
+    return tiles.getDepth();
   }
 
   public int getSeed() {
