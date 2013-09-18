@@ -15,6 +15,8 @@ import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector3f;
+import com.jme3.post.FilterPostProcessor;
+import com.jme3.post.filters.LightScatteringFilter;
 import com.jme3.renderer.Camera;
 import com.jme3.renderer.queue.RenderQueue.ShadowMode;
 import com.jme3.scene.Geometry;
@@ -25,9 +27,11 @@ import com.jme3.shadow.DirectionalLightShadowRenderer;
 import com.jme3.shadow.EdgeFilteringMode;
 import com.jme3.system.AppSettings;
 import com.jme3.texture.Image;
+import com.jme3.texture.Texture;
 import com.jme3.texture.Texture.MinFilter;
 import com.jme3.texture.Texture.WrapMode;
 import com.jme3.texture.TextureArray;
+import com.jme3.util.SkyFactory;
 
 import fi.haju.haju3d.client.ChunkProcessor;
 import fi.haju.haju3d.client.ChunkProvider;
@@ -59,6 +63,7 @@ public class ChunkRenderer extends SimpleApplication {
     this.chunkProvider = chunkProvider;
     
     AppSettings settings = new AppSettings(true);
+    settings.setResolution(1024, 768);
     settings.setVSync(true);
     settings.setAudioRenderer(null);
     settings.setFullscreen(false);
@@ -218,8 +223,18 @@ public class ChunkRenderer extends SimpleApplication {
   }
 
   private void setupLighting() {
+    Texture west = assetManager.loadTexture("fi/haju/haju3d/client/textures/sky9-left.jpg");
+    Texture east = assetManager.loadTexture("fi/haju/haju3d/client/textures/sky9-right.jpg");
+    Texture north = assetManager.loadTexture("fi/haju/haju3d/client/textures/sky9-front.jpg");
+    Texture south = assetManager.loadTexture("fi/haju/haju3d/client/textures/sky9-back.jpg");
+    Texture up = assetManager.loadTexture("fi/haju/haju3d/client/textures/sky9-top.jpg");
+    Texture down = assetManager.loadTexture("fi/haju/haju3d/client/textures/sky9-top.jpg");
+    rootNode.attachChild(SkyFactory.createSky(assetManager, west, east, north, south, up, down));
+    
     light = new DirectionalLight();
-    light.setDirection(new Vector3f(-1, -2, -3).normalizeLocal());
+    Vector3f lightDir = new Vector3f(-0.12f, -0.3729129f, 0.74847335f);
+    lightDir = new Vector3f(-0.9140114f, 0.29160172f, -0.2820493f).negate();
+    light.setDirection(lightDir.normalizeLocal());
     light.setColor(new ColorRGBA(1f, 1f, 1f, 1f).mult(0.6f));
     rootNode.addLight(light);
 
@@ -232,6 +247,20 @@ public class ChunkRenderer extends SimpleApplication {
     dlsr.setShadowIntensity(0.4f);
     dlsr.setEdgeFilteringMode(EdgeFilteringMode.PCF4);
     viewPort.addProcessor(dlsr);
+    
+    FilterPostProcessor fpp = new FilterPostProcessor(assetManager);
+//    FogFilter fog = new FogFilter();
+//    fog.setFogColor(new ColorRGBA(0.9f, 0.9f, 0.9f, 0.0f));
+//    fog.setFogDistance(200);
+//    fog.setFogDensity(1.5f);
+//    fpp.addFilter(fog);
+  
+    LightScatteringFilter filter = new LightScatteringFilter(light.getDirection().mult(-20000f));
+    filter.setLightDensity(1.2f);
+    filter.setBlurWidth(1.5f);
+    fpp.addFilter(filter);
+
+    viewPort.addProcessor(fpp);
   }
 
   @Override
