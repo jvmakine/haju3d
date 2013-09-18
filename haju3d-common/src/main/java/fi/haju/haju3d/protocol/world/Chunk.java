@@ -1,35 +1,46 @@
 package fi.haju.haju3d.protocol.world;
 
 import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
 
 import fi.haju.haju3d.protocol.Vector3i;
 
 
 public final class Chunk implements Serializable {
-  private static final long serialVersionUID = 1L;
+  private static final long serialVersionUID = 2L;
 
-  private final ObjArray3d<Tile> tiles;
-  private final FloatArray3d colors;
+  private final ByteArray3d tiles;
+  private final ByteArray3d colors;
   private final int seed;
   private final Vector3i position;
-
+  
+  private final static Map<Byte, Tile> byteToTile = new HashMap<>();
+  private final static Map<Tile, Byte> tileToByte = new HashMap<>();
+  static {
+    for (Tile t : Tile.values()) {
+      byteToTile.put((byte) t.ordinal(), t);
+      tileToByte.put(t, (byte) t.ordinal());
+    }
+  }
+  
   public Chunk(int width, int height, int depth, int seed, Vector3i position) {
     this.seed = seed;
     this.position = position;
-    this.tiles = new ObjArray3d<Tile>(width, height, depth, Tile.AIR);
-    this.colors = new FloatArray3d(width, height, depth);
+    this.tiles = new ByteArray3d(width, height, depth);
+    this.colors = new ByteArray3d(width, height, depth);
   }
   
   public void fill(Tile value) {
-    tiles.fill(value);
+    tiles.fill(tileToByte.get(value));
   }
 
   public void set(int x, int y, int z, Tile value) {
-    tiles.set(x, y, z, value);
+    tiles.set(x, y, z, tileToByte.get(value));
   }
   
   public void setColor(int x, int y, int z, float color) {
-    colors.set(x, y, z, color);
+    colors.set(x, y, z, (byte)(color * 127f));
   }
   
   public boolean isInside(int x, int y, int z) {
@@ -37,11 +48,11 @@ public final class Chunk implements Serializable {
   }
 
   public Tile get(int x, int y, int z) {
-    return tiles.get(x, y, z);
+    return byteToTile.get(tiles.get(x, y, z));
   }
   
   public float getColor(int x, int y, int z) {
-    return colors.get(x, y, z);
+    return colors.get(x, y, z) / 127f;
   }
 
   public int getWidth() {

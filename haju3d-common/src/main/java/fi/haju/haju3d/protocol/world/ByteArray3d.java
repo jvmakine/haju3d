@@ -3,33 +3,26 @@ package fi.haju.haju3d.protocol.world;
 import java.io.Serializable;
 import java.util.Arrays;
 
-/**
- * 3d array of objects.
- * <p>
- * For enumerated types, prefer ByteArray3d which uses 1/4 or 1/8 the amount of memory.
- */
-public final class ObjArray3d<T> implements Serializable {
+public final class ByteArray3d implements Serializable {
   private static final long serialVersionUID = 1L;
 
-  private final T[] data;
+  private final byte[] data;
   private final int width;
   private final int height;
   private final int depth;
 
-  @SuppressWarnings("unchecked")
-  public ObjArray3d(int width, int height, int depth, T initialValue) {
+  public ByteArray3d(int width, int height, int depth) {
     this.width = width;
     this.height = height;
     this.depth = depth;
-    this.data = (T[]) new Object[width * height * depth];
-    fill(initialValue);
+    this.data = new byte[width * height * depth];
   }
   
-  public void fill(T value) {
+  public void fill(byte value) {
     Arrays.fill(data, 0, data.length, value);
   }
   
-  public void set(int x, int y, int z, T value) {
+  public void set(int x, int y, int z, byte value) {
     data[getIndex(x, y, z)] = value;
   }
 
@@ -41,7 +34,7 @@ public final class ObjArray3d<T> implements Serializable {
     return x >= 0 && x < width && y >= 0 && y < height && z >= 0 && z < depth;
   }
 
-  public T get(int x, int y, int z) {
+  public byte get(int x, int y, int z) {
     return data[getIndex(x, y, z)];
   }
 
