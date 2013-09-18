@@ -83,7 +83,7 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
     return ground;
   }
   
-  private static Chunk makeChunk(Chunk chunk, int seed, Vector3i position) {
+  private Chunk makeChunk(Chunk chunk, int seed, Vector3i position) {
     int w = chunk.getWidth();
     int h = chunk.getHeight();
     int d = chunk.getDepth();
@@ -102,7 +102,11 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
         }
       }
     }
-    return filterFloaters(chunk);
+    if (fastMode) {
+      return chunk;
+    } else {
+      return filterFloaters(chunk);
+    }
   }
 
 }
