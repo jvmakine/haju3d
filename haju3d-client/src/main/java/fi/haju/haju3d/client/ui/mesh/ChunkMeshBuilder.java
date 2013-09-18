@@ -22,8 +22,8 @@ public class ChunkMeshBuilder {
   public ChunkMeshBuilder() {
   }
   
-  public Mesh makeMesh(World chunk, Vector3i chunkIndex) {
-    MyMesh myMesh = makeCubeMesh(chunk, chunkIndex);
+  public Mesh makeMesh(World world, Vector3i chunkIndex) {
+    MyMesh myMesh = makeCubeMesh(world, chunkIndex);
     smoothMesh(myMesh);
 
     // only faces based on a real tile should be meshed; the other ones were used for smoothing context
@@ -123,11 +123,11 @@ public class ChunkMeshBuilder {
     vertexes.put(v.x).put(v.y).put(v.z);
   }
 
-  private static MyMesh makeCubeMesh(World chunk, Vector3i chunkIndex) {
+  private static MyMesh makeCubeMesh(World world, Vector3i chunkIndex) {
     MyMesh myMesh = new MyMesh();
     
-    Vector3i w1o = chunk.getWorldPosition(chunkIndex);
-    Vector3i w2o = chunk.getWorldPosition(chunkIndex.add(1, 1, 1));
+    Vector3i w1o = world.getWorldPosition(chunkIndex);
+    Vector3i w2o = world.getWorldPosition(chunkIndex.add(1, 1, 1));
     
     Vector3i w1 = w1o.add(-SMOOTH_BUFFER, -SMOOTH_BUFFER, -SMOOTH_BUFFER);
     Vector3i w2 = w2o.add(SMOOTH_BUFFER, SMOOTH_BUFFER, SMOOTH_BUFFER);
@@ -135,14 +135,14 @@ public class ChunkMeshBuilder {
     for (int x = w1.x; x < w2.x; x++) {
       for (int y = w1.y; y < w2.y; y++) {
         for (int z = w1.z; z < w2.z; z++) {
-          Tile tile = chunk.get(x, y, z);
+          Tile tile = world.get(x, y, z);
           boolean realTile =
               x >= w1o.x && x < w2o.x &&
               y >= w1o.y && y < w2o.y &&
               z >= w1o.z && z < w2o.z;
           if (tile != Tile.AIR) {
-            float color = chunk.getColor(x, y, z);
-            if (chunk.get(x, y - 1, z) == Tile.AIR) {
+            float color = world.getColor(x, y, z);
+            if (world.get(x, y - 1, z) == Tile.AIR) {
               myMesh.addFace(
                   new Vector3f(x, y, z),
                   new Vector3f(x + 1, y, z),
@@ -151,7 +151,7 @@ public class ChunkMeshBuilder {
                   bottomTexture(tile), color,
                   realTile);
             }
-            if (chunk.get(x, y + 1, z) == Tile.AIR) {
+            if (world.get(x, y + 1, z) == Tile.AIR) {
               myMesh.addFace(
                   new Vector3f(x, y + 1, z + 1),
                   new Vector3f(x + 1, y + 1, z + 1),
@@ -160,7 +160,7 @@ public class ChunkMeshBuilder {
                   topTexture(tile), color,
                   realTile);
             }
-            if (chunk.get(x - 1, y, z) == Tile.AIR) {
+            if (world.get(x - 1, y, z) == Tile.AIR) {
               myMesh.addFace(
                   new Vector3f(x, y, z + 1),
                   new Vector3f(x, y + 1, z + 1),
@@ -169,7 +169,7 @@ public class ChunkMeshBuilder {
                   sideTexture(tile), color,
                   realTile);
             }
-            if (chunk.get(x + 1, y, z) == Tile.AIR) {
+            if (world.get(x + 1, y, z) == Tile.AIR) {
               myMesh.addFace(
                   new Vector3f(x + 1, y, z),
                   new Vector3f(x + 1, y + 1, z),
@@ -178,7 +178,7 @@ public class ChunkMeshBuilder {
                   sideTexture(tile), color,
                   realTile);
             }
-            if (chunk.get(x, y, z - 1) == Tile.AIR) {
+            if (world.get(x, y, z - 1) == Tile.AIR) {
               myMesh.addFace(
                   new Vector3f(x, y, z),
                   new Vector3f(x, y + 1, z),
@@ -187,7 +187,7 @@ public class ChunkMeshBuilder {
                   sideTexture(tile), color,
                   realTile);
             }
-            if (chunk.get(x, y, z + 1) == Tile.AIR) {
+            if (world.get(x, y, z + 1) == Tile.AIR) {
               myMesh.addFace(
                   new Vector3f(x + 1, y, z + 1),
                   new Vector3f(x + 1, y + 1, z + 1),
