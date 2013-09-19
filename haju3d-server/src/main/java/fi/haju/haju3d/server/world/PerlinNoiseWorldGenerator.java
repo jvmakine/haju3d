@@ -47,7 +47,7 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
   }
   
   private static final class PerlinNoiseScales {
-    public static List<Integer> SCALES = ImmutableList.of(4, 8, 16, 32, 64, 128);
+    public static List<Integer> SCALES = ImmutableList.of(4, 8, 16, 32);
     
     private Map<Integer, FloatArray3d> noises = Maps.newHashMap();
     
@@ -56,7 +56,6 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
         int nw = width / scale;
         int nh = height / scale;
         int nd = depth / scale;
-        if(nw == 0 || nh == 0 || nd == 0) continue;
         final float amp = (float)Math.pow(0.5f * scale * 1.0f, 1.0f);
         FloatArray3d noise = new FloatArray3d(nw, nh, nd, new FloatArray3d.Initializer() {     
           @Override
@@ -137,7 +136,6 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
           }
         }
       }
-      if(surroundingScales[0] == null) continue;
       add3dNoise(random, data, scale, surroundingScales);
     }
     return data;
