@@ -2,6 +2,7 @@ package fi.haju.haju3d.client;
 
 import java.rmi.RemoteException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -10,6 +11,10 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Predicate;
+import com.google.common.collect.Collections2;
+import com.google.common.collect.Lists;
 
 import fi.haju.haju3d.protocol.Server;
 import fi.haju.haju3d.protocol.Vector3i;
@@ -34,9 +39,7 @@ public class ChunkProvider {
       @Override
       public void run() {
         List<Chunk> chunks = new ArrayList<>();
-        for (Vector3i pos : positions) {
-          chunks.add(getChunk(pos));
-        }
+        chunks.addAll(getChunks(positions));
         processor.chunksLoaded(chunks);
         requests.remove(positions);
       }
@@ -50,15 +53,20 @@ public class ChunkProvider {
     return chunkCache.containsKey(position);
   }
   
-  private Chunk getChunk(Vector3i position) {
-    if(!chunkCache.containsKey(position)) {
+  private List<Chunk> getChunks(List<Vector3i> positions) {
+    Collection<Vector3i> newPositions = Collections2.filter(positions, new Predicate<Vector3i>() {
+      public boolean apply(Vector3i v) {
+        return !chunkCache.containsKey(v);
+      }
+    });
+    if(!newPositions.isEmpty()) {
       try {
-        chunkCache.put(position, server.getChunk(position));
+        return server.getChunks(Lists.newArrayList(newPositions));
       } catch (RemoteException e) {
         throw new RuntimeException(e);
       }
     }
-    return chunkCache.get(position);
+    return Lists.newArrayList();
   }
   
 }
