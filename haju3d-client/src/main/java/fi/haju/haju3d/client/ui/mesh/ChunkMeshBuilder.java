@@ -128,7 +128,7 @@ public class ChunkMeshBuilder {
     vertexToNormal.put(v1, sum);
   }
 
-  private void putVector(FloatBuffer vertexes, Vector3f v) {
+  private static void putVector(FloatBuffer vertexes, Vector3f v) {
     vertexes.put(v.x).put(v.y).put(v.z);
   }
 

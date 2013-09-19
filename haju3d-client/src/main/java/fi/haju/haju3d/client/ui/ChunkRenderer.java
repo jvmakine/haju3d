@@ -239,14 +239,13 @@ public class ChunkRenderer extends SimpleApplication {
     rootNode.attachChild(SkyFactory.createSky(assetManager, west, east, north, south, up, down));
     
     light = new DirectionalLight();
-    Vector3f lightDir = new Vector3f(-0.12f, -0.3729129f, 0.74847335f);
-    lightDir = new Vector3f(-0.9140114f, 0.29160172f, -0.2820493f).negate();
+    Vector3f lightDir = new Vector3f(-0.9140114f, 0.29160172f, -0.2820493f).negate();
     light.setDirection(lightDir.normalizeLocal());
-    light.setColor(new ColorRGBA(1f, 1f, 1f, 1f).mult(0.6f));
+    light.setColor(new ColorRGBA(1f, 1f, 1f, 1f).mult(1.5f));
     rootNode.addLight(light);
 
     AmbientLight al = new AmbientLight();
-    al.setColor(new ColorRGBA(0.3f, 0.3f, 0.3f, 1));
+    al.setColor(new ColorRGBA(1f, 1f, 1f, 1f).mult(0.6f));
     rootNode.addLight(al);
 
     DirectionalLightShadowRenderer dlsr = new DirectionalLightShadowRenderer(assetManager, 2048, 4);
