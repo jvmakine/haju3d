@@ -11,12 +11,30 @@ public final class FloatArray3d implements Serializable {
   private final int width;
   private final int height;
   private final int depth;
+  
+  public static interface Initializer {
+    float getValue(int x, int y, int z);
+  }
 
   public FloatArray3d(int width, int height, int depth) {
     this.width = width;
     this.height = height;
     this.depth = depth;
     this.data = new float[width * height * depth];
+  }
+  
+  public FloatArray3d(int width, int height, int depth, Initializer initializer) {
+    this.width = width;
+    this.height = height;
+    this.depth = depth;
+    this.data = new float[width * height * depth];
+    for(int x = 0; x < width; ++x) {
+      for(int y = 0; y < height; ++y) {
+        for(int z = 0; z < depth; ++z) {
+          set(x, y, z, initializer.getValue(x, y, z));
+        }
+      }
+    }
   }
   
   public void set(int x, int y, int z, float value) {

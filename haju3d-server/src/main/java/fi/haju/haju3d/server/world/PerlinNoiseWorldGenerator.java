@@ -84,7 +84,7 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
     return ground;
   }
   
-  private static FloatArray3d make3dPerlinNoise(long seed, int w, int h, int d) {
+  private FloatArray3d make3dPerlinNoise(long seed, int w, int h, int d) {
     Random random = new Random(seed);
     FloatArray3d data = new FloatArray3d(w, h, d);
     for (int scale = 4; scale != 128; scale *= 2) {
@@ -93,7 +93,7 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
     return data;
   }
     
-  private static void add3dNoise(Random random, FloatArray3d data, int scale, float amp) {
+  private void add3dNoise(final Random random, FloatArray3d data, int scale, final float amp) {
     int w = data.getWidth();
     int h = data.getHeight();
     int d = data.getDepth();
@@ -101,14 +101,14 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
     int nw = w / scale + 2;
     int nh = h / scale + 2;
     int nd = d / scale + 2;
-    int n = nw * nh * nd;
-    float noise[] = new float[n];
-    for (int i = 0; i < n; i++) {
-      noise[i] = (float) (random.nextDouble() - 0.5) * amp;
-    }
-
-    int nwh = nw * nh;
-
+    
+    FloatArray3d noise = new FloatArray3d(nw, nh, nd, new FloatArray3d.Initializer() {     
+      @Override
+      public float getValue(int x, int y, int z) {
+        return (float)((random.nextDouble() - 0.5) * amp);
+      }
+    });
+    
     for (int z = 0; z < d; z++) {
       float zt = (float) (z % scale) / scale;
       int zs = z / scale;
@@ -119,15 +119,15 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
           float xt = (float) (x % scale) / scale;
           int xs = x / scale;
 
-          float n1 = noise[xs + ys * nw + zs * nwh];
-          float n2 = noise[(xs + 1) + ys * nw + zs * nwh];
-          float n3 = noise[xs + (ys + 1) * nw + zs * nwh];
-          float n4 = noise[(xs + 1) + (ys + 1) * nw + zs * nwh];
+          float n1 = noise.get(xs, ys, zs);
+          float n2 = noise.get(xs + 1, ys, zs);
+          float n3 = noise.get(xs, ys + 1, zs);
+          float n4 = noise.get(xs + 1, ys + 1, zs);
 
-          float n5 = noise[xs + ys * nw + (zs + 1) * nwh];
-          float n6 = noise[(xs + 1) + ys * nw + (zs + 1) * nwh];
-          float n7 = noise[xs + (ys + 1) * nw + (zs + 1) * nwh];
-          float n8 = noise[(xs + 1) + (ys + 1) * nw + (zs + 1) * nwh];
+          float n5 = noise.get(xs, ys, zs + 1);
+          float n6 = noise.get(xs + 1, ys, zs + 1);
+          float n7 = noise.get(xs, ys + 1, zs + 1);
+          float n8 = noise.get(xs + 1, ys + 1, zs + 1);
 
           data.add(x, y, z, InterpolationUtil.interpolateLinear3d(xt, yt, zt, n1, n2, n3, n4, n5, n6, n7, n8));
         }
