@@ -3,8 +3,12 @@ package fi.haju.haju3d.server.world;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Maps;
 
 import fi.haju.haju3d.protocol.Vector3i;
 import fi.haju.haju3d.protocol.world.Chunk;
@@ -38,6 +42,33 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
   @Override
   public void setSeed(int seed) {
     this.seed = seed;
+  }
+  
+  private static final class PerlinNoiseScales {
+    public static List<Integer> SCALES = ImmutableList.of(4, 8, 16, 32, 64, 128);
+    
+    private Map<Integer, FloatArray3d> noises = Maps.newHashMap();
+    
+    public PerlinNoiseScales(final Random random, int width, int height, int depth) {
+      for(int scale : SCALES) {
+        final int nw = width / scale + 2;
+        final int nh = height / scale + 2;
+        final int nd = depth / scale + 2;
+        final float amp = (float)Math.pow(0.5f * scale * 1.0f, 1.0f);
+        FloatArray3d noise = new FloatArray3d(nw, nh, nd, new FloatArray3d.Initializer() {     
+          @Override
+          public float getValue(int x, int y, int z) {
+            return (float)((random.nextDouble() - 0.5) * amp);
+          }
+        });
+        noises.put(scale, noise);
+      }
+    }
+    
+    public FloatArray3d getNoise(int scale) {
+      return noises.get(scale);
+    }
+    
   }
   
   private static final class FloodFill {
@@ -87,28 +118,18 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
   private FloatArray3d make3dPerlinNoise(long seed, int w, int h, int d) {
     Random random = new Random(seed);
     FloatArray3d data = new FloatArray3d(w, h, d);
-    for (int scale = 4; scale != 128; scale *= 2) {
-      add3dNoise(random, data, scale, (float)Math.pow(0.5f * scale * 1.0f, 1.0f));
+    PerlinNoiseScales noises = new PerlinNoiseScales(random, w, h, d);
+    for (int scale : PerlinNoiseScales.SCALES) {
+      add3dNoise(random, data, scale, noises.getNoise(scale));
     }
     return data;
   }
     
-  private void add3dNoise(final Random random, FloatArray3d data, int scale, final float amp) {
+  private void add3dNoise(final Random random, FloatArray3d data, int scale, FloatArray3d noise) {
     int w = data.getWidth();
     int h = data.getHeight();
     int d = data.getDepth();
-    
-    int nw = w / scale + 2;
-    int nh = h / scale + 2;
-    int nd = d / scale + 2;
-    
-    FloatArray3d noise = new FloatArray3d(nw, nh, nd, new FloatArray3d.Initializer() {     
-      @Override
-      public float getValue(int x, int y, int z) {
-        return (float)((random.nextDouble() - 0.5) * amp);
-      }
-    });
-    
+        
     for (int z = 0; z < d; z++) {
       float zt = (float) (z % scale) / scale;
       int zs = z / scale;
