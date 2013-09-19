@@ -154,7 +154,7 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
         zOver ? z - nd : z);
   }
   
-  private void add3dNoise(final Random random, FloatArray3d data, int scale, FloatArray3d[] surroundingScales) {
+  private static void add3dNoise(final Random random, FloatArray3d data, int scale, FloatArray3d[] surroundingScales) {
     int w = data.getWidth();
     int h = data.getHeight();
     int d = data.getDepth();
