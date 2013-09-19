@@ -20,6 +20,8 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
   private int seed;
   private boolean fastMode;
   
+  private Map<Vector3i, PerlinNoiseScales> perlinNoises = Maps.newHashMap();
+  
   @Override
   public Chunk generateChunk(Vector3i position, int width, int height, int depth) {
     int realseed = seed ^ (position.x + position.y * 123 + position.z * 12347);
@@ -51,9 +53,10 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
     
     public PerlinNoiseScales(final Random random, int width, int height, int depth) {
       for(int scale : SCALES) {
-        final int nw = width / scale + 2;
-        final int nh = height / scale + 2;
-        final int nd = depth / scale + 2;
+        int nw = width / scale;
+        int nh = height / scale;
+        int nd = depth / scale;
+        if(nw == 0 || nh == 0 || nd == 0) continue;
         final float amp = (float)Math.pow(0.5f * scale * 1.0f, 1.0f);
         FloatArray3d noise = new FloatArray3d(nw, nh, nd, new FloatArray3d.Initializer() {     
           @Override
@@ -115,21 +118,55 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
     return ground;
   }
   
-  private FloatArray3d make3dPerlinNoise(long seed, int w, int h, int d) {
+  private PerlinNoiseScales getPerlinNoiseScale(Vector3i pos, Random random, int w, int h, int d) {
+    if(perlinNoises.containsKey(pos)) return perlinNoises.get(pos);
+    PerlinNoiseScales noises = new PerlinNoiseScales(random, w, h, d);
+    perlinNoises.put(pos, noises);
+    return noises;
+  }
+  
+  private FloatArray3d make3dPerlinNoise(long seed, int w, int h, int d, Vector3i position) {
     Random random = new Random(seed);
     FloatArray3d data = new FloatArray3d(w, h, d);
-    PerlinNoiseScales noises = new PerlinNoiseScales(random, w, h, d);
     for (int scale : PerlinNoiseScales.SCALES) {
-      add3dNoise(random, data, scale, noises.getNoise(scale));
+      FloatArray3d[] surroundingScales = new FloatArray3d[3*3*3];
+      for(int x = 0; x < 2; ++x) {
+        for(int y = 0; y < 2; ++y) {
+          for(int z = 0; z < 2; ++z) {
+            surroundingScales[x + y*2 + z*4] = getPerlinNoiseScale(position.add(x, y, z), random, w, h, d).getNoise(scale);
+          }
+        }
+      }
+      if(surroundingScales[0] == null) continue;
+      add3dNoise(random, data, scale, surroundingScales);
     }
     return data;
   }
     
-  private void add3dNoise(final Random random, FloatArray3d data, int scale, FloatArray3d noise) {
+  private static float getNoiseValueFromSet(int x, int y, int z, int nw, int nh, int nd, FloatArray3d[] scales) {
+    boolean xOver = x >= nw;
+    boolean yOver = y >= nh;
+    boolean zOver = z >= nd;
+    int i = xOver ? 1 : 0;
+    int j = yOver ? 1 : 0;
+    int k = zOver ? 1 : 0;
+    return scales[i + j*2 + k*4].get(
+        xOver ? x - nw : x, 
+        yOver ? y - nh : y,
+        zOver ? z - nd : z);
+  }
+  
+  private void add3dNoise(final Random random, FloatArray3d data, int scale, FloatArray3d[] surroundingScales) {
     int w = data.getWidth();
     int h = data.getHeight();
     int d = data.getDepth();
-        
+       
+    FloatArray3d centralNoise = surroundingScales[0];
+    
+    int nw = centralNoise.getWidth();
+    int nh = centralNoise.getHeight();
+    int nd = centralNoise.getDepth();
+    
     for (int z = 0; z < d; z++) {
       float zt = (float) (z % scale) / scale;
       int zs = z / scale;
@@ -139,16 +176,16 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
         for (int x = 0; x < w; x++) {
           float xt = (float) (x % scale) / scale;
           int xs = x / scale;
+         
+          float n1 = getNoiseValueFromSet(xs, ys, zs, nw, nh, nd, surroundingScales); 
+          float n2 = getNoiseValueFromSet(xs + 1, ys, zs, nw, nh, nd, surroundingScales);
+          float n3 = getNoiseValueFromSet(xs, ys + 1, zs, nw, nh, nd, surroundingScales); 
+          float n4 = getNoiseValueFromSet(xs + 1, ys + 1, zs, nw, nh, nd, surroundingScales);
 
-          float n1 = noise.get(xs, ys, zs);
-          float n2 = noise.get(xs + 1, ys, zs);
-          float n3 = noise.get(xs, ys + 1, zs);
-          float n4 = noise.get(xs + 1, ys + 1, zs);
-
-          float n5 = noise.get(xs, ys, zs + 1);
-          float n6 = noise.get(xs + 1, ys, zs + 1);
-          float n7 = noise.get(xs, ys + 1, zs + 1);
-          float n8 = noise.get(xs + 1, ys + 1, zs + 1);
+          float n5 = getNoiseValueFromSet(xs, ys, zs + 1, nw, nh, nd, surroundingScales);
+          float n6 = getNoiseValueFromSet(xs + 1, ys, zs + 1, nw, nh, nd, surroundingScales); 
+          float n7 = getNoiseValueFromSet(xs, ys + 1, zs + 1, nw, nh, nd, surroundingScales); 
+          float n8 = getNoiseValueFromSet(xs + 1, ys + 1, zs + 1, nw, nh, nd, surroundingScales); 
 
           data.add(x, y, z, InterpolationUtil.interpolateLinear3d(xt, yt, zt, n1, n2, n3, n4, n5, n6, n7, n8));
         }
@@ -161,7 +198,7 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
     int h = chunk.getHeight();
     int d = chunk.getDepth();
 
-    FloatArray3d noise = make3dPerlinNoise(seed, w, h, d);
+    FloatArray3d noise = make3dPerlinNoise(seed, w, h, d, position);
     float thres = h / 3;
     for (int x = 0; x < w; x++) {
       for (int y = 0; y < h; y++) {
