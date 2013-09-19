@@ -3,6 +3,7 @@ package fi.haju.haju3d.server.world;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 
 import fi.haju.haju3d.protocol.Vector3i;
@@ -10,7 +11,6 @@ import fi.haju.haju3d.protocol.world.Chunk;
 import fi.haju.haju3d.protocol.world.FloatArray3d;
 import fi.haju.haju3d.protocol.world.Tile;
 import fi.haju.haju3d.util.noise.InterpolationUtil;
-import fi.haju.haju3d.util.noise.PerlinNoiseUtil;
 
 public class PerlinNoiseWorldGenerator implements WorldGenerator {
   private int seed;
@@ -84,12 +84,63 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
     return ground;
   }
   
+  private static FloatArray3d make3dPerlinNoise(long seed, int w, int h, int d) {
+    Random random = new Random(seed);
+    FloatArray3d data = new FloatArray3d(w, h, d);
+    for (int scale = 4; scale != 128; scale *= 2) {
+      add3dNoise(random, data, scale, (float)Math.pow(0.5f * scale * 1.0f, 1.0f));
+    }
+    return data;
+  }
+    
+  private static void add3dNoise(Random random, FloatArray3d data, int scale, float amp) {
+    int w = data.getWidth();
+    int h = data.getHeight();
+    int d = data.getDepth();
+    
+    int nw = w / scale + 2;
+    int nh = h / scale + 2;
+    int nd = d / scale + 2;
+    int n = nw * nh * nd;
+    float noise[] = new float[n];
+    for (int i = 0; i < n; i++) {
+      noise[i] = (float) (random.nextDouble() - 0.5) * amp;
+    }
+
+    int nwh = nw * nh;
+
+    for (int z = 0; z < d; z++) {
+      float zt = (float) (z % scale) / scale;
+      int zs = z / scale;
+      for (int y = 0; y < h; y++) {
+        float yt = (float) (y % scale) / scale;
+        int ys = y / scale;
+        for (int x = 0; x < w; x++) {
+          float xt = (float) (x % scale) / scale;
+          int xs = x / scale;
+
+          float n1 = noise[xs + ys * nw + zs * nwh];
+          float n2 = noise[(xs + 1) + ys * nw + zs * nwh];
+          float n3 = noise[xs + (ys + 1) * nw + zs * nwh];
+          float n4 = noise[(xs + 1) + (ys + 1) * nw + zs * nwh];
+
+          float n5 = noise[xs + ys * nw + (zs + 1) * nwh];
+          float n6 = noise[(xs + 1) + ys * nw + (zs + 1) * nwh];
+          float n7 = noise[xs + (ys + 1) * nw + (zs + 1) * nwh];
+          float n8 = noise[(xs + 1) + (ys + 1) * nw + (zs + 1) * nwh];
+
+          data.add(x, y, z, InterpolationUtil.interpolateLinear3d(xt, yt, zt, n1, n2, n3, n4, n5, n6, n7, n8));
+        }
+      }
+    }
+  }
+  
   private Chunk makeChunk(Chunk chunk, int seed, Vector3i position) {
     int w = chunk.getWidth();
     int h = chunk.getHeight();
     int d = chunk.getDepth();
 
-    FloatArray3d noise = PerlinNoiseUtil.make3dPerlinNoise(seed, w, h, d);
+    FloatArray3d noise = make3dPerlinNoise(seed, w, h, d);
     float thres = h / 3;
     for (int x = 0; x < w; x++) {
       for (int y = 0; y < h; y++) {

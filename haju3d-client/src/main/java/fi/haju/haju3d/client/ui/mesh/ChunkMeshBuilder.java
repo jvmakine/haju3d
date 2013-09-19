@@ -105,7 +105,6 @@ public class ChunkMeshBuilder {
     m.setBuffer(Type.Color, 4, colors);
     
     m.updateBound();
-    
     return m;
   }
   
