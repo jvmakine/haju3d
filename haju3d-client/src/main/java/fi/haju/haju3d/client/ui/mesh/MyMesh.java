@@ -36,7 +36,7 @@ class MyMesh {
   private void addVertexFace(MyFace face, MyVertex v1) {
     List<MyFace> faces = vertexFaces.get(v1);
     if (faces == null) {
-      faces = new ArrayList<>();
+      faces = new ArrayList<>(5);
       vertexFaces.put(v1, faces);
     }
     faces.add(face);

@@ -95,7 +95,11 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
         for (int z = 0; z < d; z++) {
           float v = Math.abs(y);
           if (y < h / 5) {
-            v += InterpolationUtil.interpolateLinear(y / (h / 5), -10, 0);
+            v += InterpolationUtil.interpolateLinear(y / (float) (h / 5), -10, 0);
+          }
+          // create a platform at h/5:
+          if (y < h / 5) {
+            v -= 10;
           }
           v += noise.get(x, y, z) * 3;
           Tile terrain = noise.get(x, h - 1 - y, z) < 0 ? Tile.GROUND : Tile.ROCK;

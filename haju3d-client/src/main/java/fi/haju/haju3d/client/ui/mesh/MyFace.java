@@ -21,7 +21,7 @@ class MyFace {
     this.color = color;
     this.realTile = realTile;
   }
-
+  
   public Vector3f getCenter() {
     return v1.v.clone().addLocal(v2.v).addLocal(v3.v).addLocal(v4.v).divide(4);
   }

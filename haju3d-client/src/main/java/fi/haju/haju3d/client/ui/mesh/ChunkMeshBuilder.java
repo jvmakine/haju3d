@@ -20,7 +20,7 @@ import fi.haju.haju3d.protocol.world.Tile;
 import fi.haju.haju3d.protocol.world.World;
 
 public class ChunkMeshBuilder {
-  private static final int SMOOTH_BUFFER = 2;
+  private static final int SMOOTH_BUFFER = 3;
   private static final Logger LOGGER = LoggerFactory.getLogger(ChunkMeshBuilder.class);
   
   public ChunkMeshBuilder() {
@@ -34,7 +34,7 @@ public class ChunkMeshBuilder {
       myMesh = makeCubeMesh(world, chunkIndex);
     }
     smoothMesh(myMesh);
-
+    
     // only faces based on a real tile should be meshed; the other ones were used for smoothing context
     List<MyFace> realFaces = new ArrayList<>();
     for (MyFace face : myMesh.faces)  {
@@ -141,15 +141,15 @@ public class ChunkMeshBuilder {
     Vector3i w1 = w1o.add(-SMOOTH_BUFFER, -SMOOTH_BUFFER, -SMOOTH_BUFFER);
     Vector3i w2 = w2o.add(SMOOTH_BUFFER, SMOOTH_BUFFER, SMOOTH_BUFFER);
     
-    for (int x = w1.x; x < w2.x; x++) {
+    for (int z = w1.z; z < w2.z; z++) {
       for (int y = w1.y; y < w2.y; y++) {
-        for (int z = w1.z; z < w2.z; z++) {
+        for (int x = w1.x; x < w2.x; x++) {
           Tile tile = world.get(x, y, z);
-          boolean realTile =
-              x >= w1o.x && x < w2o.x &&
-              y >= w1o.y && y < w2o.y &&
-              z >= w1o.z && z < w2o.z;
           if (tile != Tile.AIR) {
+            boolean realTile =
+                x >= w1o.x && x < w2o.x &&
+                y >= w1o.y && y < w2o.y &&
+                z >= w1o.z && z < w2o.z;
             float color = world.getColor(x, y, z);
             if (world.get(x, y - 1, z) == Tile.AIR) {
               myMesh.addFace(
