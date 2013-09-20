@@ -1,6 +1,9 @@
 package fi.haju.haju3d.protocol;
 
 import java.io.Serializable;
+import java.util.List;
+
+import com.google.common.collect.Lists;
 
 public class Vector3i implements Serializable {
   private static final long serialVersionUID = 1L;
@@ -53,6 +56,21 @@ public class Vector3i implements Serializable {
 
   public Vector3i add(int x, int y, int z) {
     return new Vector3i(this.x + x, this.y + y, this.z + z);
+  }
+  
+  /**
+   * Returns 3x3x3 list of all positions around this position. (This vector is also included in the set)
+   */
+  public List<Vector3i> getSurroundingPositions() {
+    List<Vector3i> positions = Lists.newArrayList();
+    for (int x = -1; x < 2; x++) {
+      for (int y = -1; y < 2; y++) {
+        for (int z = -1; z < 2; z++) {
+          positions.add(this.add(x, y, z));
+        }
+      }
+    }
+    return positions;
   }
   
   @Override

@@ -25,8 +25,6 @@ import com.jme3.renderer.Camera;
 import com.jme3.renderer.queue.RenderQueue.ShadowMode;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Mesh;
-import com.jme3.scene.Spatial;
-import com.jme3.scene.shape.Box;
 import com.jme3.shadow.DirectionalLightShadowRenderer;
 import com.jme3.shadow.EdgeFilteringMode;
 import com.jme3.system.AppSettings;
@@ -53,7 +51,6 @@ import fi.haju.haju3d.protocol.world.World;
 public class ChunkRenderer extends SimpleApplication {
   private static final float scale = 1;
   private ChunkMeshBuilder builder;
-  private Spatial characterObject;
   private DirectionalLight light;
   private CloseEventHandler closeEventHandler;
   private ChunkProvider chunkProvider;
@@ -80,14 +77,22 @@ public class ChunkRenderer extends SimpleApplication {
 
   @Override
   public void simpleInitApp() {    
-    initInput();
     assetManager.registerLocator("assets", new ClasspathLocator().getClass());
     builder = new ChunkMeshBuilder();
     
+    setupInput();
+    setupCamera();
+    setupTextures();
+    setupLighting();
+  }
+
+  private void setupCamera() {
     getFlyByCamera().setMoveSpeed(20 * 2);
     getFlyByCamera().setRotationSpeed(3);
     getCamera().setLocation(getGlobalPosition(new Vector3i().add(32, 62, 62)));
-    
+  }
+
+  private void setupTextures() {
     Map<MyTexture, String> textureToFilename = new HashMap<>();
     if (useSimpleMesh) {
       textureToFilename.put(MyTexture.DIRT, "mc-dirt.png");
@@ -112,12 +117,9 @@ public class ChunkRenderer extends SimpleApplication {
     textures.setWrap(WrapMode.Repeat);
     textures.setMinFilter(MinFilter.BilinearNearestMipMap);
     textures.setAnisotropicFilter(4);
-    
-    setupLighting();
-    setupCharacter();
   }
 
-  private void initInput() {
+  private void setupInput() {
     inputManager.addMapping(InputActions.CHANGE_FULL_SCREEN, new KeyTrigger(KeyInput.KEY_F));
     inputManager.addListener(new ActionListener() {
       @Override
@@ -150,16 +152,8 @@ public class ChunkRenderer extends SimpleApplication {
       return;
     }
     meshed.add(chunkIndex);
-    List<Vector3i> positions = new ArrayList<>();
     // need 3x3 chunks around meshing area so that mesh borders can be handled correctly
-    for (int x = -1; x < 2; x++) {
-      for (int y = -1; y < 2; y++) {
-        for (int z = -1; z < 2; z++) {
-          positions.add(chunkIndex.add(x, y, z));
-        }
-      }
-    }
-    chunkProvider.requestChunks(positions, new ChunkProcessor() {
+    chunkProvider.requestChunks(chunkIndex.getSurroundingPositions(), new ChunkProcessor() {
       @Override
       public void chunksLoaded(List<Chunk> chunks) {
         for (Chunk c : chunks) {
@@ -168,15 +162,6 @@ public class ChunkRenderer extends SimpleApplication {
         setupChunkAsMesh(chunkIndex);
       }
     });
-  }
-
-
-  private void setupCharacter() {
-    Box characterMesh = new Box(1, 0.5f, 1);
-    characterObject = new Geometry("Character", characterMesh);
-    characterObject.setMaterial(makeColorMaterial(ColorRGBA.Red));
-    characterObject.setShadowMode(ShadowMode.CastAndReceive);
-    rootNode.attachChild(characterObject);
   }
 
   private void setupChunkAsMesh(Vector3i chunkIndex) {
@@ -217,22 +202,8 @@ public class ChunkRenderer extends SimpleApplication {
   }
   
 
-  private Material makeColorMaterial(ColorRGBA color) {
-    Material mat = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
-    mat.setBoolean("UseMaterialColors", true);
-    mat.setColor("Ambient", color);
-    mat.setColor("Diffuse", color);
-    return mat;
-  }
-
   private void setupLighting() {
-    Texture west = assetManager.loadTexture("fi/haju/haju3d/client/textures/sky9-left.jpg");
-    Texture east = assetManager.loadTexture("fi/haju/haju3d/client/textures/sky9-right.jpg");
-    Texture north = assetManager.loadTexture("fi/haju/haju3d/client/textures/sky9-front.jpg");
-    Texture south = assetManager.loadTexture("fi/haju/haju3d/client/textures/sky9-back.jpg");
-    Texture up = assetManager.loadTexture("fi/haju/haju3d/client/textures/sky9-top.jpg");
-    Texture down = assetManager.loadTexture("fi/haju/haju3d/client/textures/sky9-top.jpg");
-    rootNode.attachChild(SkyFactory.createSky(assetManager, west, east, north, south, up, down));
+    createSky();
     
     light = new DirectionalLight();
     Vector3f lightDir = new Vector3f(-0.9140114f, 0.29160172f, -0.2820493f).negate();
@@ -263,6 +234,16 @@ public class ChunkRenderer extends SimpleApplication {
     fpp.addFilter(filter);
 
     viewPort.addProcessor(fpp);
+  }
+
+  private void createSky() {
+    Texture west = assetManager.loadTexture("fi/haju/haju3d/client/textures/sky9-left.jpg");
+    Texture east = assetManager.loadTexture("fi/haju/haju3d/client/textures/sky9-right.jpg");
+    Texture north = assetManager.loadTexture("fi/haju/haju3d/client/textures/sky9-front.jpg");
+    Texture south = assetManager.loadTexture("fi/haju/haju3d/client/textures/sky9-back.jpg");
+    Texture up = assetManager.loadTexture("fi/haju/haju3d/client/textures/sky9-top.jpg");
+    Texture down = assetManager.loadTexture("fi/haju/haju3d/client/textures/sky9-top.jpg");
+    rootNode.attachChild(SkyFactory.createSky(assetManager, west, east, north, south, up, down));
   }
 
   @Override
