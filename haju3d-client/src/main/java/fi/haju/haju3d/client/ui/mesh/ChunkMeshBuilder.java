@@ -66,7 +66,7 @@ public class ChunkMeshBuilder {
   }
   
   
-  private static class NewMeshBuilder {
+  public static class NewMeshBuilder {
     private List<MyFace> realFaces;
     private FloatBuffer vertexes;
     private FloatBuffer vertexNormals;
