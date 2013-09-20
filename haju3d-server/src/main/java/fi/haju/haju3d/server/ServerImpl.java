@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
@@ -14,6 +15,8 @@ import org.apache.commons.lang3.SerializationException;
 import org.apache.commons.lang3.SerializationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.Lists;
 
 import fi.haju.haju3d.protocol.Client;
 import fi.haju.haju3d.protocol.Server;
@@ -156,6 +159,15 @@ public class ServerImpl implements Server {
       world.setChunk(position, newChunk);
       return newChunk;
     }
+  }
+
+  @Override
+  public List<Chunk> getChunks(Collection<Vector3i> positions) throws RemoteException {
+    List<Chunk> chunks = Lists.newArrayList();
+    for(Vector3i pos : positions) {
+      chunks.add(getChunk(pos));
+    }
+    return chunks;
   }
 
 }
