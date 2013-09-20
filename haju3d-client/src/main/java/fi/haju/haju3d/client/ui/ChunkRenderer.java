@@ -11,6 +11,9 @@ import java.util.concurrent.Callable;
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.TextureKey;
 import com.jme3.asset.plugins.ClasspathLocator;
+import com.jme3.input.KeyInput;
+import com.jme3.input.controls.ActionListener;
+import com.jme3.input.controls.KeyTrigger;
 import com.jme3.light.AmbientLight;
 import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
@@ -37,6 +40,7 @@ import com.jme3.util.SkyFactory;
 import fi.haju.haju3d.client.ChunkProcessor;
 import fi.haju.haju3d.client.ChunkProvider;
 import fi.haju.haju3d.client.CloseEventHandler;
+import fi.haju.haju3d.client.ui.input.InputActions;
 import fi.haju.haju3d.client.ui.mesh.ChunkMeshBuilder;
 import fi.haju.haju3d.client.ui.mesh.MyTexture;
 import fi.haju.haju3d.protocol.Vector3i;
@@ -58,23 +62,26 @@ public class ChunkRenderer extends SimpleApplication {
   private TextureArray textures;
   private Set<Vector3i> meshed = new HashSet<>();
   private boolean useSimpleMesh = false;
-
+  private boolean isFullScreen = false;
+  
   public ChunkRenderer(ChunkProvider chunkProvider) {
     this.chunkProvider = chunkProvider;
-    
+    setDisplayMode();
+  }
+
+  private void setDisplayMode() {
     AppSettings settings = new AppSettings(true);
-//    settings.setResolution(1024, 768);
     settings.setVSync(true);
     settings.setAudioRenderer(null);
-    settings.setFullscreen(false);
+    settings.setFullscreen(isFullScreen);
     setSettings(settings);
     setShowSettings(false);
   }
 
   @Override
-  public void simpleInitApp() {
+  public void simpleInitApp() {    
+    initInput();
     assetManager.registerLocator("assets", new ClasspathLocator().getClass());
-    
     builder = new ChunkMeshBuilder();
     
     getFlyByCamera().setMoveSpeed(20 * 2);
@@ -108,6 +115,18 @@ public class ChunkRenderer extends SimpleApplication {
     
     setupLighting();
     setupCharacter();
+  }
+
+  private void initInput() {
+    inputManager.addMapping(InputActions.CHANGE_FULL_SCREEN, new KeyTrigger(KeyInput.KEY_F));
+    inputManager.addListener(new ActionListener() {
+      @Override
+      public void onAction(String name, boolean keyPressed, float tpf) {
+        isFullScreen = !isFullScreen;
+        setDisplayMode();
+        restart();
+      }
+    }, InputActions.CHANGE_FULL_SCREEN);
   }
 
   private void updateWorldMesh() {
