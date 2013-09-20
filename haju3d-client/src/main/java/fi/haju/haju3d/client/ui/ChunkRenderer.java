@@ -17,7 +17,6 @@ import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector3f;
 import com.jme3.post.FilterPostProcessor;
-import com.jme3.post.filters.FogFilter;
 import com.jme3.post.filters.LightScatteringFilter;
 import com.jme3.renderer.Camera;
 import com.jme3.renderer.queue.RenderQueue.ShadowMode;
@@ -58,6 +57,7 @@ public class ChunkRenderer extends SimpleApplication {
   private World world = new World();
   private TextureArray textures;
   private Set<Vector3i> meshed = new HashSet<>();
+  private boolean useSimpleMesh = false;
 
   public ChunkRenderer(ChunkProvider chunkProvider) {
     this.chunkProvider = chunkProvider;
@@ -82,10 +82,17 @@ public class ChunkRenderer extends SimpleApplication {
     getCamera().setLocation(getGlobalPosition(new Vector3i().add(32, 62, 62)));
     
     Map<MyTexture, String> textureToFilename = new HashMap<>();
-    textureToFilename.put(MyTexture.DIRT, "mc-dirt.png");
-    textureToFilename.put(MyTexture.GRASS, "mc-grass.png");
-    textureToFilename.put(MyTexture.ROCK, "mc-rock.png");
-    textureToFilename.put(MyTexture.BRICK, "mc-brick.png");
+    if (useSimpleMesh) {
+      textureToFilename.put(MyTexture.DIRT, "mc-dirt.png");
+      textureToFilename.put(MyTexture.GRASS, "mc-grass.png");
+      textureToFilename.put(MyTexture.ROCK, "mc-rock.png");
+      textureToFilename.put(MyTexture.BRICK, "mc-brick.png");
+    } else {
+      textureToFilename.put(MyTexture.DIRT, "new-dirt.png");
+      textureToFilename.put(MyTexture.GRASS, "new-grass.png");
+      textureToFilename.put(MyTexture.ROCK, "new-rock.png");
+      textureToFilename.put(MyTexture.BRICK, "new-brick.png");
+    }
     
     List<Image> images = new ArrayList<Image>();
     for (MyTexture tex : MyTexture.values()) {
@@ -154,16 +161,20 @@ public class ChunkRenderer extends SimpleApplication {
   }
 
   private void setupChunkAsMesh(Vector3i chunkIndex) {
-    Mesh m = builder.makeMesh(world, chunkIndex);
+    Mesh m = builder.makeMesh(world, chunkIndex, useSimpleMesh);
     
     final Geometry groundObject = new Geometry("ColoredMesh", m);
     ColorRGBA color = ColorRGBA.White;
-    Material mat = new Material(assetManager, "fi/haju/haju3d/client/shaders/Lighting.j3md");
+    Material mat = new Material(assetManager,
+        useSimpleMesh ? "fi/haju/haju3d/client/shaders/Lighting.j3md" :
+          "fi/haju/haju3d/client/shaders/Terrain.j3md");
     mat.setBoolean("UseMaterialColors", true);
     mat.setTexture("DiffuseMap", textures);
     mat.setColor("Ambient", color);
     mat.setColor("Diffuse", color);
-    mat.setBoolean("UseVertexColor", true);
+    if (useSimpleMesh) {
+      mat.setBoolean("UseVertexColor", true);
+    }
     groundObject.setMaterial(mat);
     groundObject.setShadowMode(ShadowMode.CastAndReceive);
     enqueue(new Callable<Void>() {
