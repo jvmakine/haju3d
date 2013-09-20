@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,6 +16,7 @@ import com.jme3.scene.Mesh;
 import com.jme3.scene.VertexBuffer.Type;
 import com.jme3.util.BufferUtils;
 
+import fi.haju.haju3d.client.ui.mesh.MyMesh.MyFaceAndIndex;
 import fi.haju.haju3d.protocol.Vector3i;
 import fi.haju.haju3d.protocol.world.Tile;
 import fi.haju.haju3d.protocol.world.World;
@@ -46,71 +48,84 @@ public class ChunkMeshBuilder {
       face.normal = face.v2.v.subtract(face.v1.v).cross(face.v4.v.subtract(face.v1.v)).normalize();
     }
     
-    Map<MyVertex, Vector3f> vertexToNormal = new HashMap<>();
-    for (MyFace face : realFaces) {
-      calcVertexNormal(myMesh.vertexFaces, vertexToNormal, face.v1);
-      calcVertexNormal(myMesh.vertexFaces, vertexToNormal, face.v2);
-      calcVertexNormal(myMesh.vertexFaces, vertexToNormal, face.v3);
-      calcVertexNormal(myMesh.vertexFaces, vertexToNormal, face.v4);
-    }
-    
-    FloatBuffer vertexes = BufferUtils.createFloatBuffer(realFaces.size() * 4 * 3);
-    FloatBuffer vertexNormals = BufferUtils.createFloatBuffer(realFaces.size() * 4 * 3);
-    FloatBuffer textures = BufferUtils.createFloatBuffer(realFaces.size() * 4 * 3);
-    IntBuffer indexes = BufferUtils.createIntBuffer(realFaces.size() * 6);
-    FloatBuffer colors = BufferUtils.createFloatBuffer(realFaces.size() * 4 * 4);
-    
-    int i = 0;
-    for (MyFace face : realFaces) {
-      putVector(vertexes, face.v1.v);
-      putVector(vertexes, face.v2.v);
-      putVector(vertexes, face.v3.v);
-      putVector(vertexes, face.v4.v);
-      
-      if (face.texture == MyTexture.BRICK) {
-        putVector(vertexNormals, face.normal);
-        putVector(vertexNormals, face.normal);
-        putVector(vertexNormals, face.normal);
-        putVector(vertexNormals, face.normal);
-      } else {
-        putVector(vertexNormals, vertexToNormal.get(face.v1));
-        putVector(vertexNormals, vertexToNormal.get(face.v2));
-        putVector(vertexNormals, vertexToNormal.get(face.v3));
-        putVector(vertexNormals, vertexToNormal.get(face.v4));
-      }
-      
-      int ti = face.texture.ordinal();
-      textures.put(0).put(0).put(ti);
-      textures.put(0).put(1).put(ti);
-      textures.put(1).put(1).put(ti);
-      textures.put(1).put(0).put(ti);
-      
-      indexes.put(i + 0).put(i + 1).put(i + 3);
-      indexes.put(i + 1).put(i + 2).put(i + 3);
-      
-      float col = face.color;
-      colors.put(col).put(col).put(1).put(1);
-      colors.put(col).put(col).put(1).put(1);
-      colors.put(col).put(col).put(1).put(1);
-      colors.put(col).put(col).put(1).put(1);
-      
-      i += 4;
-    }
-
-    Mesh m = new Mesh();
-    m.setBuffer(Type.Position, 3, vertexes);
-    m.setBuffer(Type.Normal, 3, vertexNormals);
-    m.setBuffer(Type.TexCoord, 3, textures);
-    m.setBuffer(Type.Index, 1, indexes);
-    m.setBuffer(Type.Color, 4, colors);
-    
-    m.updateBound();
-    
-    return m;
+    return new SimpleMeshBuilder(myMesh, realFaces).build();
   }
   
-  private void calcVertexNormal(
-      Map<MyVertex, List<MyFace>> vertexFaces,
+  private static class SimpleMeshBuilder {
+    private List<MyFace> realFaces;
+    private MyMesh myMesh;
+
+    public SimpleMeshBuilder(MyMesh myMesh, List<MyFace> realFaces) {
+      this.myMesh = myMesh;
+      this.realFaces = realFaces;
+    }
+    
+    public Mesh build() {
+      Map<MyVertex, Vector3f> vertexToNormal = new HashMap<>();
+      for (MyFace face : realFaces) {
+        calcVertexNormal(myMesh.vertexFaces, vertexToNormal, face.v1);
+        calcVertexNormal(myMesh.vertexFaces, vertexToNormal, face.v2);
+        calcVertexNormal(myMesh.vertexFaces, vertexToNormal, face.v3);
+        calcVertexNormal(myMesh.vertexFaces, vertexToNormal, face.v4);
+      }
+      
+      FloatBuffer vertexes = BufferUtils.createFloatBuffer(realFaces.size() * 4 * 3);
+      FloatBuffer vertexNormals = BufferUtils.createFloatBuffer(realFaces.size() * 4 * 3);
+      FloatBuffer textures = BufferUtils.createFloatBuffer(realFaces.size() * 4 * 3);
+      IntBuffer indexes = BufferUtils.createIntBuffer(realFaces.size() * 6);
+      FloatBuffer colors = BufferUtils.createFloatBuffer(realFaces.size() * 4 * 4);
+      
+      int i = 0;
+      for (MyFace face : realFaces) {
+        putVector(vertexes, face.v1.v);
+        putVector(vertexes, face.v2.v);
+        putVector(vertexes, face.v3.v);
+        putVector(vertexes, face.v4.v);
+        
+        if (face.texture == MyTexture.BRICK) {
+          putVector(vertexNormals, face.normal);
+          putVector(vertexNormals, face.normal);
+          putVector(vertexNormals, face.normal);
+          putVector(vertexNormals, face.normal);
+        } else {
+          putVector(vertexNormals, vertexToNormal.get(face.v1));
+          putVector(vertexNormals, vertexToNormal.get(face.v2));
+          putVector(vertexNormals, vertexToNormal.get(face.v3));
+          putVector(vertexNormals, vertexToNormal.get(face.v4));
+        }
+        
+        int ti = face.texture.ordinal();
+        textures.put(0).put(0).put(ti);
+        textures.put(0).put(1).put(ti);
+        textures.put(1).put(1).put(ti);
+        textures.put(1).put(0).put(ti);
+        
+        indexes.put(i + 0).put(i + 1).put(i + 3);
+        indexes.put(i + 1).put(i + 2).put(i + 3);
+        
+        float col = face.color;
+        colors.put(col).put(col).put(1).put(1);
+        colors.put(col).put(col).put(1).put(1);
+        colors.put(col).put(col).put(1).put(1);
+        colors.put(col).put(col).put(1).put(1);
+        
+        i += 4;
+      }
+
+      Mesh m = new Mesh();
+      m.setBuffer(Type.Position, 3, vertexes);
+      m.setBuffer(Type.Normal, 3, vertexNormals);
+      m.setBuffer(Type.TexCoord, 3, textures);
+      m.setBuffer(Type.Index, 1, indexes);
+      m.setBuffer(Type.Color, 4, colors);
+      
+      m.updateBound();
+      return m;
+    }
+  }
+  
+  private static void calcVertexNormal(
+      Map<MyVertex, List<MyFaceAndIndex>> vertexFaces,
       Map<MyVertex, Vector3f> vertexToNormal,
       MyVertex v1) {
     
@@ -119,9 +134,8 @@ public class ChunkMeshBuilder {
     }
     
     Vector3f sum = Vector3f.ZERO.clone();
-    List<MyFace> faces = vertexFaces.get(v1);
-    for (MyFace f : faces) {
-      sum.addLocal(f.normal);
+    for (MyFaceAndIndex f : vertexFaces.get(v1)) {
+      sum.addLocal(f.face.normal);
     }
     sum.normalizeLocal();
     
@@ -141,6 +155,8 @@ public class ChunkMeshBuilder {
     Vector3i w1 = w1o.add(-SMOOTH_BUFFER, -SMOOTH_BUFFER, -SMOOTH_BUFFER);
     Vector3i w2 = w2o.add(SMOOTH_BUFFER, SMOOTH_BUFFER, SMOOTH_BUFFER);
     
+    Random r = new Random(0L);
+    
     for (int z = w1.z; z < w2.z; z++) {
       for (int y = w1.y; y < w2.y; y++) {
         for (int x = w1.x; x < w2.x; x++) {
@@ -158,7 +174,8 @@ public class ChunkMeshBuilder {
                   new Vector3f(x + 1, y, z + 1),
                   new Vector3f(x, y, z + 1),
                   bottomTexture(tile), color,
-                  realTile);
+                  realTile,
+                  r.nextInt());
             }
             if (world.get(x, y + 1, z) == Tile.AIR) {
               myMesh.addFace(
@@ -167,7 +184,8 @@ public class ChunkMeshBuilder {
                   new Vector3f(x + 1, y + 1, z),
                   new Vector3f(x, y + 1, z),
                   topTexture(tile), color,
-                  realTile);
+                  realTile,
+                  r.nextInt());
             }
             if (world.get(x - 1, y, z) == Tile.AIR) {
               myMesh.addFace(
@@ -176,7 +194,8 @@ public class ChunkMeshBuilder {
                   new Vector3f(x, y + 1, z),
                   new Vector3f(x, y, z),
                   sideTexture(tile), color,
-                  realTile);
+                  realTile,
+                  r.nextInt());
             }
             if (world.get(x + 1, y, z) == Tile.AIR) {
               myMesh.addFace(
@@ -185,7 +204,8 @@ public class ChunkMeshBuilder {
                   new Vector3f(x + 1, y + 1, z + 1),
                   new Vector3f(x + 1, y, z + 1),
                   sideTexture(tile), color,
-                  realTile);
+                  realTile,
+                  r.nextInt());
             }
             if (world.get(x, y, z - 1) == Tile.AIR) {
               myMesh.addFace(
@@ -194,7 +214,8 @@ public class ChunkMeshBuilder {
                   new Vector3f(x + 1, y + 1, z),
                   new Vector3f(x + 1, y, z),
                   sideTexture(tile), color,
-                  realTile);
+                  realTile,
+                  r.nextInt());
             }
             if (world.get(x, y, z + 1) == Tile.AIR) {
               myMesh.addFace(
@@ -203,7 +224,8 @@ public class ChunkMeshBuilder {
                   new Vector3f(x, y + 1, z + 1),
                   new Vector3f(x, y, z + 1),
                   sideTexture(tile), color,
-                  realTile);
+                  realTile,
+                  r.nextInt());
             }
           }
         }
@@ -254,13 +276,16 @@ public class ChunkMeshBuilder {
   private static void smoothMesh(MyMesh myMesh) {
     for (int i = 0; i < SMOOTH_BUFFER; i++) {
       Map<MyVertex, Vector3f> newPos = new HashMap<>();
-      for (Map.Entry<MyVertex, List<MyFace>> e : myMesh.vertexFaces.entrySet()) {
+      for (MyFace f : myMesh.faces) {
+        f.calcCenter();
+      }
+      for (Map.Entry<MyVertex, List<MyFaceAndIndex>> e : myMesh.vertexFaces.entrySet()) {
         Vector3f sum = Vector3f.ZERO.clone();
-        List<MyFace> faces = e.getValue();
+        List<MyFaceAndIndex> faces = e.getValue();
         boolean hasBrick = false;
-        for (MyFace f : faces) {
-          sum.addLocal(f.getCenter());
-          hasBrick = hasBrick | (f.texture == MyTexture.BRICK);
+        for (MyFaceAndIndex f : faces) {
+          sum.addLocal(f.face.getCenter());
+          hasBrick = hasBrick | (f.face.texture == MyTexture.BRICK);
         }
         sum.divideLocal(faces.size());
         if (!hasBrick) {

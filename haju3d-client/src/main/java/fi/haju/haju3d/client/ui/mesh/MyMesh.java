@@ -7,38 +7,46 @@ import java.util.Map;
 
 import com.jme3.math.Vector3f;
 
-class MyMesh {
+public class MyMesh {
   private Map<Vector3f, MyVertex> vectorToVertex = new HashMap<>();
-  Map<MyVertex, List<MyFace>> vertexFaces = new HashMap<>();
-  List<MyFace> faces = new ArrayList<>();
+  public Map<MyVertex, List<MyFaceAndIndex>> vertexFaces = new HashMap<>();
+  public List<MyFace> faces = new ArrayList<>();
+  
+  public static class MyFaceAndIndex {
+    public MyFace face;
+    public int index;
+  }
 
   public void addFace(
       Vector3f v1, Vector3f v2, Vector3f v3, Vector3f v4,
-      MyTexture texture, float color, boolean realTile) {
-    MyFace face = new MyFace(getVertex(v1), getVertex(v2), getVertex(v3), getVertex(v4), texture, color, realTile);
+      MyTexture texture, float color, boolean realTile, int zIndex) {
+    MyFace face = new MyFace(getVertex(v1), getVertex(v2), getVertex(v3), getVertex(v4), texture, color, realTile, zIndex);
 
-    addVertexFace(face, face.v1);
-    addVertexFace(face, face.v2);
-    addVertexFace(face, face.v3);
-    addVertexFace(face, face.v4);
+    addVertexFace(face, face.v1, 1);
+    addVertexFace(face, face.v2, 2);
+    addVertexFace(face, face.v3, 3);
+    addVertexFace(face, face.v4, 4);
     faces.add(face);
   }
 
-  private MyVertex getVertex(Vector3f v1) {
-    MyVertex v = vectorToVertex.get(v1);
+  private MyVertex getVertex(Vector3f vect) {
+    MyVertex v = vectorToVertex.get(vect);
     if (v == null) {
-      v = new MyVertex(v1);
-      vectorToVertex.put(v1, v);
+      v = new MyVertex(vect);
+      vectorToVertex.put(vect, v);
     }
     return v;
   }
 
-  private void addVertexFace(MyFace face, MyVertex v1) {
-    List<MyFace> faces = vertexFaces.get(v1);
+  private void addVertexFace(MyFace face, MyVertex vertex, int vertexIndex) {
+    List<MyFaceAndIndex> faces = vertexFaces.get(vertex);
     if (faces == null) {
       faces = new ArrayList<>(5);
-      vertexFaces.put(v1, faces);
+      vertexFaces.put(vertex, faces);
     }
-    faces.add(face);
+    MyFaceAndIndex fi = new MyFaceAndIndex();
+    fi.face = face;
+    fi.index = vertexIndex;
+    faces.add(fi);
   }
 }
