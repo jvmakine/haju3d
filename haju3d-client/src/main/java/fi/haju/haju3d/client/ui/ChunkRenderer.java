@@ -30,10 +30,12 @@ import com.jme3.shadow.EdgeFilteringMode;
 import com.jme3.system.AppSettings;
 import com.jme3.texture.Image;
 import com.jme3.texture.Texture;
+import com.jme3.texture.Texture2D;
 import com.jme3.texture.Texture.MinFilter;
 import com.jme3.texture.Texture.WrapMode;
 import com.jme3.texture.TextureArray;
 import com.jme3.util.SkyFactory;
+import com.jme3.water.WaterFilter;
 
 import fi.haju.haju3d.client.ChunkProcessor;
 import fi.haju.haju3d.client.ChunkProvider;
@@ -68,6 +70,7 @@ public class ChunkRenderer extends SimpleApplication {
 
   private void setDisplayMode() {
     AppSettings settings = new AppSettings(true);
+//    settings.setResolution(1280, 720);
     settings.setVSync(true);
     settings.setAudioRenderer(null);
     settings.setFullscreen(isFullScreen);
@@ -76,7 +79,7 @@ public class ChunkRenderer extends SimpleApplication {
   }
 
   @Override
-  public void simpleInitApp() {    
+  public void simpleInitApp() {
     assetManager.registerLocator("assets", new ClasspathLocator().getClass());
     builder = new ChunkMeshBuilder();
     
@@ -232,6 +235,18 @@ public class ChunkRenderer extends SimpleApplication {
     filter.setLightDensity(1.2f);
     filter.setBlurWidth(1.5f);
     fpp.addFilter(filter);
+
+    WaterFilter water = new WaterFilter(rootNode, lightDir);
+    water.setCenter(new Vector3f(319.6663f, -18.367947f, -236.67674f));
+    water.setRadius(26000);
+    water.setWaterHeight(14);
+    water.setWaveScale(0.01f);
+    water.setSpeed(0.4f);
+    water.setMaxAmplitude(1.0f);
+    water.setFoamExistence(new Vector3f(1f, 4, 0.5f).mult(0.2f));
+    water.setFoamTexture((Texture2D) assetManager.loadTexture("Common/MatDefs/Water/Textures/foam2.jpg"));
+    water.setRefractionStrength(0.1f);
+    fpp.addFilter(water);
 
     viewPort.addProcessor(fpp);
   }

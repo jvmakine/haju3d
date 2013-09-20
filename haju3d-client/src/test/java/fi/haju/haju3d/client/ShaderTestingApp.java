@@ -54,7 +54,7 @@ public class ShaderTestingApp extends SimpleApplication {
     textureToFilename.put(MyTexture.DIRT, "new-dirt.png");
     textureToFilename.put(MyTexture.GRASS, "new-grass.png");
     textureToFilename.put(MyTexture.ROCK, "new-rock.png");
-    textureToFilename.put(MyTexture.BRICK, "new-rock.png");
+    textureToFilename.put(MyTexture.BRICK, "new-brick.png");
     
     List<Image> images = new ArrayList<Image>();
     for (MyTexture tex : MyTexture.values()) {
