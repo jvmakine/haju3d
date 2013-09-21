@@ -1,12 +1,5 @@
 package fi.haju.haju3d.client.ui;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
-
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.plugins.ClasspathLocator;
 import com.jme3.input.KeyInput;
@@ -19,9 +12,7 @@ import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector3f;
 import com.jme3.post.FilterPostProcessor;
 import com.jme3.post.filters.LightScatteringFilter;
-import com.jme3.renderer.Camera;
 import com.jme3.scene.Node;
-import com.jme3.scene.Spatial;
 import com.jme3.shadow.DirectionalLightShadowRenderer;
 import com.jme3.shadow.EdgeFilteringMode;
 import com.jme3.system.AppSettings;
@@ -30,13 +21,11 @@ import com.jme3.texture.Texture2D;
 import com.jme3.util.SkyFactory;
 import com.jme3.water.WaterFilter;
 
-import fi.haju.haju3d.client.ChunkProcessor;
 import fi.haju.haju3d.client.ChunkProvider;
 import fi.haju.haju3d.client.CloseEventHandler;
 import fi.haju.haju3d.client.ui.input.InputActions;
 import fi.haju.haju3d.client.ui.mesh.ChunkMeshBuilder;
 import fi.haju.haju3d.protocol.Vector3i;
-import fi.haju.haju3d.protocol.world.Chunk;
 import fi.haju.haju3d.protocol.world.World;
 
 /**
@@ -52,11 +41,9 @@ public class ChunkRenderer extends SimpleApplication {
   enum ChunkSpatialType { LOW_QUALITY, HIGH_QUALITY }
   
   private World world = new World();
-  private Set<Vector3i> meshed = new HashSet<>();
-  private Map<Vector3i, ChunkSpatial> chunkSpatials = new ConcurrentHashMap<>();
-  private Map<Vector3i, ChunkSpatialType> chunkSpatialTypeShown = new ConcurrentHashMap<>();
   private boolean isFullScreen = false;
   private Node terrainNode = new Node("terrain");
+  private WorldBuilder worldBuilder;
   
   public ChunkRenderer(ChunkProvider chunkProvider) {
     this.chunkProvider = chunkProvider;
@@ -76,7 +63,9 @@ public class ChunkRenderer extends SimpleApplication {
   @Override
   public void simpleInitApp() {
     assetManager.registerLocator("assets", new ClasspathLocator().getClass());
-    builder = new ChunkMeshBuilder(assetManager);
+    this.builder = new ChunkMeshBuilder(assetManager);
+    this.worldBuilder = new WorldBuilder(world, chunkProvider, builder);
+    new Thread(worldBuilder).start();
     
     setupInput();
     setupCamera();
@@ -106,17 +95,7 @@ public class ChunkRenderer extends SimpleApplication {
   }
 
   private void updateWorldMesh() {
-    Camera camera = getCamera();
-    Vector3f camLoc = camera.getLocation();
-    Vector3f camDir = camera.getDirection().mult(80);
-    Vector3f camLeft = camera.getLeft().mult(30);
-    Vector3f camUp = camera.getUp().mult(30);
-    loadWorldMeshForLocation(camLoc);
-    loadWorldMeshForLocation(camLoc.add(camDir));
-    loadWorldMeshForLocation(camLoc.add(camDir).add(camLeft));
-    loadWorldMeshForLocation(camLoc.add(camDir).subtract(camLeft));
-    loadWorldMeshForLocation(camLoc.add(camDir).add(camUp));
-    loadWorldMeshForLocation(camLoc.add(camDir).subtract(camUp));
+    worldBuilder.setPosition(world.getChunkIndex(getWorldPosition(getCamera().getLocation())));
   }
   
   private void updateChunkSpatialVisibility() {
@@ -127,30 +106,11 @@ public class ChunkRenderer extends SimpleApplication {
     terrainNode.detachAllChildren();
     
     for (Vector3i pos : chunkIndex.getSurroundingPositions(2, 2, 2)) {
-      ChunkSpatial cs = chunkSpatials.get(pos);
+      ChunkSpatial cs = worldBuilder.getChunkSpatial(pos);
       if (cs != null) {
         terrainNode.attachChild(pos.equals(chunkIndex) ? cs.highDetail : cs.lowDetail);
       }
     }
-  }
-
-  private void loadWorldMeshForLocation(Vector3f location) {
-    Vector3i worldPosition = getWorldPosition(location);
-    final Vector3i chunkIndex = world.getChunkIndex(worldPosition);
-    if (meshed.contains(chunkIndex)) {
-      return;
-    }
-    meshed.add(chunkIndex);
-    // need 3x3 chunks around meshing area so that mesh borders can be handled correctly
-    chunkProvider.requestChunks(chunkIndex.getSurroundingPositions(), new ChunkProcessor() {
-      @Override
-      public void chunksLoaded(List<Chunk> chunks) {
-        for (Chunk c : chunks) {
-          world.setChunk(c.getPosition(), c);
-        }
-        chunkSpatials.put(chunkIndex, builder.makeSpatials(world, chunkIndex));
-      }
-    });
   }
 
   public Vector3f getGlobalPosition(Vector3i worldPosition) {
@@ -230,6 +190,9 @@ public class ChunkRenderer extends SimpleApplication {
   @Override
   public void destroy() {
     super.destroy();
+    if (this.worldBuilder != null) {
+      this.worldBuilder.stop();
+    }
     if (closeEventHandler != null) {
       this.closeEventHandler.onClose();
     }

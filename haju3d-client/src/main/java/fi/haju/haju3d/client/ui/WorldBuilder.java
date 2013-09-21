@@ -1,0 +1,94 @@
+package fi.haju.haju3d.client.ui;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import fi.haju.haju3d.client.ChunkProvider;
+import fi.haju.haju3d.client.ui.mesh.ChunkMeshBuilder;
+import fi.haju.haju3d.protocol.Vector3i;
+import fi.haju.haju3d.protocol.world.Chunk;
+import fi.haju.haju3d.protocol.world.World;
+
+public class WorldBuilder implements Runnable {
+  private World world;
+  private ChunkProvider chunkProvider;
+  private ChunkMeshBuilder builder;
+  
+  private Set<Vector3i> meshed = new HashSet<>();
+  private Map<Vector3i, ChunkSpatial> chunkSpatials = new ConcurrentHashMap<>();
+  
+  private AtomicBoolean running = new AtomicBoolean(true);
+  private Object lock = new Object();
+  private transient Vector3i position;
+  
+  public WorldBuilder(World world, ChunkProvider chunkProvider, ChunkMeshBuilder builder) {
+    this.world = world;
+    this.chunkProvider = chunkProvider;
+    this.builder = builder;
+  }
+  
+  @Override
+  public void run() {
+    while (running.get()) {
+//      synchronized (lock) {
+//        try {
+//          lock.wait();
+//        } catch (InterruptedException e) {
+//          throw new RuntimeException(e);
+//        }
+//      }
+      if (position != null) {
+        makeChunkNearPosition(position);
+      }
+    }
+  }
+  
+  private void makeChunkNearPosition(Vector3i centerChunkIndex) {
+    List<Vector3i> indexes = new ArrayList<>();
+    indexes.add(centerChunkIndex);
+    indexes.addAll(centerChunkIndex.getSurroundingPositions(1, 1, 1));
+    indexes.addAll(centerChunkIndex.getSurroundingPositions(2, 2, 2));
+    for (Vector3i i : indexes) {
+      if (meshed.contains(i)) {
+        continue;
+      }
+      meshed.add(i);
+      makeChunkAt(i);
+      break;
+    }
+  }
+
+  private void makeChunkAt(Vector3i chunkIndex) {
+    // need 3x3 chunks around meshing area so that mesh borders can be handled correctly
+    List<Chunk> chunks = chunkProvider.getChunks(chunkIndex.getSurroundingPositions());
+    for (Chunk c : chunks) {
+      world.setChunk(c.getPosition(), c);
+    }
+    chunkSpatials.put(chunkIndex, builder.makeSpatials(world, chunkIndex));
+  }
+
+  public void setPosition(Vector3i position) {
+    this.position = position;
+    synchronized (lock) {
+      lock.notify();
+    }
+  }
+  
+  public void stop() {
+    running.set(false);
+    synchronized (lock) {
+      lock.notify();
+    }
+  }
+
+  public ChunkSpatial getChunkSpatial(Vector3i pos) {
+    return chunkSpatials.get(pos);
+  }
+
+
+}

@@ -1,12 +1,9 @@
 package fi.haju.haju3d.client;
 
 import java.rmi.RemoteException;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
@@ -25,43 +22,26 @@ public class ChunkProvider {
     
   private final Server server;
   private Map<Vector3i, Chunk> chunkCache = new ConcurrentHashMap<Vector3i, Chunk>();
-  private Set<List<Vector3i>> requests = Collections.newSetFromMap(new ConcurrentHashMap<List<Vector3i>, Boolean>());
   
   public ChunkProvider(Server server) {
     this.server = server;
   }
-  
-  public void requestChunks(final List<Vector3i> positions, final ChunkProcessor processor) {
-    LOGGER.info("Requested " + positions);
-    
-    requests.add(positions);
-    new Thread(new Runnable() {
-      @Override
-      public void run() {
-        List<Chunk> chunks = new ArrayList<>();
-        chunks.addAll(getChunks(positions));
-        processor.chunksLoaded(chunks);
-        requests.remove(positions);
-      }
-    }).start();
-  }
-  
-  public boolean hasChunk(Vector3i position) {
-    if(requests.contains(position)) {
-      return true;
-    }
-    return chunkCache.containsKey(position);
-  }
-  
-  private List<Chunk> getChunks(List<Vector3i> positions) {
+
+  public List<Chunk> getChunks(List<Vector3i> positions) {
     Collection<Vector3i> newPositions = Collections2.filter(positions, new Predicate<Vector3i>() {
+      @Override
       public boolean apply(Vector3i v) {
         return !chunkCache.containsKey(v);
       }
     });
     if(!newPositions.isEmpty()) {
       try {
-        return server.getChunks(Lists.newArrayList(newPositions));
+        LOGGER.info("Requested " + newPositions);
+        List<Chunk> chunks = server.getChunks(Lists.newArrayList(newPositions));
+        for (Chunk c : chunks) {
+          chunkCache.put(c.getPosition(), c);
+        }
+        return chunks;
       } catch (RemoteException e) {
         throw new RuntimeException(e);
       }
