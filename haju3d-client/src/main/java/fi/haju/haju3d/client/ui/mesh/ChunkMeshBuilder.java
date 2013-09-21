@@ -13,9 +13,20 @@ import java.util.Random;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.jme3.asset.AssetManager;
+import com.jme3.asset.TextureKey;
+import com.jme3.material.Material;
+import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector3f;
+import com.jme3.renderer.queue.RenderQueue.ShadowMode;
+import com.jme3.scene.Geometry;
 import com.jme3.scene.Mesh;
+import com.jme3.scene.Spatial;
 import com.jme3.scene.VertexBuffer.Type;
+import com.jme3.texture.Image;
+import com.jme3.texture.TextureArray;
+import com.jme3.texture.Texture.MinFilter;
+import com.jme3.texture.Texture.WrapMode;
 import com.jme3.util.BufferUtils;
 
 import fi.haju.haju3d.client.ui.mesh.MyMesh.MyFaceAndIndex;
@@ -26,8 +37,59 @@ import fi.haju.haju3d.protocol.world.World;
 public class ChunkMeshBuilder {
   private static final int SMOOTH_BUFFER = 3;
   private static final Logger LOGGER = LoggerFactory.getLogger(ChunkMeshBuilder.class);
+  private Material lowMaterial;
+  private Material highMaterial;
   
-  public ChunkMeshBuilder() {
+  public ChunkMeshBuilder(AssetManager assetManager) {
+    Map<MyTexture, String> textureToFilename = new HashMap<>();
+    textureToFilename.put(MyTexture.DIRT, "new-dirt.png");
+    textureToFilename.put(MyTexture.GRASS, "new-grass.png");
+    textureToFilename.put(MyTexture.ROCK, "new-rock.png");
+    textureToFilename.put(MyTexture.BRICK, "new-brick.png");
+    
+    List<Image> images = new ArrayList<Image>();
+    for (MyTexture tex : MyTexture.values()) {
+      String textureResource = "fi/haju/haju3d/client/textures/" + textureToFilename.get(tex);
+      TextureKey key = new TextureKey(textureResource);
+      key.setGenerateMips(true);
+      images.add(assetManager.loadTexture(key).getImage());
+    }
+    TextureArray textures = new TextureArray(images);
+    textures.setWrap(WrapMode.Repeat);
+    textures.setMinFilter(MinFilter.BilinearNearestMipMap);
+    textures.setAnisotropicFilter(4);
+    
+    this.lowMaterial = makeMaterial(assetManager, textures, "fi/haju/haju3d/client/shaders/Lighting.j3md");
+    this.highMaterial = makeMaterial(assetManager, textures, "fi/haju/haju3d/client/shaders/Terrain.j3md");
+  }
+
+  private Material makeMaterial(AssetManager assetManager, TextureArray textures, String materialFile) {
+    Material mat = new Material(assetManager, materialFile);
+    mat.setBoolean("UseMaterialColors", true);
+    mat.setTexture("DiffuseMap", textures);
+    mat.setColor("Ambient", ColorRGBA.White);
+    mat.setColor("Diffuse", ColorRGBA.White);
+    return mat;
+  }
+  
+  public static class LodSpatial {
+    public Spatial lowDetail;
+    public Spatial highDetail;
+  }
+  
+  public LodSpatial makeSpatials(World world, Vector3i chunkIndex) {
+    LodSpatial lodSpatial = new LodSpatial();
+    lodSpatial.lowDetail = makeSpatial(world, chunkIndex, true);
+    lodSpatial.highDetail = makeSpatial(world, chunkIndex, false);
+    return lodSpatial;
+  }
+  
+  public Spatial makeSpatial(World world, Vector3i chunkIndex, boolean useSimpleMesh) {
+    Mesh m = makeMesh(world, chunkIndex, useSimpleMesh);
+    final Geometry groundObject = new Geometry("ColoredMesh", m);
+    groundObject.setMaterial(useSimpleMesh ? lowMaterial : highMaterial);
+    groundObject.setShadowMode(ShadowMode.CastAndReceive);
+    return groundObject;
   }
   
   public Mesh makeMesh(World world, Vector3i chunkIndex, boolean useSimpleMesh) {
@@ -250,11 +312,9 @@ public class ChunkMeshBuilder {
   
   private static class SimpleMeshBuilder {
     private List<MyFace> realFaces;
-    private MyMesh myMesh;
     private Map<MyVertex, Vector3f> vertexToNormal = new HashMap<>();
     
     public SimpleMeshBuilder(MyMesh myMesh, List<MyFace> realFaces) {
-      this.myMesh = myMesh;
       this.realFaces = realFaces;
       for (MyFace face : realFaces) {
         calcVertexNormal(myMesh.vertexFaces, vertexToNormal, face.v1);
@@ -292,10 +352,10 @@ public class ChunkMeshBuilder {
         }
         
         int ti = face.texture.ordinal();
-        textures.put(0).put(0).put(ti);
-        textures.put(0).put(1).put(ti);
-        textures.put(1).put(1).put(ti);
-        textures.put(1).put(0).put(ti);
+        textures.put(0.25f).put(0.25f).put(ti);
+        textures.put(0.25f).put(0.75f).put(ti);
+        textures.put(0.75f).put(0.75f).put(ti);
+        textures.put(0.75f).put(0.25f).put(ti);
         
         indexes.put(i + 0).put(i + 1).put(i + 3);
         indexes.put(i + 1).put(i + 2).put(i + 3);
@@ -314,7 +374,7 @@ public class ChunkMeshBuilder {
       m.setBuffer(Type.Normal, 3, vertexNormals);
       m.setBuffer(Type.TexCoord, 3, textures);
       m.setBuffer(Type.Index, 1, indexes);
-      m.setBuffer(Type.Color, 4, colors);
+//      m.setBuffer(Type.Color, 4, colors);
       
       m.updateBound();
       return m;

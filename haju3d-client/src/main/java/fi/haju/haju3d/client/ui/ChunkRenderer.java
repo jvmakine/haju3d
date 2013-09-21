@@ -1,15 +1,11 @@
 package fi.haju.haju3d.client.ui;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 
 import com.jme3.app.SimpleApplication;
-import com.jme3.asset.TextureKey;
 import com.jme3.asset.plugins.ClasspathLocator;
 import com.jme3.input.KeyInput;
 import com.jme3.input.controls.ActionListener;
@@ -22,18 +18,12 @@ import com.jme3.math.Vector3f;
 import com.jme3.post.FilterPostProcessor;
 import com.jme3.post.filters.LightScatteringFilter;
 import com.jme3.renderer.Camera;
-import com.jme3.renderer.queue.RenderQueue.ShadowMode;
-import com.jme3.scene.Geometry;
-import com.jme3.scene.Mesh;
+import com.jme3.scene.Spatial;
 import com.jme3.shadow.DirectionalLightShadowRenderer;
 import com.jme3.shadow.EdgeFilteringMode;
 import com.jme3.system.AppSettings;
-import com.jme3.texture.Image;
 import com.jme3.texture.Texture;
 import com.jme3.texture.Texture2D;
-import com.jme3.texture.Texture.MinFilter;
-import com.jme3.texture.Texture.WrapMode;
-import com.jme3.texture.TextureArray;
 import com.jme3.util.SkyFactory;
 import com.jme3.water.WaterFilter;
 
@@ -42,7 +32,7 @@ import fi.haju.haju3d.client.ChunkProvider;
 import fi.haju.haju3d.client.CloseEventHandler;
 import fi.haju.haju3d.client.ui.input.InputActions;
 import fi.haju.haju3d.client.ui.mesh.ChunkMeshBuilder;
-import fi.haju.haju3d.client.ui.mesh.MyTexture;
+import fi.haju.haju3d.client.ui.mesh.ChunkMeshBuilder.LodSpatial;
 import fi.haju.haju3d.protocol.Vector3i;
 import fi.haju.haju3d.protocol.world.Chunk;
 import fi.haju.haju3d.protocol.world.World;
@@ -58,7 +48,6 @@ public class ChunkRenderer extends SimpleApplication {
   private ChunkProvider chunkProvider;
   
   private World world = new World();
-  private TextureArray textures;
   private Set<Vector3i> meshed = new HashSet<>();
   private boolean useSimpleMesh = false;
   private boolean isFullScreen = false;
@@ -81,11 +70,10 @@ public class ChunkRenderer extends SimpleApplication {
   @Override
   public void simpleInitApp() {
     assetManager.registerLocator("assets", new ClasspathLocator().getClass());
-    builder = new ChunkMeshBuilder();
+    builder = new ChunkMeshBuilder(assetManager);
     
     setupInput();
     setupCamera();
-    setupTextures();
     setupLighting();
   }
 
@@ -94,33 +82,8 @@ public class ChunkRenderer extends SimpleApplication {
     getFlyByCamera().setRotationSpeed(3);
     getCamera().setLocation(getGlobalPosition(new Vector3i().add(32, 62, 62)));
   }
-
-  private void setupTextures() {
-    Map<MyTexture, String> textureToFilename = new HashMap<>();
-    if (useSimpleMesh) {
-      textureToFilename.put(MyTexture.DIRT, "mc-dirt.png");
-      textureToFilename.put(MyTexture.GRASS, "mc-grass.png");
-      textureToFilename.put(MyTexture.ROCK, "mc-rock.png");
-      textureToFilename.put(MyTexture.BRICK, "mc-brick.png");
-    } else {
-      textureToFilename.put(MyTexture.DIRT, "new-dirt.png");
-      textureToFilename.put(MyTexture.GRASS, "new-grass.png");
-      textureToFilename.put(MyTexture.ROCK, "new-rock.png");
-      textureToFilename.put(MyTexture.BRICK, "new-brick.png");
-    }
-    
-    List<Image> images = new ArrayList<Image>();
-    for (MyTexture tex : MyTexture.values()) {
-      String textureResource = "fi/haju/haju3d/client/textures/" + textureToFilename.get(tex);
-      TextureKey key = new TextureKey(textureResource);
-      key.setGenerateMips(true);
-      images.add(assetManager.loadTexture(key).getImage());
-    }
-    textures = new TextureArray(images);
-    textures.setWrap(WrapMode.Repeat);
-    textures.setMinFilter(MinFilter.BilinearNearestMipMap);
-    textures.setAnisotropicFilter(4);
-  }
+  
+  Material mat;
 
   private void setupInput() {
     inputManager.addMapping(InputActions.CHANGE_FULL_SCREEN, new KeyTrigger(KeyInput.KEY_F));
@@ -137,7 +100,7 @@ public class ChunkRenderer extends SimpleApplication {
   private void updateWorldMesh() {
     Camera camera = getCamera();
     Vector3f camLoc = camera.getLocation();
-    Vector3f camDir = camera.getDirection().mult(50);
+    Vector3f camDir = camera.getDirection().mult(80);
     Vector3f camLeft = camera.getLeft().mult(30);
     Vector3f camUp = camera.getUp().mult(30);
     loadWorldMeshForLocation(camLoc);
@@ -168,22 +131,9 @@ public class ChunkRenderer extends SimpleApplication {
   }
 
   private void setupChunkAsMesh(Vector3i chunkIndex) {
-    Mesh m = builder.makeMesh(world, chunkIndex, useSimpleMesh);
+    LodSpatial spatials = builder.makeSpatials(world, chunkIndex);
+    final Spatial groundObject = useSimpleMesh ? spatials.lowDetail : spatials.highDetail;
     
-    final Geometry groundObject = new Geometry("ColoredMesh", m);
-    ColorRGBA color = ColorRGBA.White;
-    Material mat = new Material(assetManager,
-        useSimpleMesh ? "fi/haju/haju3d/client/shaders/Lighting.j3md" :
-          "fi/haju/haju3d/client/shaders/Terrain.j3md");
-    mat.setBoolean("UseMaterialColors", true);
-    mat.setTexture("DiffuseMap", textures);
-    mat.setColor("Ambient", color);
-    mat.setColor("Diffuse", color);
-    if (useSimpleMesh) {
-      mat.setBoolean("UseVertexColor", true);
-    }
-    groundObject.setMaterial(mat);
-    groundObject.setShadowMode(ShadowMode.CastAndReceive);
     enqueue(new Callable<Void>() {
       @Override
       public Void call() throws Exception {
@@ -211,7 +161,7 @@ public class ChunkRenderer extends SimpleApplication {
     light = new DirectionalLight();
     Vector3f lightDir = new Vector3f(-0.9140114f, 0.29160172f, -0.2820493f).negate();
     light.setDirection(lightDir.normalizeLocal());
-    light.setColor(new ColorRGBA(1f, 1f, 1f, 1f).mult(1.5f));
+    light.setColor(new ColorRGBA(1f, 1f, 1f, 1f).mult(1.0f));
     rootNode.addLight(light);
 
     AmbientLight al = new AmbientLight();

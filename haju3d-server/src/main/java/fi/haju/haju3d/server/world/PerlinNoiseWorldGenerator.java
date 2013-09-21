@@ -56,7 +56,7 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
         int nh = height / scale;
         int nd = depth / scale;
         final float amp = (float)Math.pow(0.5f * scale * 1.0f, 1.0f);
-        FloatArray3d noise = new FloatArray3d(nw, nh, nd, new FloatArray3d.Initializer() {     
+        FloatArray3d noise = new FloatArray3d(nw, nh, nd, new FloatArray3d.Initializer() {
           @Override
           public float getValue(int x, int y, int z) {
             return (float)((random.nextDouble() - 0.5) * amp);
@@ -117,7 +117,9 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
   }
   
   private PerlinNoiseScales getPerlinNoiseScale(Vector3i pos, Random random, int w, int h, int d) {
-    if(perlinNoises.containsKey(pos)) return perlinNoises.get(pos);
+    if(perlinNoises.containsKey(pos)) {
+      return perlinNoises.get(pos);
+    }
     PerlinNoiseScales noises = new PerlinNoiseScales(random, w, h, d);
     perlinNoises.put(pos, noises);
     return noises;
@@ -148,7 +150,7 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
     int j = yOver ? 1 : 0;
     int k = zOver ? 1 : 0;
     return scales[i + j*2 + k*4].get(
-        xOver ? x - nw : x, 
+        xOver ? x - nw : x,
         yOver ? y - nh : y,
         zOver ? z - nd : z);
   }
@@ -174,15 +176,15 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
           float xt = (float) (x % scale) / scale;
           int xs = x / scale;
          
-          float n1 = getNoiseValueFromSet(xs, ys, zs, nw, nh, nd, surroundingScales); 
+          float n1 = getNoiseValueFromSet(xs, ys, zs, nw, nh, nd, surroundingScales);
           float n2 = getNoiseValueFromSet(xs + 1, ys, zs, nw, nh, nd, surroundingScales);
-          float n3 = getNoiseValueFromSet(xs, ys + 1, zs, nw, nh, nd, surroundingScales); 
+          float n3 = getNoiseValueFromSet(xs, ys + 1, zs, nw, nh, nd, surroundingScales);
           float n4 = getNoiseValueFromSet(xs + 1, ys + 1, zs, nw, nh, nd, surroundingScales);
 
           float n5 = getNoiseValueFromSet(xs, ys, zs + 1, nw, nh, nd, surroundingScales);
-          float n6 = getNoiseValueFromSet(xs + 1, ys, zs + 1, nw, nh, nd, surroundingScales); 
-          float n7 = getNoiseValueFromSet(xs, ys + 1, zs + 1, nw, nh, nd, surroundingScales); 
-          float n8 = getNoiseValueFromSet(xs + 1, ys + 1, zs + 1, nw, nh, nd, surroundingScales); 
+          float n6 = getNoiseValueFromSet(xs + 1, ys, zs + 1, nw, nh, nd, surroundingScales);
+          float n7 = getNoiseValueFromSet(xs, ys + 1, zs + 1, nw, nh, nd, surroundingScales);
+          float n8 = getNoiseValueFromSet(xs + 1, ys + 1, zs + 1, nw, nh, nd, surroundingScales);
 
           data.add(x, y, z, InterpolationUtil.interpolateLinear3d(xt, yt, zt, n1, n2, n3, n4, n5, n6, n7, n8));
         }
@@ -204,9 +206,9 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
           if (y < h / 5) {
             v += InterpolationUtil.interpolateLinear(y / (float) (h / 5), -10, 0);
           }
-          // create a platform at h/5:
-          if (y < h / 5) {
-            v -= 10;
+          // create a platform at h/4:
+          if (y < h / 4) {
+            v -= 5;
           }
           v += noise.get(x, y, z) * 3;
           Tile terrain = noise.get(x, h - 1 - y, z) < 0 ? Tile.GROUND : Tile.ROCK;
@@ -221,15 +223,15 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
         }
       }
     }
-    
-    // add a "building" in the middle of chunk
-    int midX = w / 2;
-    int midZ = d / 2;
+    Random r = new Random(seed);
+    // add a "building" in the chunk
+    int midX = r.nextInt(w - 10);
+    int midZ = r.nextInt(d - 10);
     int groundY = findGround(chunk, h, midX, midZ);
     if (groundY >= 0 && groundY < h - 10) {
       for (int x = 0; x < 10; x++) {
         for (int y = 0; y < 10; y++) {
-          for (int z = 0; z < 10; z++) {
+          for (int z = 0; z < 5; z++) {
             chunk.set(x + midX, y + groundY, z + midZ, Tile.BRICK);
           }
         }
