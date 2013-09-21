@@ -73,7 +73,7 @@ public class ChunkMeshBuilder {
     return mat;
   }
   
-  public ChunkSpatial makeSpatials(World world, Vector3i chunkIndex) {
+  public ChunkSpatial makeChunkSpatial(World world, Vector3i chunkIndex) {
     ChunkSpatial lodSpatial = new ChunkSpatial();
     lodSpatial.lowDetail = makeSpatial(world, chunkIndex, true);
     lodSpatial.highDetail = makeSpatial(world, chunkIndex, false);

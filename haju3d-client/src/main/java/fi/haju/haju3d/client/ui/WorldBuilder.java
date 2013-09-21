@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -18,8 +19,6 @@ public class WorldBuilder implements Runnable {
   private World world;
   private ChunkProvider chunkProvider;
   private ChunkMeshBuilder builder;
-  
-  private Set<Vector3i> meshed = new HashSet<>();
   private Map<Vector3i, ChunkSpatial> chunkSpatials = new ConcurrentHashMap<>();
   
   private AtomicBoolean running = new AtomicBoolean(true);
@@ -45,19 +44,35 @@ public class WorldBuilder implements Runnable {
       if (position != null) {
         makeChunkNearPosition(position);
       }
+      removeFarChunks(position);
     }
   }
   
+  private void removeFarChunks(Vector3i centerChunkIndex) {
+    final int maxDistance = 3;
+    Set<Vector3i> remove = new HashSet<>();
+    for (Map.Entry<Vector3i, ChunkSpatial> c : chunkSpatials.entrySet()) {
+      Vector3i v = c.getKey();
+      if (Math.abs(centerChunkIndex.x - v.x) > maxDistance
+          || Math.abs(centerChunkIndex.y - v.y) > maxDistance
+          || Math.abs(centerChunkIndex.z - v.z) > maxDistance) {
+        remove.add(v);
+      }
+    }
+    for (Vector3i r : remove) {
+      chunkSpatials.remove(r);
+    }
+  }
+
   private void makeChunkNearPosition(Vector3i centerChunkIndex) {
     List<Vector3i> indexes = new ArrayList<>();
     indexes.add(centerChunkIndex);
     indexes.addAll(centerChunkIndex.getSurroundingPositions(1, 1, 1));
     indexes.addAll(centerChunkIndex.getSurroundingPositions(2, 2, 2));
     for (Vector3i i : indexes) {
-      if (meshed.contains(i)) {
+      if (chunkSpatials.containsKey(i)) {
         continue;
       }
-      meshed.add(i);
       makeChunkAt(i);
       break;
     }
@@ -69,7 +84,7 @@ public class WorldBuilder implements Runnable {
     for (Chunk c : chunks) {
       world.setChunk(c.getPosition(), c);
     }
-    chunkSpatials.put(chunkIndex, builder.makeSpatials(world, chunkIndex));
+    chunkSpatials.put(chunkIndex, builder.makeChunkSpatial(world, chunkIndex));
   }
 
   public void setPosition(Vector3i position) {
