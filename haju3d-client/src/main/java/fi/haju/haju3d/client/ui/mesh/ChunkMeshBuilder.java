@@ -24,11 +24,12 @@ import com.jme3.scene.Mesh;
 import com.jme3.scene.Spatial;
 import com.jme3.scene.VertexBuffer.Type;
 import com.jme3.texture.Image;
-import com.jme3.texture.TextureArray;
 import com.jme3.texture.Texture.MinFilter;
 import com.jme3.texture.Texture.WrapMode;
+import com.jme3.texture.TextureArray;
 import com.jme3.util.BufferUtils;
 
+import fi.haju.haju3d.client.ui.ChunkSpatial;
 import fi.haju.haju3d.client.ui.mesh.MyMesh.MyFaceAndIndex;
 import fi.haju.haju3d.protocol.Vector3i;
 import fi.haju.haju3d.protocol.world.Tile;
@@ -72,13 +73,8 @@ public class ChunkMeshBuilder {
     return mat;
   }
   
-  public static class LodSpatial {
-    public Spatial lowDetail;
-    public Spatial highDetail;
-  }
-  
-  public LodSpatial makeSpatials(World world, Vector3i chunkIndex) {
-    LodSpatial lodSpatial = new LodSpatial();
+  public ChunkSpatial makeSpatials(World world, Vector3i chunkIndex) {
+    ChunkSpatial lodSpatial = new ChunkSpatial();
     lodSpatial.lowDetail = makeSpatial(world, chunkIndex, true);
     lodSpatial.highDetail = makeSpatial(world, chunkIndex, false);
     return lodSpatial;

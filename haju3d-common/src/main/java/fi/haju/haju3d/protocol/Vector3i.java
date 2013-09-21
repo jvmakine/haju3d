@@ -62,10 +62,14 @@ public class Vector3i implements Serializable {
    * Returns 3x3x3 list of all positions around this position. (This vector is also included in the set)
    */
   public List<Vector3i> getSurroundingPositions() {
+    return getSurroundingPositions(1, 1, 1);
+  }
+  
+  public List<Vector3i> getSurroundingPositions(int w, int h, int d) {
     List<Vector3i> positions = Lists.newArrayList();
-    for (int x = -1; x < 2; x++) {
-      for (int y = -1; y < 2; y++) {
-        for (int z = -1; z < 2; z++) {
+    for (int x = -w; x <= w; x++) {
+      for (int y = -h; y <= h; y++) {
+        for (int z = -d; z <= d; z++) {
           positions.add(this.add(x, y, z));
         }
       }

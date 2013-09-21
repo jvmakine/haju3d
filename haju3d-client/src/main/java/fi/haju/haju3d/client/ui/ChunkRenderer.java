@@ -2,8 +2,10 @@ package fi.haju.haju3d.client.ui;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.plugins.ClasspathLocator;
@@ -18,6 +20,7 @@ import com.jme3.math.Vector3f;
 import com.jme3.post.FilterPostProcessor;
 import com.jme3.post.filters.LightScatteringFilter;
 import com.jme3.renderer.Camera;
+import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
 import com.jme3.shadow.DirectionalLightShadowRenderer;
 import com.jme3.shadow.EdgeFilteringMode;
@@ -32,7 +35,6 @@ import fi.haju.haju3d.client.ChunkProvider;
 import fi.haju.haju3d.client.CloseEventHandler;
 import fi.haju.haju3d.client.ui.input.InputActions;
 import fi.haju.haju3d.client.ui.mesh.ChunkMeshBuilder;
-import fi.haju.haju3d.client.ui.mesh.ChunkMeshBuilder.LodSpatial;
 import fi.haju.haju3d.protocol.Vector3i;
 import fi.haju.haju3d.protocol.world.Chunk;
 import fi.haju.haju3d.protocol.world.World;
@@ -47,10 +49,14 @@ public class ChunkRenderer extends SimpleApplication {
   private CloseEventHandler closeEventHandler;
   private ChunkProvider chunkProvider;
   
+  enum ChunkSpatialType { LOW_QUALITY, HIGH_QUALITY }
+  
   private World world = new World();
   private Set<Vector3i> meshed = new HashSet<>();
-  private boolean useSimpleMesh = false;
+  private Map<Vector3i, ChunkSpatial> chunkSpatials = new ConcurrentHashMap<>();
+  private Map<Vector3i, ChunkSpatialType> chunkSpatialTypeShown = new ConcurrentHashMap<>();
   private boolean isFullScreen = false;
+  private Node terrainNode = new Node("terrain");
   
   public ChunkRenderer(ChunkProvider chunkProvider) {
     this.chunkProvider = chunkProvider;
@@ -75,6 +81,8 @@ public class ChunkRenderer extends SimpleApplication {
     setupInput();
     setupCamera();
     setupLighting();
+    
+    rootNode.attachChild(terrainNode);
   }
 
   private void setupCamera() {
@@ -110,6 +118,21 @@ public class ChunkRenderer extends SimpleApplication {
     loadWorldMeshForLocation(camLoc.add(camDir).add(camUp));
     loadWorldMeshForLocation(camLoc.add(camDir).subtract(camUp));
   }
+  
+  private void updateChunkSpatialVisibility() {
+    Vector3f location = getCamera().getLocation();
+    Vector3i worldPosition = getWorldPosition(location);
+    Vector3i chunkIndex = world.getChunkIndex(worldPosition);
+    
+    terrainNode.detachAllChildren();
+    
+    for (Vector3i pos : chunkIndex.getSurroundingPositions(2, 2, 2)) {
+      ChunkSpatial cs = chunkSpatials.get(pos);
+      if (cs != null) {
+        terrainNode.attachChild(pos.equals(chunkIndex) ? cs.highDetail : cs.lowDetail);
+      }
+    }
+  }
 
   private void loadWorldMeshForLocation(Vector3f location) {
     Vector3i worldPosition = getWorldPosition(location);
@@ -125,24 +148,11 @@ public class ChunkRenderer extends SimpleApplication {
         for (Chunk c : chunks) {
           world.setChunk(c.getPosition(), c);
         }
-        setupChunkAsMesh(chunkIndex);
+        chunkSpatials.put(chunkIndex, builder.makeSpatials(world, chunkIndex));
       }
     });
   }
 
-  private void setupChunkAsMesh(Vector3i chunkIndex) {
-    LodSpatial spatials = builder.makeSpatials(world, chunkIndex);
-    final Spatial groundObject = useSimpleMesh ? spatials.lowDetail : spatials.highDetail;
-    
-    enqueue(new Callable<Void>() {
-      @Override
-      public Void call() throws Exception {
-        rootNode.attachChild(groundObject);
-        return null;
-      }
-    });
-  }
-  
   public Vector3f getGlobalPosition(Vector3i worldPosition) {
     return new Vector3f(worldPosition.x * scale, worldPosition.y * scale, worldPosition.z * scale);
   }
@@ -214,6 +224,7 @@ public class ChunkRenderer extends SimpleApplication {
   @Override
   public void simpleUpdate(float tpf) {
     updateWorldMesh();
+    updateChunkSpatialVisibility();
   }
   
   @Override
