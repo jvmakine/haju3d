@@ -67,7 +67,7 @@ public class ChunkRenderer extends SimpleApplication {
     assetManager.registerLocator("assets", new ClasspathLocator().getClass());
     this.builder = new ChunkSpatialBuilder(assetManager);
     this.worldBuilder = new WorldBuilder(world, chunkProvider, builder);
-    new Thread(worldBuilder).start();
+    this.worldBuilder.start();
     
     setupInput();
     setupCamera();

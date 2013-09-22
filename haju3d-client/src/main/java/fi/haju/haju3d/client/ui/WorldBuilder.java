@@ -14,13 +14,13 @@ import fi.haju.haju3d.protocol.Vector3i;
 import fi.haju.haju3d.protocol.world.Chunk;
 import fi.haju.haju3d.protocol.world.World;
 
-public class WorldBuilder implements Runnable {
+public class WorldBuilder {
   private World world;
   private ChunkProvider chunkProvider;
   private ChunkSpatialBuilder builder;
   private Map<Vector3i, ChunkSpatial> chunkSpatials = new ConcurrentHashMap<>();
   
-  private AtomicBoolean running = new AtomicBoolean(true);
+  private AtomicBoolean running = new AtomicBoolean(false);
   private Object lock = new Object();
   private transient Vector3i position;
   
@@ -30,9 +30,10 @@ public class WorldBuilder implements Runnable {
     this.builder = builder;
   }
   
-  @Override
-  public void run() {
-    while (running.get()) {
+  private Runnable runnable = new Runnable() {
+    @Override
+    public void run() {
+      while (running.get()) {
 //      synchronized (lock) {
 //        try {
 //          lock.wait();
@@ -45,7 +46,8 @@ public class WorldBuilder implements Runnable {
       }
       removeFarChunks(position);
     }
-  }
+    }
+  };
   
   private void removeFarChunks(Vector3i centerChunkIndex) {
     final int maxDistance = 3;
@@ -90,6 +92,13 @@ public class WorldBuilder implements Runnable {
     this.position = position;
     synchronized (lock) {
       lock.notify();
+    }
+  }
+  
+  public void start() {
+    if (!running.get()) {
+      running.set(true);
+      new Thread(runnable).start();
     }
   }
   
