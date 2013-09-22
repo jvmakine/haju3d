@@ -34,18 +34,18 @@ public class WorldBuilder {
     @Override
     public void run() {
       while (running.get()) {
-//      synchronized (lock) {
-//        try {
-//          lock.wait();
-//        } catch (InterruptedException e) {
-//          throw new RuntimeException(e);
-//        }
-//      }
-      if (position != null) {
-        makeChunkNearPosition(position);
+        // synchronized (lock) {
+        // try {
+        // lock.wait();
+        // } catch (InterruptedException e) {
+        // throw new RuntimeException(e);
+        // }
+        // }
+        if (position != null) {
+          makeChunkNearPosition(position);
+        }
+        removeFarChunks(position);
       }
-      removeFarChunks(position);
-    }
     }
   };
   
