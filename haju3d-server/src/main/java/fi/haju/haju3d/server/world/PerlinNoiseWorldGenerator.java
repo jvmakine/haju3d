@@ -46,7 +46,7 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
   }
   
   private static final class PerlinNoiseScales {
-    public static List<Integer> SCALES = ImmutableList.of(4, 8, 16, 32);
+    public static List<Integer> SCALES = ImmutableList.of(2, 4, 8, 16, 32);
     
     private Map<Integer, FloatArray3d> noises = Maps.newHashMap();
     
@@ -204,13 +204,13 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
         for (int z = 0; z < d; z++) {
           float v = Math.abs(y);
           if (y < h / 5) {
-            v += InterpolationUtil.interpolateLinear(y / (float) (h / 5), -10, 0);
+            v += InterpolationUtil.interpolateLinear(y / (float) (h / 5), -80, 0);
           }
           // create a platform at h/4:
           if (y < h / 4) {
             v -= 5;
           }
-          v += noise.get(x, y, z) * 3;
+          v += noise.get(x, y, z) * 4;
           Tile terrain = noise.get(x, h - 1 - y, z) < 0 ? Tile.GROUND : Tile.ROCK;
           chunk.set(x, y, z, v < thres ? terrain : Tile.AIR);
           float col = 0.75f + noise.get(w - 1 - x, y, z) * 0.1f;
