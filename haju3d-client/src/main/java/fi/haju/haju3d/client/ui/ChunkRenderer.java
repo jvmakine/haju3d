@@ -24,7 +24,7 @@ import com.jme3.water.WaterFilter;
 import fi.haju.haju3d.client.ChunkProvider;
 import fi.haju.haju3d.client.CloseEventHandler;
 import fi.haju.haju3d.client.ui.input.InputActions;
-import fi.haju.haju3d.client.ui.mesh.ChunkMeshBuilder;
+import fi.haju.haju3d.client.ui.mesh.ChunkSpatialBuilder;
 import fi.haju.haju3d.protocol.Vector3i;
 import fi.haju.haju3d.protocol.world.World;
 
@@ -33,7 +33,7 @@ import fi.haju.haju3d.protocol.world.World;
  */
 public class ChunkRenderer extends SimpleApplication {
   private static final float scale = 1;
-  private ChunkMeshBuilder builder;
+  private ChunkSpatialBuilder builder;
   private DirectionalLight light;
   private CloseEventHandler closeEventHandler;
   private ChunkProvider chunkProvider;
@@ -53,6 +53,7 @@ public class ChunkRenderer extends SimpleApplication {
   private void setDisplayMode() {
     AppSettings settings = new AppSettings(true);
 //    settings.setResolution(1280, 720);
+    settings.setResolution(1920, 1080);
     settings.setVSync(true);
     settings.setAudioRenderer(null);
     settings.setFullscreen(isFullScreen);
@@ -63,7 +64,7 @@ public class ChunkRenderer extends SimpleApplication {
   @Override
   public void simpleInitApp() {
     assetManager.registerLocator("assets", new ClasspathLocator().getClass());
-    this.builder = new ChunkMeshBuilder(assetManager);
+    this.builder = new ChunkSpatialBuilder(assetManager);
     this.worldBuilder = new WorldBuilder(world, chunkProvider, builder);
     new Thread(worldBuilder).start();
     

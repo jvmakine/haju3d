@@ -23,7 +23,7 @@ import com.jme3.texture.Texture.MinFilter;
 import com.jme3.texture.Texture.WrapMode;
 import com.jme3.texture.TextureArray;
 
-import fi.haju.haju3d.client.ui.mesh.ChunkMeshBuilder;
+import fi.haju.haju3d.client.ui.mesh.ChunkSpatialBuilder;
 import fi.haju.haju3d.client.ui.mesh.MyFace;
 import fi.haju.haju3d.client.ui.mesh.MyMesh;
 import fi.haju.haju3d.client.ui.mesh.MyMesh.MyFaceAndIndex;
@@ -113,7 +113,7 @@ public class ShaderTestingApp extends SimpleApplication {
     }
     
     //Mesh m = new NewMeshBuilder(mesh).build();
-    Mesh m = new ChunkMeshBuilder.NewMeshBuilder(myMesh, myMesh.faces).build();
+    Mesh m = new ChunkSpatialBuilder.NewMeshBuilder(myMesh, myMesh.faces).build();
     
     /*
     // simple faces

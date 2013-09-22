@@ -35,17 +35,19 @@ import fi.haju.haju3d.protocol.Vector3i;
 import fi.haju.haju3d.protocol.world.Tile;
 import fi.haju.haju3d.protocol.world.World;
 
-public class ChunkMeshBuilder {
+public class ChunkSpatialBuilder {
   private static final int SMOOTH_BUFFER = 3;
-  private static final Logger LOGGER = LoggerFactory.getLogger(ChunkMeshBuilder.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ChunkSpatialBuilder.class);
   private Material lowMaterial;
   private Material highMaterial;
   
-  public ChunkMeshBuilder(AssetManager assetManager) {
+  public ChunkSpatialBuilder(AssetManager assetManager) {
     Map<MyTexture, String> textureToFilename = new HashMap<>();
     textureToFilename.put(MyTexture.DIRT, "new-dirt.png");
     textureToFilename.put(MyTexture.GRASS, "new-grass.png");
+    textureToFilename.put(MyTexture.GRASS2, "new-grass2.png");
     textureToFilename.put(MyTexture.ROCK, "new-rock.png");
+    textureToFilename.put(MyTexture.ROCK2, "new-rock2.png");
     textureToFilename.put(MyTexture.BRICK, "new-brick.png");
     
     List<Image> images = new ArrayList<Image>();
@@ -433,7 +435,7 @@ public class ChunkMeshBuilder {
                   new Vector3f(x + 1, y, z),
                   new Vector3f(x + 1, y, z + 1),
                   new Vector3f(x, y, z + 1),
-                  bottomTexture(tile), color,
+                  bottomTexture(r, tile), color,
                   realTile,
                   r.nextInt());
             }
@@ -443,7 +445,7 @@ public class ChunkMeshBuilder {
                   new Vector3f(x + 1, y + 1, z + 1),
                   new Vector3f(x + 1, y + 1, z),
                   new Vector3f(x, y + 1, z),
-                  topTexture(tile), color,
+                  topTexture(r, tile), color,
                   realTile,
                   r.nextInt());
             }
@@ -453,7 +455,7 @@ public class ChunkMeshBuilder {
                   new Vector3f(x, y + 1, z + 1),
                   new Vector3f(x, y + 1, z),
                   new Vector3f(x, y, z),
-                  sideTexture(tile), color,
+                  sideTexture(r, tile), color,
                   realTile,
                   r.nextInt());
             }
@@ -463,7 +465,7 @@ public class ChunkMeshBuilder {
                   new Vector3f(x + 1, y + 1, z),
                   new Vector3f(x + 1, y + 1, z + 1),
                   new Vector3f(x + 1, y, z + 1),
-                  sideTexture(tile), color,
+                  sideTexture(r, tile), color,
                   realTile,
                   r.nextInt());
             }
@@ -473,7 +475,7 @@ public class ChunkMeshBuilder {
                   new Vector3f(x, y + 1, z),
                   new Vector3f(x + 1, y + 1, z),
                   new Vector3f(x + 1, y, z),
-                  sideTexture(tile), color,
+                  sideTexture(r, tile), color,
                   realTile,
                   r.nextInt());
             }
@@ -483,7 +485,7 @@ public class ChunkMeshBuilder {
                   new Vector3f(x + 1, y + 1, z + 1),
                   new Vector3f(x, y + 1, z + 1),
                   new Vector3f(x, y, z + 1),
-                  sideTexture(tile), color,
+                  sideTexture(r, tile), color,
                   realTile,
                   r.nextInt());
             }
@@ -494,38 +496,36 @@ public class ChunkMeshBuilder {
     return myMesh;
   }
 
-  private static MyTexture sideTexture(Tile tile) {
+  private static MyTexture sideTexture(Random r, Tile tile) {
+    return baseTexture(r, tile);
+  }
+
+  private static MyTexture bottomTexture(Random r, Tile tile) {
+    return baseTexture(r, tile);
+  }
+  
+  private static final MyTexture[] GRASSES = new MyTexture[] {MyTexture.GRASS, MyTexture.GRASS2};
+  private static final MyTexture[] ROCKS = new MyTexture[] {MyTexture.ROCK, MyTexture.ROCK2};
+  
+  private static <T> T sample(Random r, T[] array) {
+    return array[r.nextInt(array.length)];
+  }
+  
+  private static MyTexture topTexture(Random r, Tile tile) {
+    switch (tile) {
+    case GROUND:
+      return sample(r, GRASSES);
+    default:
+      return baseTexture(r, tile);
+    }
+  }
+  
+  private static MyTexture baseTexture(Random r, Tile tile) {
     switch (tile) {
     case GROUND:
       return MyTexture.DIRT;
     case ROCK:
-      return MyTexture.ROCK;
-    case BRICK:
-      return MyTexture.BRICK;
-    case AIR:
-    }
-    throw new IllegalStateException("Unknown case: " + tile);
-  }
-
-  private static MyTexture bottomTexture(Tile tile) {
-    switch (tile) {
-    case GROUND:
-      return MyTexture.DIRT;
-    case ROCK:
-      return MyTexture.ROCK;
-    case BRICK:
-      return MyTexture.BRICK;
-    case AIR:
-    }
-    throw new IllegalStateException("Unknown case: " + tile);
-  }
-
-  private static MyTexture topTexture(Tile tile) {
-    switch (tile) {
-    case GROUND:
-      return MyTexture.GRASS;
-    case ROCK:
-      return MyTexture.ROCK;
+      return sample(r, ROCKS);
     case BRICK:
       return MyTexture.BRICK;
     case AIR:

@@ -4,13 +4,12 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import fi.haju.haju3d.client.ChunkProvider;
-import fi.haju.haju3d.client.ui.mesh.ChunkMeshBuilder;
+import fi.haju.haju3d.client.ui.mesh.ChunkSpatialBuilder;
 import fi.haju.haju3d.protocol.Vector3i;
 import fi.haju.haju3d.protocol.world.Chunk;
 import fi.haju.haju3d.protocol.world.World;
@@ -18,14 +17,14 @@ import fi.haju.haju3d.protocol.world.World;
 public class WorldBuilder implements Runnable {
   private World world;
   private ChunkProvider chunkProvider;
-  private ChunkMeshBuilder builder;
+  private ChunkSpatialBuilder builder;
   private Map<Vector3i, ChunkSpatial> chunkSpatials = new ConcurrentHashMap<>();
   
   private AtomicBoolean running = new AtomicBoolean(true);
   private Object lock = new Object();
   private transient Vector3i position;
   
-  public WorldBuilder(World world, ChunkProvider chunkProvider, ChunkMeshBuilder builder) {
+  public WorldBuilder(World world, ChunkProvider chunkProvider, ChunkSpatialBuilder builder) {
     this.world = world;
     this.chunkProvider = chunkProvider;
     this.builder = builder;
