@@ -11,7 +11,8 @@ import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector3f;
 import com.jme3.post.FilterPostProcessor;
-import com.jme3.post.filters.LightScatteringFilter;
+import com.jme3.post.filters.BloomFilter;
+import com.jme3.post.filters.CartoonEdgeFilter;
 import com.jme3.scene.Node;
 import com.jme3.shadow.DirectionalLightShadowRenderer;
 import com.jme3.shadow.EdgeFilteringMode;
@@ -53,7 +54,7 @@ public class ChunkRenderer extends SimpleApplication {
   private void setDisplayMode() {
     AppSettings settings = new AppSettings(true);
 //    settings.setResolution(1280, 720);
-    settings.setResolution(1920, 1080);
+//    settings.setResolution(1920, 1080);
     settings.setVSync(true);
     settings.setAudioRenderer(null);
     settings.setFullscreen(isFullScreen);
@@ -146,16 +147,27 @@ public class ChunkRenderer extends SimpleApplication {
     viewPort.addProcessor(dlsr);
     
     FilterPostProcessor fpp = new FilterPostProcessor(assetManager);
+    
+    // FogFilter will also apply fog on the skybox..
 //    FogFilter fog = new FogFilter();
 //    fog.setFogColor(new ColorRGBA(0.9f, 0.9f, 0.9f, 0.0f));
 //    fog.setFogDistance(200);
 //    fog.setFogDensity(1.5f);
 //    fpp.addFilter(fog);
   
-    LightScatteringFilter filter = new LightScatteringFilter(light.getDirection().mult(-20000f));
-    filter.setLightDensity(1.2f);
-    filter.setBlurWidth(1.5f);
-    fpp.addFilter(filter);
+    // disabled LightScatteringFilter for now, it looks very strange if something is blocking the sun
+//    LightScatteringFilter filter = new LightScatteringFilter(light.getDirection().mult(-20000f));
+//    filter.setLightDensity(1.2f);
+//    filter.setBlurWidth(1.5f);
+//    fpp.addFilter(filter);
+    
+    BloomFilter bloom=new BloomFilter();
+    bloom.setDownSamplingFactor(2);
+    bloom.setBlurScale(1.37f);
+    bloom.setExposurePower(4.30f);
+    bloom.setExposureCutOff(0.2f);
+    bloom.setBloomIntensity(0.8f);
+    fpp.addFilter(bloom);
 
     WaterFilter water = new WaterFilter(rootNode, lightDir);
     water.setCenter(new Vector3f(319.6663f, -18.367947f, -236.67674f));
@@ -168,6 +180,20 @@ public class ChunkRenderer extends SimpleApplication {
     water.setFoamTexture((Texture2D) assetManager.loadTexture("Common/MatDefs/Water/Textures/foam2.jpg"));
     water.setRefractionStrength(0.1f);
     fpp.addFilter(water);
+    
+    CartoonEdgeFilter rimLightFilter = new CartoonEdgeFilter();
+    rimLightFilter.setEdgeColor(ColorRGBA.Black);
+    
+    rimLightFilter.setEdgeIntensity(0.5f);
+    rimLightFilter.setEdgeWidth(1.0f);
+    
+    rimLightFilter.setNormalSensitivity(0.0f);
+    rimLightFilter.setNormalThreshold(0.0f);
+    
+    rimLightFilter.setDepthSensitivity(20.0f);
+    rimLightFilter.setDepthThreshold(0.0f);
+    
+    fpp.addFilter(rimLightFilter);
 
     viewPort.addProcessor(fpp);
   }
