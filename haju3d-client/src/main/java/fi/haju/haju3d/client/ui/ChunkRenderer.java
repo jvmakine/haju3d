@@ -2,12 +2,14 @@ package fi.haju.haju3d.client.ui;
 
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.plugins.ClasspathLocator;
+import com.jme3.collision.CollisionResults;
 import com.jme3.input.KeyInput;
 import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.KeyTrigger;
 import com.jme3.light.AmbientLight;
 import com.jme3.light.DirectionalLight;
 import com.jme3.math.ColorRGBA;
+import com.jme3.math.Ray;
 import com.jme3.math.Vector3f;
 import com.jme3.post.FilterPostProcessor;
 import com.jme3.post.filters.BloomFilter;
@@ -39,11 +41,7 @@ public class ChunkRenderer extends SimpleApplication {
   private DirectionalLight light;
   private CloseEventHandler closeEventHandler;
   private ChunkProvider chunkProvider;
-
-  
-  enum ChunkSpatialType {
-    LOW_QUALITY, HIGH_QUALITY
-  }
+  private Vector3f lastLocation = null;
 
   private World world = new World();
   private boolean isFullScreen = false;
@@ -103,18 +101,20 @@ public class ChunkRenderer extends SimpleApplication {
   }
 
   private void updateChunkSpatialVisibility() {
-    Vector3f location = getCamera().getLocation();
-    Vector3i worldPosition = getWorldPosition(location);
-    Vector3i chunkIndex = world.getChunkIndex(worldPosition);
-
+    Vector3i chunkIndex = getChunkIndexForLocation();
     terrainNode.detachAllChildren();
-
     for (Vector3i pos : chunkIndex.getSurroundingPositions(2, 2, 2)) {
       ChunkSpatial cs = worldBuilder.getChunkSpatial(pos);
       if (cs != null) {
         terrainNode.attachChild(pos.equals(chunkIndex) ? cs.highDetail : cs.lowDetail);
       }
     }
+  }
+
+  private Vector3i getChunkIndexForLocation() {
+    Vector3f location = getCamera().getLocation();
+    Vector3i worldPosition = getWorldPosition(location);
+    return world.getChunkIndex(worldPosition);
   }
 
   public Vector3f getGlobalPosition(Vector3i worldPosition) {
@@ -192,6 +192,27 @@ public class ChunkRenderer extends SimpleApplication {
   public void simpleUpdate(float tpf) {
     updateWorldMesh();
     updateChunkSpatialVisibility();
+    Vector3f position = cam.getLocation().clone();
+    Vector3i chunkIndex = getChunkIndexForLocation();
+    if(lastLocation != null) {
+      Ray movement = new Ray(lastLocation, position.subtract(lastLocation).normalize());
+      float distance = lastLocation.distance(position);
+      //TODO: More efficient way of selecting chunks to check against
+      for (Vector3i pos : chunkIndex.getSurroundingPositions(1, 1, 1)) {
+        ChunkSpatial cs = worldBuilder.getChunkSpatial(pos);
+        CollisionResults collision = new CollisionResults();
+        if(cs != null && cs.lowDetail.collideWith(movement, collision) != 0) {
+          Vector3f closest = collision.getClosestCollision().getContactPoint();
+          boolean collided = closest.distance(lastLocation) <= distance + 1.5f; 
+          if(collided) {
+            cam.setLocation(lastLocation);
+            position = lastLocation;
+            break;
+          }
+        }
+      }
+    }
+    lastLocation = position;
   }
 
   @Override
