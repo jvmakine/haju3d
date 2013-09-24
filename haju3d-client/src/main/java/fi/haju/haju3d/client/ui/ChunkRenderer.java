@@ -191,6 +191,24 @@ public class ChunkRenderer extends SimpleApplication {
     rootNode.attachChild(SkyFactory.createSky(assetManager, west, east, north, south, up, down));
   }
 
+  private Vector3f getTerrainCollsisionPoint(Vector3f from, Vector3f to, float distanceFix) {
+    Set<Vector3i> chunkPositions = Sets.newHashSet(getChunkIndexForLocation(from), getChunkIndexForLocation(to));
+    Ray ray = new Ray(from, to.subtract(from).normalize());
+    float distance = from.distance(to);
+    for (Vector3i pos : chunkPositions) {
+      ChunkSpatial cs = worldBuilder.getChunkSpatial(pos);
+      CollisionResults collision = new CollisionResults();
+      if(cs != null && cs.lowDetail.collideWith(ray, collision) != 0) {
+        Vector3f closest = collision.getClosestCollision().getContactPoint();
+        boolean collided = closest.distance(lastLocation) <= distance + distanceFix; 
+        if(collided) {
+          return closest;
+        }
+      }
+    }
+    return null;
+  }
+  
   @Override
   public void simpleUpdate(float tpf) {
     updateWorldMesh();
@@ -198,22 +216,10 @@ public class ChunkRenderer extends SimpleApplication {
     Vector3f position = cam.getLocation().clone();
     // Check for collisions
     if(lastLocation != null) {
-      Set<Vector3i> chunkPositions = Sets.newHashSet(
-          getChunkIndexForLocation(position), getChunkIndexForLocation(lastLocation));
-      Ray movement = new Ray(lastLocation, position.subtract(lastLocation).normalize());
-      float distance = lastLocation.distance(position);
-      for (Vector3i pos : chunkPositions) {
-        ChunkSpatial cs = worldBuilder.getChunkSpatial(pos);
-        CollisionResults collision = new CollisionResults();
-        if(cs != null && cs.lowDetail.collideWith(movement, collision) != 0) {
-          Vector3f closest = collision.getClosestCollision().getContactPoint();
-          boolean collided = closest.distance(lastLocation) <= distance + 1.5f; 
-          if(collided) {
-            cam.setLocation(lastLocation);
-            position = lastLocation;
-            break;
-          }
-        }
+      Vector3f collision = getTerrainCollsisionPoint(lastLocation, position, 1.5f);
+      if(collision != null) {
+        cam.setLocation(lastLocation);
+        position = lastLocation;
       }
     }
     lastLocation = position;
