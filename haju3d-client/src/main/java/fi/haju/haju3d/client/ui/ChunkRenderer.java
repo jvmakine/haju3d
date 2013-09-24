@@ -51,6 +51,8 @@ public class ChunkRenderer extends SimpleApplication {
   private boolean isFullScreen = false;
   private Node terrainNode = new Node("terrain");
   private WorldBuilder worldBuilder;
+  
+  private float fallSpeed = 0f;
 
   public ChunkRenderer(ChunkProvider chunkProvider) {
     this.chunkProvider = chunkProvider;
@@ -191,7 +193,7 @@ public class ChunkRenderer extends SimpleApplication {
     rootNode.attachChild(SkyFactory.createSky(assetManager, west, east, north, south, up, down));
   }
 
-  private Vector3f getTerrainCollsisionPoint(Vector3f from, Vector3f to, float distanceFix) {
+  private Vector3f getTerrainCollisionPoint(Vector3f from, Vector3f to, float distanceFix) {
     Set<Vector3i> chunkPositions = Sets.newHashSet(getChunkIndexForLocation(from), getChunkIndexForLocation(to));
     Ray ray = new Ray(from, to.subtract(from).normalize());
     float distance = from.distance(to);
@@ -216,12 +218,21 @@ public class ChunkRenderer extends SimpleApplication {
     Vector3f position = cam.getLocation().clone();
     // Check for collisions
     if(lastLocation != null) {
-      Vector3f collision = getTerrainCollsisionPoint(lastLocation, position, 1.5f);
+      Vector3f collision = getTerrainCollisionPoint(lastLocation, position, 1.5f);
       if(collision != null) {
-        cam.setLocation(lastLocation);
         position = lastLocation;
       }
     }
+    // Check for falling
+    Vector3f fallCollision = getTerrainCollisionPoint(position, position.add(new Vector3f(0f, -fallSpeed*tpf, 0f)), 2.0f);
+    if(fallCollision != null) {
+      position = fallCollision.add(new Vector3f(0f, 2.0f, 0f));
+      fallSpeed = 0f;
+    } else {
+      position = position.add(new Vector3f(0f, -fallSpeed*tpf, 0f));
+      fallSpeed += tpf*5.0f;
+    }
+    cam.setLocation(position);
     lastLocation = position;
   }
 
