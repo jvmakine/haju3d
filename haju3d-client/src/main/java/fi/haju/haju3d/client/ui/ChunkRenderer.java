@@ -1,5 +1,8 @@
 package fi.haju.haju3d.client.ui;
 
+import java.util.Set;
+
+import com.google.common.collect.Sets;
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.plugins.ClasspathLocator;
 import com.jme3.collision.CollisionResults;
@@ -102,7 +105,7 @@ public class ChunkRenderer extends SimpleApplication {
   }
 
   private void updateChunkSpatialVisibility() {
-    Vector3i chunkIndex = getChunkIndexForLocation();
+    Vector3i chunkIndex = getChunkIndexForLocation(getCamera().getLocation());
     terrainNode.detachAllChildren();
     for (Vector3i pos : chunkIndex.getSurroundingPositions(CHUNK_CUT_OFF, CHUNK_CUT_OFF, CHUNK_CUT_OFF)) {
       ChunkSpatial cs = worldBuilder.getChunkSpatial(pos);
@@ -112,8 +115,7 @@ public class ChunkRenderer extends SimpleApplication {
     }
   }
 
-  private Vector3i getChunkIndexForLocation() {
-    Vector3f location = getCamera().getLocation();
+  private Vector3i getChunkIndexForLocation(Vector3f location) {
     Vector3i worldPosition = getWorldPosition(location);
     return world.getChunkIndex(worldPosition);
   }
@@ -194,13 +196,13 @@ public class ChunkRenderer extends SimpleApplication {
     updateWorldMesh();
     updateChunkSpatialVisibility();
     Vector3f position = cam.getLocation().clone();
-    Vector3i chunkIndex = getChunkIndexForLocation();
     // Check for collisions
     if(lastLocation != null) {
+      Set<Vector3i> chunkPositions = Sets.newHashSet(
+          getChunkIndexForLocation(position), getChunkIndexForLocation(lastLocation));
       Ray movement = new Ray(lastLocation, position.subtract(lastLocation).normalize());
       float distance = lastLocation.distance(position);
-      //TODO: More efficient way of selecting chunks to check against
-      for (Vector3i pos : chunkIndex.getSurroundingPositions(1, 1, 1)) {
+      for (Vector3i pos : chunkPositions) {
         ChunkSpatial cs = worldBuilder.getChunkSpatial(pos);
         CollisionResults collision = new CollisionResults();
         if(cs != null && cs.lowDetail.collideWith(movement, collision) != 0) {
