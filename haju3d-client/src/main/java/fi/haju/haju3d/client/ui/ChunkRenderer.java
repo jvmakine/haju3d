@@ -34,7 +34,8 @@ import fi.haju.haju3d.protocol.world.World;
  * Renderer application for rendering chunks from the server
  */
 public class ChunkRenderer extends SimpleApplication {
-  private static final float scale = 1;
+  private static final float SCALE = 1;
+  private static final int CHUNK_CUT_OFF = 3;
   private static final Vector3f lightDir = new Vector3f(-0.9140114f, 0.29160172f, -0.2820493f).negate();
   
   private ChunkSpatialBuilder builder;
@@ -103,7 +104,7 @@ public class ChunkRenderer extends SimpleApplication {
   private void updateChunkSpatialVisibility() {
     Vector3i chunkIndex = getChunkIndexForLocation();
     terrainNode.detachAllChildren();
-    for (Vector3i pos : chunkIndex.getSurroundingPositions(2, 2, 2)) {
+    for (Vector3i pos : chunkIndex.getSurroundingPositions(CHUNK_CUT_OFF, CHUNK_CUT_OFF, CHUNK_CUT_OFF)) {
       ChunkSpatial cs = worldBuilder.getChunkSpatial(pos);
       if (cs != null) {
         terrainNode.attachChild(pos.equals(chunkIndex) ? cs.highDetail : cs.lowDetail);
@@ -118,11 +119,11 @@ public class ChunkRenderer extends SimpleApplication {
   }
 
   public Vector3f getGlobalPosition(Vector3i worldPosition) {
-    return new Vector3f(worldPosition.x * scale, worldPosition.y * scale, worldPosition.z * scale);
+    return new Vector3f(worldPosition.x * SCALE, worldPosition.y * SCALE, worldPosition.z * SCALE);
   }
 
   private Vector3i getWorldPosition(Vector3f location) {
-    return new Vector3i((int) Math.floor(location.x / scale), (int) Math.floor(location.y / scale), (int) Math.floor(location.z / scale));
+    return new Vector3i((int) Math.floor(location.x / SCALE), (int) Math.floor(location.y / SCALE), (int) Math.floor(location.z / SCALE));
   }
 
   private void setupLighting() {
@@ -194,6 +195,7 @@ public class ChunkRenderer extends SimpleApplication {
     updateChunkSpatialVisibility();
     Vector3f position = cam.getLocation().clone();
     Vector3i chunkIndex = getChunkIndexForLocation();
+    // Check for collisions
     if(lastLocation != null) {
       Ray movement = new Ray(lastLocation, position.subtract(lastLocation).normalize());
       float distance = lastLocation.distance(position);
