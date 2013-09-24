@@ -7,7 +7,6 @@ import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.KeyTrigger;
 import com.jme3.light.AmbientLight;
 import com.jme3.light.DirectionalLight;
-import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector3f;
 import com.jme3.post.FilterPostProcessor;
@@ -34,18 +33,23 @@ import fi.haju.haju3d.protocol.world.World;
  */
 public class ChunkRenderer extends SimpleApplication {
   private static final float scale = 1;
+  private static final Vector3f lightDir = new Vector3f(-0.9140114f, 0.29160172f, -0.2820493f).negate();
+  
   private ChunkSpatialBuilder builder;
   private DirectionalLight light;
   private CloseEventHandler closeEventHandler;
   private ChunkProvider chunkProvider;
+
   
-  enum ChunkSpatialType { LOW_QUALITY, HIGH_QUALITY }
-  
+  enum ChunkSpatialType {
+    LOW_QUALITY, HIGH_QUALITY
+  }
+
   private World world = new World();
   private boolean isFullScreen = false;
   private Node terrainNode = new Node("terrain");
   private WorldBuilder worldBuilder;
-  
+
   public ChunkRenderer(ChunkProvider chunkProvider) {
     this.chunkProvider = chunkProvider;
     setDisplayMode();
@@ -53,8 +57,6 @@ public class ChunkRenderer extends SimpleApplication {
 
   private void setDisplayMode() {
     AppSettings settings = new AppSettings(true);
-//    settings.setResolution(1280, 720);
-//    settings.setResolution(1920, 1080);
     settings.setVSync(true);
     settings.setAudioRenderer(null);
     settings.setFullscreen(isFullScreen);
@@ -68,11 +70,13 @@ public class ChunkRenderer extends SimpleApplication {
     this.builder = new ChunkSpatialBuilder(assetManager);
     this.worldBuilder = new WorldBuilder(world, chunkProvider, builder);
     new Thread(worldBuilder).start();
-    
+
     setupInput();
     setupCamera();
+    setupSky();
     setupLighting();
-    
+    setupPostFilters();
+
     rootNode.attachChild(terrainNode);
   }
 
@@ -81,8 +85,6 @@ public class ChunkRenderer extends SimpleApplication {
     getFlyByCamera().setRotationSpeed(3);
     getCamera().setLocation(getGlobalPosition(new Vector3i().add(32, 62, 62)));
   }
-  
-  Material mat;
 
   private void setupInput() {
     inputManager.addMapping(InputActions.CHANGE_FULL_SCREEN, new KeyTrigger(KeyInput.KEY_F));
@@ -99,14 +101,14 @@ public class ChunkRenderer extends SimpleApplication {
   private void updateWorldMesh() {
     worldBuilder.setPosition(world.getChunkIndex(getWorldPosition(getCamera().getLocation())));
   }
-  
+
   private void updateChunkSpatialVisibility() {
     Vector3f location = getCamera().getLocation();
     Vector3i worldPosition = getWorldPosition(location);
     Vector3i chunkIndex = world.getChunkIndex(worldPosition);
-    
+
     terrainNode.detachAllChildren();
-    
+
     for (Vector3i pos : chunkIndex.getSurroundingPositions(2, 2, 2)) {
       ChunkSpatial cs = worldBuilder.getChunkSpatial(pos);
       if (cs != null) {
@@ -118,20 +120,13 @@ public class ChunkRenderer extends SimpleApplication {
   public Vector3f getGlobalPosition(Vector3i worldPosition) {
     return new Vector3f(worldPosition.x * scale, worldPosition.y * scale, worldPosition.z * scale);
   }
-  
+
   private Vector3i getWorldPosition(Vector3f location) {
-    return new Vector3i(
-        (int) Math.floor(location.x / scale),
-        (int) Math.floor(location.y / scale),
-        (int) Math.floor(location.z / scale));
+    return new Vector3i((int) Math.floor(location.x / scale), (int) Math.floor(location.y / scale), (int) Math.floor(location.z / scale));
   }
-  
 
   private void setupLighting() {
-    createSky();
-    
     light = new DirectionalLight();
-    Vector3f lightDir = new Vector3f(-0.9140114f, 0.29160172f, -0.2820493f).negate();
     light.setDirection(lightDir.normalizeLocal());
     light.setColor(new ColorRGBA(1f, 1f, 1f, 1f).mult(1.0f));
     rootNode.addLight(light);
@@ -145,23 +140,12 @@ public class ChunkRenderer extends SimpleApplication {
     dlsr.setShadowIntensity(0.4f);
     dlsr.setEdgeFilteringMode(EdgeFilteringMode.PCF4);
     viewPort.addProcessor(dlsr);
-    
+  }
+
+  private void setupPostFilters() {
     FilterPostProcessor fpp = new FilterPostProcessor(assetManager);
-    
-    // FogFilter will also apply fog on the skybox..
-//    FogFilter fog = new FogFilter();
-//    fog.setFogColor(new ColorRGBA(0.9f, 0.9f, 0.9f, 0.0f));
-//    fog.setFogDistance(200);
-//    fog.setFogDensity(1.5f);
-//    fpp.addFilter(fog);
-  
-    // disabled LightScatteringFilter for now, it looks very strange if something is blocking the sun
-//    LightScatteringFilter filter = new LightScatteringFilter(light.getDirection().mult(-20000f));
-//    filter.setLightDensity(1.2f);
-//    filter.setBlurWidth(1.5f);
-//    fpp.addFilter(filter);
-    
-    BloomFilter bloom=new BloomFilter();
+
+    BloomFilter bloom = new BloomFilter();
     bloom.setDownSamplingFactor(2);
     bloom.setBlurScale(1.37f);
     bloom.setExposurePower(4.30f);
@@ -180,25 +164,21 @@ public class ChunkRenderer extends SimpleApplication {
     water.setFoamTexture((Texture2D) assetManager.loadTexture("Common/MatDefs/Water/Textures/foam2.jpg"));
     water.setRefractionStrength(0.1f);
     fpp.addFilter(water);
-    
+
     CartoonEdgeFilter rimLightFilter = new CartoonEdgeFilter();
     rimLightFilter.setEdgeColor(ColorRGBA.Black);
-    
     rimLightFilter.setEdgeIntensity(0.5f);
     rimLightFilter.setEdgeWidth(1.0f);
-    
     rimLightFilter.setNormalSensitivity(0.0f);
     rimLightFilter.setNormalThreshold(0.0f);
-    
     rimLightFilter.setDepthSensitivity(20.0f);
     rimLightFilter.setDepthThreshold(0.0f);
-    
     fpp.addFilter(rimLightFilter);
 
     viewPort.addProcessor(fpp);
   }
 
-  private void createSky() {
+  private void setupSky() {
     Texture west = assetManager.loadTexture("fi/haju/haju3d/client/textures/sky9-left.jpg");
     Texture east = assetManager.loadTexture("fi/haju/haju3d/client/textures/sky9-right.jpg");
     Texture north = assetManager.loadTexture("fi/haju/haju3d/client/textures/sky9-front.jpg");
@@ -213,7 +193,7 @@ public class ChunkRenderer extends SimpleApplication {
     updateWorldMesh();
     updateChunkSpatialVisibility();
   }
-  
+
   @Override
   public void destroy() {
     super.destroy();
