@@ -37,6 +37,7 @@ import fi.haju.haju3d.protocol.world.World;
  * Renderer application for rendering chunks from the server
  */
 public class ChunkRenderer extends SimpleApplication {
+  private static final int MOVE_SPEED = 20;
   private static final float SCALE = 1;
   private static final int CHUNK_CUT_OFF = 3;
   private static final Vector3f lightDir = new Vector3f(-0.9140114f, 0.29160172f, -0.2820493f).negate();
@@ -85,7 +86,7 @@ public class ChunkRenderer extends SimpleApplication {
   }
 
   private void setupCamera() {
-    getFlyByCamera().setMoveSpeed(20 * 2);
+    getFlyByCamera().setMoveSpeed(MOVE_SPEED);
     getFlyByCamera().setRotationSpeed(3);
     getCamera().setLocation(getGlobalPosition(new Vector3i().add(32, 62, 62)));
   }
