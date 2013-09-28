@@ -1,7 +1,12 @@
 package fi.haju.haju3d.client.ui;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.plugins.ClasspathLocator;
+import com.jme3.bounding.BoundingSphere;
+import com.jme3.collision.CollisionResults;
 import com.jme3.input.KeyInput;
 import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.KeyTrigger;
@@ -9,11 +14,15 @@ import com.jme3.light.AmbientLight;
 import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
+import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
 import com.jme3.post.FilterPostProcessor;
 import com.jme3.post.filters.BloomFilter;
 import com.jme3.post.filters.CartoonEdgeFilter;
+import com.jme3.scene.CameraNode;
+import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
+import com.jme3.scene.shape.Box;
 import com.jme3.shadow.DirectionalLightShadowRenderer;
 import com.jme3.shadow.EdgeFilteringMode;
 import com.jme3.system.AppSettings;
@@ -45,6 +54,11 @@ public class ChunkRenderer extends SimpleApplication {
   private boolean isFullScreen = false;
   private Node terrainNode = new Node("terrain");
   private WorldBuilder worldBuilder;
+  private Set<String> activeInputs = new HashSet<>();
+  private CameraNode camNode;
+  private boolean lockView = false;
+  private Node characterNode;
+  private Vector3f characterVelocity = new Vector3f();
   
   public ChunkRenderer(ChunkProvider chunkProvider) {
     this.chunkProvider = chunkProvider;
@@ -72,8 +86,36 @@ public class ChunkRenderer extends SimpleApplication {
     setupInput();
     setupCamera();
     setupLighting();
+    setupCharacter();
     
     rootNode.attachChild(terrainNode);
+  }
+
+  private void setupCharacter() {
+    characterNode = new Node("character");
+    characterNode.setLocalTranslation(getGlobalPosition(new Vector3i().add(32, 62, 62)));
+    
+    Box characterMesh = new Box(0.5f, 1.5f, 0.5f);
+    Geometry characterModel = new Geometry ("CharacterModel", characterMesh);
+    
+    ColorRGBA color = ColorRGBA.Red;
+    Material mat = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
+    mat.setBoolean("UseMaterialColors",true);
+    mat.setColor("Ambient", color);
+    mat.setColor("Diffuse", color);
+    characterModel.setMaterial(mat);
+    
+    characterNode.attachChild(characterModel);
+    
+    camNode = new CameraNode("CamNode", cam);
+    camNode.setLocalTranslation(new Vector3f(0, 3, -10));
+    Quaternion quat = new Quaternion();
+    quat.lookAt(Vector3f.UNIT_Z.subtract(0, 0.2f, 0), Vector3f.UNIT_Y);
+    camNode.setLocalRotation(quat);
+    characterNode.attachChild(camNode);
+    camNode.setEnabled(false);
+    
+    rootNode.attachChild(characterNode);
   }
 
   private void setupCamera() {
@@ -85,6 +127,43 @@ public class ChunkRenderer extends SimpleApplication {
   Material mat;
 
   private void setupInput() {
+    inputManager.addMapping(InputActions.STRAFE_LEFT, new KeyTrigger(KeyInput.KEY_A));
+    inputManager.addMapping(InputActions.STRAFE_RIGHT, new KeyTrigger(KeyInput.KEY_D));
+    inputManager.addMapping(InputActions.WALK_FORWARD, new KeyTrigger(KeyInput.KEY_W));
+    inputManager.addMapping(InputActions.WALK_BACKWARD, new KeyTrigger(KeyInput.KEY_S));
+    inputManager.addMapping(InputActions.JUMP, new KeyTrigger(KeyInput.KEY_SPACE));
+    inputManager.addMapping(InputActions.LOCK_VIEW, new KeyTrigger(KeyInput.KEY_RETURN));
+    inputManager.addListener(new ActionListener() {
+      @Override
+      public void onAction(String name, boolean isPressed, float tpf) {
+        if (isPressed) {
+          activeInputs.add(name);
+        } else {
+          activeInputs.remove(name);
+        }
+      }
+    }, InputActions.STRAFE_LEFT, InputActions.STRAFE_RIGHT, InputActions.WALK_FORWARD, InputActions.WALK_BACKWARD);
+    
+    inputManager.addListener(new ActionListener() {
+      @Override
+      public void onAction(String name, boolean isPressed, float tpf) {
+        if (isPressed) {
+          characterVelocity.y += 0.5;
+        }
+      }
+    }, InputActions.JUMP);
+    
+    inputManager.addListener(new ActionListener() {
+      @Override
+      public void onAction(String name, boolean isPressed, float tpf) {
+        if (isPressed) {
+          lockView = !lockView;
+          flyCam.setEnabled(!lockView);
+          camNode.setEnabled(lockView);
+        }
+      }
+    }, InputActions.LOCK_VIEW);
+    
     inputManager.addMapping(InputActions.CHANGE_FULL_SCREEN, new KeyTrigger(KeyInput.KEY_F));
     inputManager.addListener(new ActionListener() {
       @Override
@@ -95,15 +174,17 @@ public class ChunkRenderer extends SimpleApplication {
       }
     }, InputActions.CHANGE_FULL_SCREEN);
   }
-
+  
   private void updateWorldMesh() {
-    worldBuilder.setPosition(world.getChunkIndex(getWorldPosition(getCamera().getLocation())));
+    worldBuilder.setPosition(getCurrentChunkIndex());
+  }
+
+  private Vector3i getCurrentChunkIndex() {
+    return world.getChunkIndex(getWorldPosition(getCamera().getLocation()));
   }
   
   private void updateChunkSpatialVisibility() {
-    Vector3f location = getCamera().getLocation();
-    Vector3i worldPosition = getWorldPosition(location);
-    Vector3i chunkIndex = world.getChunkIndex(worldPosition);
+    Vector3i chunkIndex = getCurrentChunkIndex();
     
     terrainNode.detachAllChildren();
     
@@ -161,6 +242,21 @@ public class ChunkRenderer extends SimpleApplication {
 //    filter.setBlurWidth(1.5f);
 //    fpp.addFilter(filter);
     
+    
+    CartoonEdgeFilter rimLightFilter = new CartoonEdgeFilter();
+    rimLightFilter.setEdgeColor(ColorRGBA.Black);
+    
+    rimLightFilter.setEdgeIntensity(0.5f);
+    rimLightFilter.setEdgeWidth(1.0f);
+    
+    rimLightFilter.setNormalSensitivity(0.0f);
+    rimLightFilter.setNormalThreshold(0.0f);
+    
+    rimLightFilter.setDepthSensitivity(20.0f);
+    rimLightFilter.setDepthThreshold(0.0f);
+    
+    fpp.addFilter(rimLightFilter);
+    
     BloomFilter bloom=new BloomFilter();
     bloom.setDownSamplingFactor(2);
     bloom.setBlurScale(1.37f);
@@ -180,20 +276,6 @@ public class ChunkRenderer extends SimpleApplication {
     water.setFoamTexture((Texture2D) assetManager.loadTexture("Common/MatDefs/Water/Textures/foam2.jpg"));
     water.setRefractionStrength(0.1f);
     fpp.addFilter(water);
-    
-    CartoonEdgeFilter rimLightFilter = new CartoonEdgeFilter();
-    rimLightFilter.setEdgeColor(ColorRGBA.Black);
-    
-    rimLightFilter.setEdgeIntensity(0.5f);
-    rimLightFilter.setEdgeWidth(1.0f);
-    
-    rimLightFilter.setNormalSensitivity(0.0f);
-    rimLightFilter.setNormalThreshold(0.0f);
-    
-    rimLightFilter.setDepthSensitivity(20.0f);
-    rimLightFilter.setDepthThreshold(0.0f);
-    
-    fpp.addFilter(rimLightFilter);
 
     viewPort.addProcessor(fpp);
   }
@@ -212,8 +294,68 @@ public class ChunkRenderer extends SimpleApplication {
   public void simpleUpdate(float tpf) {
     updateWorldMesh();
     updateChunkSpatialVisibility();
+    updateCharacter(tpf);
   }
   
+  private void updateCharacter(float tpf) {
+    if (worldBuilder.getChunkSpatial(getCurrentChunkIndex()) == null) {
+      return;
+    }
+    
+    characterVelocity.y -= tpf * 0.5;
+    Vector3f characterPos = characterNode.getLocalTranslation();
+    characterPos = characterPos.add(characterVelocity);
+    
+    {
+      BoundingSphere bs = new BoundingSphere(1, characterPos);
+      CollisionResults res = new CollisionResults();
+      int collideWith = terrainNode.collideWith(bs, res);
+      while (collideWith != 0) {
+        characterVelocity.y = 0;
+        characterPos = characterPos.add(0, 0.01f, 0);
+        res = new CollisionResults();
+        bs = new BoundingSphere(1, characterPos);
+        collideWith = terrainNode.collideWith(bs, res);
+      }
+    }
+    
+    Vector3f oldPos = characterPos.clone();
+    final float walkSpeed = 10;
+    if (activeInputs.contains(InputActions.WALK_FORWARD)) {
+      characterPos.z += tpf * walkSpeed;
+    }
+    if (activeInputs.contains(InputActions.WALK_BACKWARD)) {
+      characterPos.z -= tpf * walkSpeed;
+    }
+    if (activeInputs.contains(InputActions.STRAFE_LEFT)) {
+      characterPos.x += tpf * walkSpeed;
+    }
+    if (activeInputs.contains(InputActions.STRAFE_RIGHT)) {
+      characterPos.x -= tpf * walkSpeed;
+    }
+    
+    {
+      Vector3f newPos = characterPos;
+      int i = 0;
+      final int loops = 40;
+      for (i = 0; i < loops; i++) {
+        newPos = newPos.add(0, 0.01f, 0);
+        CollisionResults res = new CollisionResults();
+        BoundingSphere bs = new BoundingSphere(1, newPos);
+        int collideWith = terrainNode.collideWith(bs, res);
+        if (collideWith == 0) {
+          characterPos = newPos;
+          break;
+        }
+      }
+      if (i == loops) {
+        characterPos = oldPos;
+      }
+    }
+    
+    characterNode.setLocalTranslation(characterPos);
+  }
+
   @Override
   public void destroy() {
     super.destroy();
