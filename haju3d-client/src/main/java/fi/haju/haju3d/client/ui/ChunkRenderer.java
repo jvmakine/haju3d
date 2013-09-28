@@ -3,6 +3,7 @@ package fi.haju.haju3d.client.ui;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.google.common.collect.Sets;
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.plugins.ClasspathLocator;
 import com.jme3.bounding.BoundingSphere;
@@ -15,6 +16,7 @@ import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Quaternion;
+import com.jme3.math.Ray;
 import com.jme3.math.Vector3f;
 import com.jme3.post.FilterPostProcessor;
 import com.jme3.post.filters.BloomFilter;
@@ -42,14 +44,17 @@ import fi.haju.haju3d.protocol.world.World;
  * Renderer application for rendering chunks from the server
  */
 public class ChunkRenderer extends SimpleApplication {
-  private static final float scale = 1;
+  private static final int MOVE_SPEED = 20;
+  private static final float SCALE = 1;
+  private static final int CHUNK_CUT_OFF = 3;
+  private static final Vector3f lightDir = new Vector3f(-0.9140114f, 0.29160172f, -0.2820493f).negate();
+  
   private ChunkSpatialBuilder builder;
   private DirectionalLight light;
   private CloseEventHandler closeEventHandler;
   private ChunkProvider chunkProvider;
-  
-  enum ChunkSpatialType { LOW_QUALITY, HIGH_QUALITY }
-  
+  private Vector3f lastLocation = null;
+
   private World world = new World();
   private boolean isFullScreen = false;
   private Node terrainNode = new Node("terrain");
@@ -60,6 +65,8 @@ public class ChunkRenderer extends SimpleApplication {
   private Node characterNode;
   private Vector3f characterVelocity = new Vector3f();
   
+  private float fallSpeed = 0f;
+
   public ChunkRenderer(ChunkProvider chunkProvider) {
     this.chunkProvider = chunkProvider;
     setDisplayMode();
@@ -67,8 +74,6 @@ public class ChunkRenderer extends SimpleApplication {
 
   private void setDisplayMode() {
     AppSettings settings = new AppSettings(true);
-//    settings.setResolution(1280, 720);
-//    settings.setResolution(1920, 1080);
     settings.setVSync(true);
     settings.setAudioRenderer(null);
     settings.setFullscreen(isFullScreen);
@@ -85,8 +90,10 @@ public class ChunkRenderer extends SimpleApplication {
     
     setupInput();
     setupCamera();
+    setupSky();
     setupLighting();
     setupCharacter();
+    setupPostFilters();
     
     rootNode.attachChild(terrainNode);
   }
@@ -119,12 +126,10 @@ public class ChunkRenderer extends SimpleApplication {
   }
 
   private void setupCamera() {
-    getFlyByCamera().setMoveSpeed(20 * 2);
+    getFlyByCamera().setMoveSpeed(MOVE_SPEED);
     getFlyByCamera().setRotationSpeed(3);
     getCamera().setLocation(getGlobalPosition(new Vector3i().add(32, 62, 62)));
   }
-  
-  Material mat;
 
   private void setupInput() {
     inputManager.addMapping(InputActions.STRAFE_LEFT, new KeyTrigger(KeyInput.KEY_A));
@@ -180,15 +185,13 @@ public class ChunkRenderer extends SimpleApplication {
   }
 
   private Vector3i getCurrentChunkIndex() {
-    return world.getChunkIndex(getWorldPosition(getCamera().getLocation()));
+    return getChunkIndexForLocation(getCamera().getLocation());
   }
-  
+
   private void updateChunkSpatialVisibility() {
     Vector3i chunkIndex = getCurrentChunkIndex();
-    
     terrainNode.detachAllChildren();
-    
-    for (Vector3i pos : chunkIndex.getSurroundingPositions(2, 2, 2)) {
+    for (Vector3i pos : chunkIndex.getSurroundingPositions(CHUNK_CUT_OFF, CHUNK_CUT_OFF, CHUNK_CUT_OFF)) {
       ChunkSpatial cs = worldBuilder.getChunkSpatial(pos);
       if (cs != null) {
         terrainNode.attachChild(pos.equals(chunkIndex) ? cs.highDetail : cs.lowDetail);
@@ -196,23 +199,20 @@ public class ChunkRenderer extends SimpleApplication {
     }
   }
 
+  private Vector3i getChunkIndexForLocation(Vector3f location) {
+    return world.getChunkIndex(getWorldPosition(location));
+  }
+
   public Vector3f getGlobalPosition(Vector3i worldPosition) {
-    return new Vector3f(worldPosition.x * scale, worldPosition.y * scale, worldPosition.z * scale);
+    return new Vector3f(worldPosition.x * SCALE, worldPosition.y * SCALE, worldPosition.z * SCALE);
   }
-  
+
   private Vector3i getWorldPosition(Vector3f location) {
-    return new Vector3i(
-        (int) Math.floor(location.x / scale),
-        (int) Math.floor(location.y / scale),
-        (int) Math.floor(location.z / scale));
+    return new Vector3i((int) Math.floor(location.x / SCALE), (int) Math.floor(location.y / SCALE), (int) Math.floor(location.z / SCALE));
   }
-  
 
   private void setupLighting() {
-    createSky();
-    
     light = new DirectionalLight();
-    Vector3f lightDir = new Vector3f(-0.9140114f, 0.29160172f, -0.2820493f).negate();
     light.setDirection(lightDir.normalizeLocal());
     light.setColor(new ColorRGBA(1f, 1f, 1f, 1f).mult(1.0f));
     rootNode.addLight(light);
@@ -226,22 +226,10 @@ public class ChunkRenderer extends SimpleApplication {
     dlsr.setShadowIntensity(0.4f);
     dlsr.setEdgeFilteringMode(EdgeFilteringMode.PCF4);
     viewPort.addProcessor(dlsr);
-    
+  }
+
+  private void setupPostFilters() {
     FilterPostProcessor fpp = new FilterPostProcessor(assetManager);
-    
-    // FogFilter will also apply fog on the skybox..
-//    FogFilter fog = new FogFilter();
-//    fog.setFogColor(new ColorRGBA(0.9f, 0.9f, 0.9f, 0.0f));
-//    fog.setFogDistance(200);
-//    fog.setFogDensity(1.5f);
-//    fpp.addFilter(fog);
-  
-    // disabled LightScatteringFilter for now, it looks very strange if something is blocking the sun
-//    LightScatteringFilter filter = new LightScatteringFilter(light.getDirection().mult(-20000f));
-//    filter.setLightDensity(1.2f);
-//    filter.setBlurWidth(1.5f);
-//    fpp.addFilter(filter);
-    
     
     CartoonEdgeFilter rimLightFilter = new CartoonEdgeFilter();
     rimLightFilter.setEdgeColor(ColorRGBA.Black);
@@ -257,7 +245,7 @@ public class ChunkRenderer extends SimpleApplication {
     
     fpp.addFilter(rimLightFilter);
     
-    BloomFilter bloom=new BloomFilter();
+    BloomFilter bloom = new BloomFilter();
     bloom.setDownSamplingFactor(2);
     bloom.setBlurScale(1.37f);
     bloom.setExposurePower(4.30f);
@@ -280,7 +268,7 @@ public class ChunkRenderer extends SimpleApplication {
     viewPort.addProcessor(fpp);
   }
 
-  private void createSky() {
+  private void setupSky() {
     Texture west = assetManager.loadTexture("fi/haju/haju3d/client/textures/sky9-left.jpg");
     Texture east = assetManager.loadTexture("fi/haju/haju3d/client/textures/sky9-right.jpg");
     Texture north = assetManager.loadTexture("fi/haju/haju3d/client/textures/sky9-front.jpg");
@@ -290,6 +278,24 @@ public class ChunkRenderer extends SimpleApplication {
     rootNode.attachChild(SkyFactory.createSky(assetManager, west, east, north, south, up, down));
   }
 
+  private Vector3f getTerrainCollisionPoint(Vector3f from, Vector3f to, float distanceFix) {
+    Set<Vector3i> chunkPositions = Sets.newHashSet(getChunkIndexForLocation(from), getChunkIndexForLocation(to));
+    Ray ray = new Ray(from, to.subtract(from).normalize());
+    float distance = from.distance(to);
+    for (Vector3i pos : chunkPositions) {
+      ChunkSpatial cs = worldBuilder.getChunkSpatial(pos);
+      CollisionResults collision = new CollisionResults();
+      if(cs != null && cs.lowDetail.collideWith(ray, collision) != 0) {
+        Vector3f closest = collision.getClosestCollision().getContactPoint();
+        boolean collided = closest.distance(lastLocation) <= distance + distanceFix;
+        if(collided) {
+          return closest;
+        }
+      }
+    }
+    return null;
+  }
+  
   @Override
   public void simpleUpdate(float tpf) {
     updateWorldMesh();
@@ -354,6 +360,28 @@ public class ChunkRenderer extends SimpleApplication {
     }
     
     characterNode.setLocalTranslation(characterPos);
+  }
+  
+  private void updateCharacter2(float tpf) {
+    Vector3f position = cam.getLocation().clone();
+    // Check for collisions
+    if(lastLocation != null) {
+      Vector3f collision = getTerrainCollisionPoint(lastLocation, position, 1.5f);
+      if(collision != null) {
+        position = lastLocation;
+      }
+    }
+    // Check for falling
+    Vector3f fallCollision = getTerrainCollisionPoint(position, position.add(new Vector3f(0f, -fallSpeed*tpf, 0f)), 2.0f);
+    if(fallCollision != null) {
+      position = fallCollision.add(new Vector3f(0f, 2.0f, 0f));
+      fallSpeed = 0f;
+    } else {
+      position = position.add(new Vector3f(0f, -fallSpeed*tpf, 0f));
+      fallSpeed += tpf*5.0f;
+    }
+    cam.setLocation(position);
+    lastLocation = position;
   }
 
   @Override
