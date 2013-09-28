@@ -7,21 +7,25 @@ import com.google.common.collect.Sets;
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.plugins.ClasspathLocator;
 import com.jme3.bounding.BoundingSphere;
+import com.jme3.bounding.BoundingVolume;
 import com.jme3.collision.CollisionResults;
 import com.jme3.input.KeyInput;
+import com.jme3.input.MouseInput;
 import com.jme3.input.controls.ActionListener;
+import com.jme3.input.controls.AnalogListener;
 import com.jme3.input.controls.KeyTrigger;
+import com.jme3.input.controls.MouseAxisTrigger;
 import com.jme3.light.AmbientLight;
 import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
+import com.jme3.math.FastMath;
 import com.jme3.math.Quaternion;
 import com.jme3.math.Ray;
 import com.jme3.math.Vector3f;
 import com.jme3.post.FilterPostProcessor;
 import com.jme3.post.filters.BloomFilter;
 import com.jme3.post.filters.CartoonEdgeFilter;
-import com.jme3.scene.CameraNode;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
 import com.jme3.scene.shape.Box;
@@ -44,7 +48,10 @@ import fi.haju.haju3d.protocol.world.World;
  * Renderer application for rendering chunks from the server
  */
 public class ChunkRenderer extends SimpleApplication {
-  private static final int MOVE_SPEED = 20;
+  private static final float MOVE_SPEED = 20;
+  private static final float MOUSE_X_SPEED = 3.0f;
+  private static final float MOUSE_Y_SPEED = MOUSE_X_SPEED;
+  
   private static final float SCALE = 1;
   private static final int CHUNK_CUT_OFF = 3;
   private static final Vector3f lightDir = new Vector3f(-0.9140114f, 0.29160172f, -0.2820493f).negate();
@@ -60,10 +67,10 @@ public class ChunkRenderer extends SimpleApplication {
   private Node terrainNode = new Node("terrain");
   private WorldBuilder worldBuilder;
   private Set<String> activeInputs = new HashSet<>();
-  private CameraNode camNode;
-  private boolean lockView = false;
   private Node characterNode;
   private Vector3f characterVelocity = new Vector3f();
+  private float characterLookAzimuth = 0f;
+  private float characterLookElevation = 0f;
   
   private float fallSpeed = 0f;
 
@@ -100,7 +107,7 @@ public class ChunkRenderer extends SimpleApplication {
 
   private void setupCharacter() {
     characterNode = new Node("character");
-    characterNode.setLocalTranslation(getGlobalPosition(new Vector3i().add(32, 62, 62)));
+    characterNode.setLocalTranslation(getGlobalPosition(new Vector3i().add(32, 62, 32)));
     
     Box characterMesh = new Box(0.5f, 1.5f, 0.5f);
     Geometry characterModel = new Geometry ("CharacterModel", characterMesh);
@@ -114,14 +121,6 @@ public class ChunkRenderer extends SimpleApplication {
     
     characterNode.attachChild(characterModel);
     
-    camNode = new CameraNode("CamNode", cam);
-    camNode.setLocalTranslation(new Vector3f(0, 3, -10));
-    Quaternion quat = new Quaternion();
-    quat.lookAt(Vector3f.UNIT_Z.subtract(0, 0.2f, 0), Vector3f.UNIT_Y);
-    camNode.setLocalRotation(quat);
-    characterNode.attachChild(camNode);
-    camNode.setEnabled(false);
-    
     rootNode.attachChild(characterNode);
   }
 
@@ -132,12 +131,11 @@ public class ChunkRenderer extends SimpleApplication {
   }
 
   private void setupInput() {
+    // moving
     inputManager.addMapping(InputActions.STRAFE_LEFT, new KeyTrigger(KeyInput.KEY_A));
     inputManager.addMapping(InputActions.STRAFE_RIGHT, new KeyTrigger(KeyInput.KEY_D));
     inputManager.addMapping(InputActions.WALK_FORWARD, new KeyTrigger(KeyInput.KEY_W));
     inputManager.addMapping(InputActions.WALK_BACKWARD, new KeyTrigger(KeyInput.KEY_S));
-    inputManager.addMapping(InputActions.JUMP, new KeyTrigger(KeyInput.KEY_SPACE));
-    inputManager.addMapping(InputActions.LOCK_VIEW, new KeyTrigger(KeyInput.KEY_RETURN));
     inputManager.addListener(new ActionListener() {
       @Override
       public void onAction(String name, boolean isPressed, float tpf) {
@@ -149,6 +147,29 @@ public class ChunkRenderer extends SimpleApplication {
       }
     }, InputActions.STRAFE_LEFT, InputActions.STRAFE_RIGHT, InputActions.WALK_FORWARD, InputActions.WALK_BACKWARD);
     
+    // looking
+    inputManager.addMapping(InputActions.LOOK_LEFT, new MouseAxisTrigger(MouseInput.AXIS_X, true), new KeyTrigger(KeyInput.KEY_LEFT));
+    inputManager.addMapping(InputActions.LOOK_RIGHT, new MouseAxisTrigger(MouseInput.AXIS_X, false), new KeyTrigger(KeyInput.KEY_RIGHT));
+    inputManager.addMapping(InputActions.LOOK_UP, new MouseAxisTrigger(MouseInput.AXIS_Y, false), new KeyTrigger(KeyInput.KEY_UP));
+    inputManager.addMapping(InputActions.LOOK_DOWN, new MouseAxisTrigger(MouseInput.AXIS_Y, true), new KeyTrigger(KeyInput.KEY_DOWN));
+    
+    inputManager.addListener(new AnalogListener() {
+      @Override
+      public void onAnalog(String name, float value, float tpf) {
+        if (name.equals(InputActions.LOOK_LEFT)) {
+          characterLookAzimuth += value * MOUSE_X_SPEED;
+        } else if (name.equals(InputActions.LOOK_RIGHT)) {
+          characterLookAzimuth -= value * MOUSE_X_SPEED;
+        } else if (name.equals(InputActions.LOOK_UP)) {
+          characterLookElevation -= value * MOUSE_Y_SPEED;
+        } else if (name.equals(InputActions.LOOK_DOWN)) {
+          characterLookElevation += value * MOUSE_Y_SPEED;
+        }
+      }
+    }, InputActions.LOOK_LEFT, InputActions.LOOK_RIGHT, InputActions.LOOK_UP, InputActions.LOOK_DOWN);
+
+    // jumping
+    inputManager.addMapping(InputActions.JUMP, new KeyTrigger(KeyInput.KEY_SPACE));
     inputManager.addListener(new ActionListener() {
       @Override
       public void onAction(String name, boolean isPressed, float tpf) {
@@ -158,17 +179,19 @@ public class ChunkRenderer extends SimpleApplication {
       }
     }, InputActions.JUMP);
     
+    // toggle flycam
+    inputManager.addMapping(InputActions.TOGGLE_FLYCAM, new KeyTrigger(KeyInput.KEY_RETURN));
     inputManager.addListener(new ActionListener() {
       @Override
       public void onAction(String name, boolean isPressed, float tpf) {
         if (isPressed) {
-          lockView = !lockView;
-          flyCam.setEnabled(!lockView);
-          camNode.setEnabled(lockView);
+          flyCam.setEnabled(!flyCam.isEnabled());
+          inputManager.setCursorVisible(false);
         }
       }
-    }, InputActions.LOCK_VIEW);
+    }, InputActions.TOGGLE_FLYCAM);
     
+    // toggle fullscreen
     inputManager.addMapping(InputActions.CHANGE_FULL_SCREEN, new KeyTrigger(KeyInput.KEY_F));
     inputManager.addListener(new ActionListener() {
       @Override
@@ -287,7 +310,7 @@ public class ChunkRenderer extends SimpleApplication {
       CollisionResults collision = new CollisionResults();
       if(cs != null && cs.lowDetail.collideWith(ray, collision) != 0) {
         Vector3f closest = collision.getClosestCollision().getContactPoint();
-        boolean collided = closest.distance(lastLocation) <= distance + distanceFix;
+        boolean collided = closest.distance(from) <= distance + distanceFix;
         if(collided) {
           return closest;
         }
@@ -304,42 +327,50 @@ public class ChunkRenderer extends SimpleApplication {
   }
   
   private void updateCharacter(float tpf) {
+    if (flyCam.isEnabled()) {
+      return;
+    }
     if (worldBuilder.getChunkSpatial(getCurrentChunkIndex()) == null) {
       return;
     }
     
+    // apply gravity
     characterVelocity.y -= tpf * 0.5;
     Vector3f characterPos = characterNode.getLocalTranslation();
     characterPos = characterPos.add(characterVelocity);
-    
-    {
-      BoundingSphere bs = new BoundingSphere(1, characterPos);
+  
+    // check if character falls below ground level, lift up to ground level
+    while (true) {
       CollisionResults res = new CollisionResults();
-      int collideWith = terrainNode.collideWith(bs, res);
-      while (collideWith != 0) {
-        characterVelocity.y = 0;
-        characterPos = characterPos.add(0, 0.01f, 0);
-        res = new CollisionResults();
-        bs = new BoundingSphere(1, characterPos);
-        collideWith = terrainNode.collideWith(bs, res);
+      int collideWith = terrainNode.collideWith(makeCharacterBoundingVolume(characterPos), res);
+      if (collideWith == 0) {
+        break;
       }
+      characterVelocity.y = 0;
+      characterPos = characterPos.add(0, 0.01f, 0);
     }
     
+    // move character based on used input
     Vector3f oldPos = characterPos.clone();
     final float walkSpeed = 10;
     if (activeInputs.contains(InputActions.WALK_FORWARD)) {
-      characterPos.z += tpf * walkSpeed;
+      characterPos.z += FastMath.cos(characterLookAzimuth) * tpf * walkSpeed;
+      characterPos.x += FastMath.sin(characterLookAzimuth) * tpf * walkSpeed;
     }
     if (activeInputs.contains(InputActions.WALK_BACKWARD)) {
-      characterPos.z -= tpf * walkSpeed;
+      characterPos.z -= FastMath.cos(characterLookAzimuth) * tpf * walkSpeed;
+      characterPos.x -= FastMath.sin(characterLookAzimuth) * tpf * walkSpeed;
     }
     if (activeInputs.contains(InputActions.STRAFE_LEFT)) {
-      characterPos.x += tpf * walkSpeed;
+      characterPos.z -= FastMath.sin(characterLookAzimuth) * tpf * walkSpeed;
+      characterPos.x -= -FastMath.cos(characterLookAzimuth) * tpf * walkSpeed;
     }
     if (activeInputs.contains(InputActions.STRAFE_RIGHT)) {
-      characterPos.x -= tpf * walkSpeed;
+      characterPos.z += FastMath.sin(characterLookAzimuth) * tpf * walkSpeed;
+      characterPos.x += -FastMath.cos(characterLookAzimuth) * tpf * walkSpeed;
     }
     
+    // check if character hits wall. either climb it or return to old position
     {
       Vector3f newPos = characterPos;
       int i = 0;
@@ -347,19 +378,41 @@ public class ChunkRenderer extends SimpleApplication {
       for (i = 0; i < loops; i++) {
         newPos = newPos.add(0, 0.01f, 0);
         CollisionResults res = new CollisionResults();
-        BoundingSphere bs = new BoundingSphere(1, newPos);
-        int collideWith = terrainNode.collideWith(bs, res);
+        int collideWith = terrainNode.collideWith(makeCharacterBoundingVolume(newPos), res);
         if (collideWith == 0) {
-          characterPos = newPos;
           break;
         }
       }
       if (i == loops) {
         characterPos = oldPos;
+      } else {
+        characterPos = newPos;
       }
     }
     
     characterNode.setLocalTranslation(characterPos);
+    
+    // set camera position and rotation
+    {
+      Quaternion quat = new Quaternion();
+      quat.fromAngles(characterLookElevation, characterLookAzimuth, 0.0f);
+      cam.setRotation(quat);
+      
+      Vector3f camPos = characterNode.getLocalTranslation().clone();
+      Vector3f lookDir = quat.mult(Vector3f.UNIT_Z);
+      camPos.addLocal(lookDir.mult(-10));
+      
+      Vector3f coll = getTerrainCollisionPoint(characterNode.getLocalTranslation(), camPos, 0.0f);
+      if (coll != null) {
+        camPos.set(coll);
+      }
+      
+      cam.setLocation(camPos);
+    }
+  }
+
+  private BoundingVolume makeCharacterBoundingVolume(Vector3f characterPos) {
+    return new BoundingSphere(1, characterPos.add(0, -0.5f, 0));
   }
   
   private void updateCharacter2(float tpf) {
