@@ -34,6 +34,10 @@ public class WorldBuilder {
     @Override
     public void run() {
       while (running.get()) {
+        try {
+          Thread.sleep(10L);
+        } catch (InterruptedException e) {
+        }
         // synchronized (lock) {
         // try {
         // lock.wait();
@@ -98,7 +102,9 @@ public class WorldBuilder {
   public void start() {
     if (!running.get()) {
       running.set(true);
-      new Thread(runnable).start();
+      Thread thread = new Thread(runnable);
+      thread.setPriority(3);
+      thread.start();
     }
   }
   

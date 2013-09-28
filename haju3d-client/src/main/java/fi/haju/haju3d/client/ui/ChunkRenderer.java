@@ -48,7 +48,7 @@ import fi.haju.haju3d.protocol.world.World;
  * Renderer application for rendering chunks from the server
  */
 public class ChunkRenderer extends SimpleApplication {
-  private static final float MOVE_SPEED = 20;
+  private static final float MOVE_SPEED = 40;
   private static final float MOUSE_X_SPEED = 3.0f;
   private static final float MOUSE_Y_SPEED = MOUSE_X_SPEED;
   
@@ -90,6 +90,8 @@ public class ChunkRenderer extends SimpleApplication {
 
   @Override
   public void simpleInitApp() {
+    Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
+    
     assetManager.registerLocator("assets", new ClasspathLocator().getClass());
     this.builder = new ChunkSpatialBuilder(assetManager);
     this.worldBuilder = new WorldBuilder(world, chunkProvider, builder);
@@ -126,7 +128,7 @@ public class ChunkRenderer extends SimpleApplication {
 
   private void setupCamera() {
     getFlyByCamera().setMoveSpeed(MOVE_SPEED);
-    getFlyByCamera().setRotationSpeed(3);
+    getFlyByCamera().setRotationSpeed(MOUSE_X_SPEED);
     getCamera().setLocation(getGlobalPosition(new Vector3i().add(32, 62, 62)));
   }
 
