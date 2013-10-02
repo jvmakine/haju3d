@@ -51,11 +51,11 @@ public class ChunkRenderer extends SimpleApplication {
   private static final float MOVE_SPEED = 40;
   private static final float MOUSE_X_SPEED = 3.0f;
   private static final float MOUSE_Y_SPEED = MOUSE_X_SPEED;
-  
+
   private static final float SCALE = 1;
   private static final int CHUNK_CUT_OFF = 3;
   private static final Vector3f lightDir = new Vector3f(-0.9140114f, 0.29160172f, -0.2820493f).negate();
-  
+
   private ChunkSpatialBuilder builder;
   private DirectionalLight light;
   private CloseEventHandler closeEventHandler;
@@ -71,7 +71,7 @@ public class ChunkRenderer extends SimpleApplication {
   private Vector3f characterVelocity = new Vector3f();
   private float characterLookAzimuth = 0f;
   private float characterLookElevation = 0f;
-  
+
   private float fallSpeed = 0f;
 
   public ChunkRenderer(ChunkProvider chunkProvider) {
@@ -91,38 +91,38 @@ public class ChunkRenderer extends SimpleApplication {
   @Override
   public void simpleInitApp() {
     Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
-    
+
     assetManager.registerLocator("assets", new ClasspathLocator().getClass());
     this.builder = new ChunkSpatialBuilder(assetManager);
     this.worldBuilder = new WorldBuilder(world, chunkProvider, builder);
     this.worldBuilder.start();
-    
+
     setupInput();
     setupCamera();
     setupSky();
     setupLighting();
     setupCharacter();
     setupPostFilters();
-    
+
     rootNode.attachChild(terrainNode);
   }
 
   private void setupCharacter() {
     characterNode = new Node("character");
     characterNode.setLocalTranslation(getGlobalPosition(new Vector3i().add(32, 62, 32)));
-    
+
     Box characterMesh = new Box(0.5f, 1.5f, 0.5f);
-    Geometry characterModel = new Geometry ("CharacterModel", characterMesh);
-    
+    Geometry characterModel = new Geometry("CharacterModel", characterMesh);
+
     ColorRGBA color = ColorRGBA.Red;
     Material mat = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
-    mat.setBoolean("UseMaterialColors",true);
+    mat.setBoolean("UseMaterialColors", true);
     mat.setColor("Ambient", color);
     mat.setColor("Diffuse", color);
     characterModel.setMaterial(mat);
-    
+
     characterNode.attachChild(characterModel);
-    
+
     rootNode.attachChild(characterNode);
   }
 
@@ -148,13 +148,13 @@ public class ChunkRenderer extends SimpleApplication {
         }
       }
     }, InputActions.STRAFE_LEFT, InputActions.STRAFE_RIGHT, InputActions.WALK_FORWARD, InputActions.WALK_BACKWARD);
-    
+
     // looking
     inputManager.addMapping(InputActions.LOOK_LEFT, new MouseAxisTrigger(MouseInput.AXIS_X, true), new KeyTrigger(KeyInput.KEY_LEFT));
     inputManager.addMapping(InputActions.LOOK_RIGHT, new MouseAxisTrigger(MouseInput.AXIS_X, false), new KeyTrigger(KeyInput.KEY_RIGHT));
     inputManager.addMapping(InputActions.LOOK_UP, new MouseAxisTrigger(MouseInput.AXIS_Y, false), new KeyTrigger(KeyInput.KEY_UP));
     inputManager.addMapping(InputActions.LOOK_DOWN, new MouseAxisTrigger(MouseInput.AXIS_Y, true), new KeyTrigger(KeyInput.KEY_DOWN));
-    
+
     inputManager.addListener(new AnalogListener() {
       @Override
       public void onAnalog(String name, float value, float tpf) {
@@ -175,12 +175,12 @@ public class ChunkRenderer extends SimpleApplication {
     inputManager.addListener(new ActionListener() {
       @Override
       public void onAction(String name, boolean isPressed, float tpf) {
-        if (isPressed) {
+        if (isPressed && canJump(characterNode)) {
           characterVelocity.y += 0.5;
         }
       }
     }, InputActions.JUMP);
-    
+
     // toggle flycam
     inputManager.addMapping(InputActions.TOGGLE_FLYCAM, new KeyTrigger(KeyInput.KEY_RETURN));
     inputManager.addListener(new ActionListener() {
@@ -192,7 +192,7 @@ public class ChunkRenderer extends SimpleApplication {
         }
       }
     }, InputActions.TOGGLE_FLYCAM);
-    
+
     // toggle fullscreen
     inputManager.addMapping(InputActions.CHANGE_FULL_SCREEN, new KeyTrigger(KeyInput.KEY_F));
     inputManager.addListener(new ActionListener() {
@@ -203,6 +203,11 @@ public class ChunkRenderer extends SimpleApplication {
         restart();
       }
     }, InputActions.CHANGE_FULL_SCREEN);
+  }
+
+  private boolean canJump(Node characterNode) {
+    Vector3f pos = characterNode.getLocalTranslation();
+    return getTerrainCollisionPoint(pos, pos.add(new Vector3f(0, -2.0f, 0)), 0.0f) != null;
   }
   
   private void updateWorldMesh() {
@@ -255,21 +260,21 @@ public class ChunkRenderer extends SimpleApplication {
 
   private void setupPostFilters() {
     FilterPostProcessor fpp = new FilterPostProcessor(assetManager);
-    
+
     CartoonEdgeFilter rimLightFilter = new CartoonEdgeFilter();
     rimLightFilter.setEdgeColor(ColorRGBA.Black);
-    
+
     rimLightFilter.setEdgeIntensity(0.5f);
     rimLightFilter.setEdgeWidth(1.0f);
-    
+
     rimLightFilter.setNormalSensitivity(0.0f);
     rimLightFilter.setNormalThreshold(0.0f);
-    
+
     rimLightFilter.setDepthSensitivity(20.0f);
     rimLightFilter.setDepthThreshold(0.0f);
-    
+
     fpp.addFilter(rimLightFilter);
-    
+
     BloomFilter bloom = new BloomFilter();
     bloom.setDownSamplingFactor(2);
     bloom.setBlurScale(1.37f);
@@ -310,24 +315,24 @@ public class ChunkRenderer extends SimpleApplication {
     for (Vector3i pos : chunkPositions) {
       ChunkSpatial cs = worldBuilder.getChunkSpatial(pos);
       CollisionResults collision = new CollisionResults();
-      if(cs != null && cs.lowDetail.collideWith(ray, collision) != 0) {
+      if (cs != null && cs.lowDetail.collideWith(ray, collision) != 0) {
         Vector3f closest = collision.getClosestCollision().getContactPoint();
         boolean collided = closest.distance(from) <= distance + distanceFix;
-        if(collided) {
+        if (collided) {
           return closest;
         }
       }
     }
     return null;
   }
-  
+
   @Override
   public void simpleUpdate(float tpf) {
     updateWorldMesh();
     updateChunkSpatialVisibility();
     updateCharacter(tpf);
   }
-  
+
   private void updateCharacter(float tpf) {
     if (flyCam.isEnabled()) {
       return;
@@ -335,12 +340,12 @@ public class ChunkRenderer extends SimpleApplication {
     if (worldBuilder.getChunkSpatial(getCurrentChunkIndex()) == null) {
       return;
     }
-    
+
     // apply gravity
     characterVelocity.y -= tpf * 0.5;
     Vector3f characterPos = characterNode.getLocalTranslation();
     characterPos = characterPos.add(characterVelocity);
-  
+
     // check if character falls below ground level, lift up to ground level
     while (true) {
       CollisionResults res = new CollisionResults();
@@ -351,7 +356,7 @@ public class ChunkRenderer extends SimpleApplication {
       characterVelocity.y = 0;
       characterPos = characterPos.add(0, 0.01f, 0);
     }
-    
+
     // move character based on used input
     Vector3f oldPos = characterPos.clone();
     final float walkSpeed = 10;
@@ -371,69 +376,65 @@ public class ChunkRenderer extends SimpleApplication {
       characterPos.z += FastMath.sin(characterLookAzimuth) * tpf * walkSpeed;
       characterPos.x += -FastMath.cos(characterLookAzimuth) * tpf * walkSpeed;
     }
-    
+
     // check if character hits wall. either climb it or return to old position
-    {
-      Vector3f newPos = characterPos;
-      int i = 0;
-      final int loops = 40;
-      for (i = 0; i < loops; i++) {
-        newPos = newPos.add(0, 0.01f, 0);
-        CollisionResults res = new CollisionResults();
-        int collideWith = terrainNode.collideWith(makeCharacterBoundingVolume(newPos), res);
-        if (collideWith == 0) {
-          break;
-        }
-      }
-      if (i == loops) {
-        characterPos = oldPos;
-      } else {
-        characterPos = newPos;
+    Vector3f newPos = characterPos;
+    int i = 0;
+    final int loops = 40;
+    for (i = 0; i < loops; i++) {
+      newPos = newPos.add(0, 0.01f, 0);
+      CollisionResults res = new CollisionResults();
+      int collideWith = terrainNode.collideWith(makeCharacterBoundingVolume(newPos), res);
+      if (collideWith == 0) {
+        break;
       }
     }
-    
+    if (i == loops) {
+      characterPos = oldPos;
+    } else {
+      characterPos = newPos;
+    }
+
     characterNode.setLocalTranslation(characterPos);
-    
+
     // set camera position and rotation
-    {
-      Quaternion quat = new Quaternion();
-      quat.fromAngles(characterLookElevation, characterLookAzimuth, 0.0f);
-      cam.setRotation(quat);
-      
-      Vector3f camPos = characterNode.getLocalTranslation().clone();
-      Vector3f lookDir = quat.mult(Vector3f.UNIT_Z);
-      camPos.addLocal(lookDir.mult(-10));
-      
-      Vector3f coll = getTerrainCollisionPoint(characterNode.getLocalTranslation(), camPos, 0.0f);
-      if (coll != null) {
-        camPos.set(coll);
-      }
-      
-      cam.setLocation(camPos);
+    Quaternion quat = new Quaternion();
+    quat.fromAngles(characterLookElevation, characterLookAzimuth, 0.0f);
+    cam.setRotation(quat);
+
+    Vector3f camPos = characterNode.getLocalTranslation().clone();
+    Vector3f lookDir = quat.mult(Vector3f.UNIT_Z);
+    camPos.addLocal(lookDir.mult(-10));
+
+    Vector3f coll = getTerrainCollisionPoint(characterNode.getLocalTranslation(), camPos, 0.0f);
+    if (coll != null) {
+      camPos.set(coll);
     }
+
+    cam.setLocation(camPos);
   }
 
   private BoundingVolume makeCharacterBoundingVolume(Vector3f characterPos) {
     return new BoundingSphere(1, characterPos.add(0, -0.5f, 0));
   }
-  
+
   private void updateCharacter2(float tpf) {
     Vector3f position = cam.getLocation().clone();
     // Check for collisions
-    if(lastLocation != null) {
+    if (lastLocation != null) {
       Vector3f collision = getTerrainCollisionPoint(lastLocation, position, 1.5f);
-      if(collision != null) {
+      if (collision != null) {
         position = lastLocation;
       }
     }
     // Check for falling
-    Vector3f fallCollision = getTerrainCollisionPoint(position, position.add(new Vector3f(0f, -fallSpeed*tpf, 0f)), 2.0f);
-    if(fallCollision != null) {
+    Vector3f fallCollision = getTerrainCollisionPoint(position, position.add(new Vector3f(0f, -fallSpeed * tpf, 0f)), 2.0f);
+    if (fallCollision != null) {
       position = fallCollision.add(new Vector3f(0f, 2.0f, 0f));
       fallSpeed = 0f;
     } else {
-      position = position.add(new Vector3f(0f, -fallSpeed*tpf, 0f));
-      fallSpeed += tpf*5.0f;
+      position = position.add(new Vector3f(0f, -fallSpeed * tpf, 0f));
+      fallSpeed += tpf * 5.0f;
     }
     cam.setLocation(position);
     lastLocation = position;

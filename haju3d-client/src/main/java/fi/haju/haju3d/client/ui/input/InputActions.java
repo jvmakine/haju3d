@@ -12,10 +12,9 @@ public final class InputActions {
   public static final String LOOK_RIGHT = "Look Right";
   public static final String LOOK_UP = "Look Up";
   public static final String LOOK_DOWN = "Look Down";
-
+  public static final String CHANGE_FULL_SCREEN = "fullscreen";
+  
   private InputActions() {
   }
-  
-  public static final String CHANGE_FULL_SCREEN = "fullscreen";
   
 }
