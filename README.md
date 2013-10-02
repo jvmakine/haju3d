@@ -14,4 +14,8 @@ ESC : Exit the client
 
 F : Change between fullscreen and windowed modes.
 
-A S D W : Move the camera
+A S D W : Move the camera/character
+
+SPACE : Jump
+
+ENTER : Toggle flycam and third person view
