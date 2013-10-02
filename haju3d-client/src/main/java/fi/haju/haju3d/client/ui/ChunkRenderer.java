@@ -3,7 +3,6 @@ package fi.haju.haju3d.client.ui;
 import java.util.HashSet;
 import java.util.Set;
 
-import com.google.common.collect.Sets;
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.plugins.ClasspathLocator;
 import com.jme3.bounding.BoundingSphere;
@@ -21,7 +20,6 @@ import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.FastMath;
 import com.jme3.math.Quaternion;
-import com.jme3.math.Ray;
 import com.jme3.math.Vector3f;
 import com.jme3.post.FilterPostProcessor;
 import com.jme3.post.filters.BloomFilter;
@@ -42,7 +40,6 @@ import fi.haju.haju3d.client.CloseEventHandler;
 import fi.haju.haju3d.client.ui.input.InputActions;
 import fi.haju.haju3d.client.ui.mesh.ChunkSpatialBuilder;
 import fi.haju.haju3d.protocol.Vector3i;
-import fi.haju.haju3d.protocol.world.World;
 
 /**
  * Renderer application for rendering chunks from the server
@@ -52,7 +49,7 @@ public class ChunkRenderer extends SimpleApplication {
   private static final float MOUSE_X_SPEED = 3.0f;
   private static final float MOUSE_Y_SPEED = MOUSE_X_SPEED;
 
-  private static final float SCALE = 1;
+  
   private static final int CHUNK_CUT_OFF = 3;
   private static final Vector3f lightDir = new Vector3f(-0.9140114f, 0.29160172f, -0.2820493f).negate();
 
@@ -60,19 +57,16 @@ public class ChunkRenderer extends SimpleApplication {
   private DirectionalLight light;
   private CloseEventHandler closeEventHandler;
   private ChunkProvider chunkProvider;
-  private Vector3f lastLocation = null;
 
-  private World world = new World();
+
   private boolean isFullScreen = false;
   private Node terrainNode = new Node("terrain");
-  private WorldBuilder worldBuilder;
+  private WorldManager worldManager;
   private Set<String> activeInputs = new HashSet<>();
   private Node characterNode;
   private Vector3f characterVelocity = new Vector3f();
   private float characterLookAzimuth = 0f;
   private float characterLookElevation = 0f;
-
-  private float fallSpeed = 0f;
 
   public ChunkRenderer(ChunkProvider chunkProvider) {
     this.chunkProvider = chunkProvider;
@@ -94,8 +88,8 @@ public class ChunkRenderer extends SimpleApplication {
 
     assetManager.registerLocator("assets", new ClasspathLocator().getClass());
     this.builder = new ChunkSpatialBuilder(assetManager);
-    this.worldBuilder = new WorldBuilder(world, chunkProvider, builder);
-    this.worldBuilder.start();
+    this.worldManager = new WorldManager(chunkProvider, builder);
+    this.worldManager.start();
 
     setupInput();
     setupCamera();
@@ -109,7 +103,7 @@ public class ChunkRenderer extends SimpleApplication {
 
   private void setupCharacter() {
     characterNode = new Node("character");
-    characterNode.setLocalTranslation(getGlobalPosition(new Vector3i().add(32, 62, 32)));
+    characterNode.setLocalTranslation(worldManager.getGlobalPosition(new Vector3i().add(32, 62, 32)));
 
     Box characterMesh = new Box(0.5f, 1.5f, 0.5f);
     Geometry characterModel = new Geometry("CharacterModel", characterMesh);
@@ -129,7 +123,7 @@ public class ChunkRenderer extends SimpleApplication {
   private void setupCamera() {
     getFlyByCamera().setMoveSpeed(MOVE_SPEED);
     getFlyByCamera().setRotationSpeed(MOUSE_X_SPEED);
-    getCamera().setLocation(getGlobalPosition(new Vector3i().add(32, 62, 62)));
+    getCamera().setLocation(worldManager.getGlobalPosition(new Vector3i().add(32, 62, 62)));
   }
 
   private void setupInput() {
@@ -207,38 +201,26 @@ public class ChunkRenderer extends SimpleApplication {
 
   private boolean canJump(Node characterNode) {
     Vector3f pos = characterNode.getLocalTranslation();
-    return getTerrainCollisionPoint(pos, pos.add(new Vector3f(0, -2.0f, 0)), 0.0f) != null;
+    return worldManager.getTerrainCollisionPoint(pos, pos.add(new Vector3f(0, -2.0f, 0)), 0.0f) != null;
   }
   
   private void updateWorldMesh() {
-    worldBuilder.setPosition(getCurrentChunkIndex());
+    worldManager.setPosition(getCurrentChunkIndex());
   }
 
   private Vector3i getCurrentChunkIndex() {
-    return getChunkIndexForLocation(getCamera().getLocation());
+    return worldManager.getChunkIndexForLocation(getCamera().getLocation());
   }
 
   private void updateChunkSpatialVisibility() {
     Vector3i chunkIndex = getCurrentChunkIndex();
     terrainNode.detachAllChildren();
     for (Vector3i pos : chunkIndex.getSurroundingPositions(CHUNK_CUT_OFF, CHUNK_CUT_OFF, CHUNK_CUT_OFF)) {
-      ChunkSpatial cs = worldBuilder.getChunkSpatial(pos);
+      ChunkSpatial cs = worldManager.getChunkSpatial(pos);
       if (cs != null) {
         terrainNode.attachChild(pos.equals(chunkIndex) ? cs.highDetail : cs.lowDetail);
       }
     }
-  }
-
-  private Vector3i getChunkIndexForLocation(Vector3f location) {
-    return world.getChunkIndex(getWorldPosition(location));
-  }
-
-  public Vector3f getGlobalPosition(Vector3i worldPosition) {
-    return new Vector3f(worldPosition.x * SCALE, worldPosition.y * SCALE, worldPosition.z * SCALE);
-  }
-
-  private Vector3i getWorldPosition(Vector3f location) {
-    return new Vector3i((int) Math.floor(location.x / SCALE), (int) Math.floor(location.y / SCALE), (int) Math.floor(location.z / SCALE));
   }
 
   private void setupLighting() {
@@ -308,24 +290,6 @@ public class ChunkRenderer extends SimpleApplication {
     rootNode.attachChild(SkyFactory.createSky(assetManager, west, east, north, south, up, down));
   }
 
-  private Vector3f getTerrainCollisionPoint(Vector3f from, Vector3f to, float distanceFix) {
-    Set<Vector3i> chunkPositions = Sets.newHashSet(getChunkIndexForLocation(from), getChunkIndexForLocation(to));
-    Ray ray = new Ray(from, to.subtract(from).normalize());
-    float distance = from.distance(to);
-    for (Vector3i pos : chunkPositions) {
-      ChunkSpatial cs = worldBuilder.getChunkSpatial(pos);
-      CollisionResults collision = new CollisionResults();
-      if (cs != null && cs.lowDetail.collideWith(ray, collision) != 0) {
-        Vector3f closest = collision.getClosestCollision().getContactPoint();
-        boolean collided = closest.distance(from) <= distance + distanceFix;
-        if (collided) {
-          return closest;
-        }
-      }
-    }
-    return null;
-  }
-
   @Override
   public void simpleUpdate(float tpf) {
     updateWorldMesh();
@@ -337,7 +301,7 @@ public class ChunkRenderer extends SimpleApplication {
     if (flyCam.isEnabled()) {
       return;
     }
-    if (worldBuilder.getChunkSpatial(getCurrentChunkIndex()) == null) {
+    if (worldManager.getChunkSpatial(getCurrentChunkIndex()) == null) {
       return;
     }
 
@@ -406,7 +370,7 @@ public class ChunkRenderer extends SimpleApplication {
     Vector3f lookDir = quat.mult(Vector3f.UNIT_Z);
     camPos.addLocal(lookDir.mult(-10));
 
-    Vector3f coll = getTerrainCollisionPoint(characterNode.getLocalTranslation(), camPos, 0.0f);
+    Vector3f coll = worldManager.getTerrainCollisionPoint(characterNode.getLocalTranslation(), camPos, 0.0f);
     if (coll != null) {
       camPos.set(coll);
     }
@@ -418,33 +382,11 @@ public class ChunkRenderer extends SimpleApplication {
     return new BoundingSphere(1, characterPos.add(0, -0.5f, 0));
   }
 
-  private void updateCharacter2(float tpf) {
-    Vector3f position = cam.getLocation().clone();
-    // Check for collisions
-    if (lastLocation != null) {
-      Vector3f collision = getTerrainCollisionPoint(lastLocation, position, 1.5f);
-      if (collision != null) {
-        position = lastLocation;
-      }
-    }
-    // Check for falling
-    Vector3f fallCollision = getTerrainCollisionPoint(position, position.add(new Vector3f(0f, -fallSpeed * tpf, 0f)), 2.0f);
-    if (fallCollision != null) {
-      position = fallCollision.add(new Vector3f(0f, 2.0f, 0f));
-      fallSpeed = 0f;
-    } else {
-      position = position.add(new Vector3f(0f, -fallSpeed * tpf, 0f));
-      fallSpeed += tpf * 5.0f;
-    }
-    cam.setLocation(position);
-    lastLocation = position;
-  }
-
   @Override
   public void destroy() {
     super.destroy();
-    if (this.worldBuilder != null) {
-      this.worldBuilder.stop();
+    if (this.worldManager != null) {
+      this.worldManager.stop();
     }
     if (closeEventHandler != null) {
       this.closeEventHandler.onClose();
