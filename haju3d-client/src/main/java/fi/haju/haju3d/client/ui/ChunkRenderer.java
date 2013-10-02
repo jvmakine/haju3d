@@ -35,6 +35,7 @@ import com.jme3.texture.Texture2D;
 import com.jme3.util.SkyFactory;
 import com.jme3.water.WaterFilter;
 
+import fi.haju.haju3d.client.Character;
 import fi.haju.haju3d.client.ChunkProvider;
 import fi.haju.haju3d.client.CloseEventHandler;
 import fi.haju.haju3d.client.ui.input.InputActions;
@@ -58,16 +59,13 @@ public class ChunkRenderer extends SimpleApplication {
   private CloseEventHandler closeEventHandler;
   private ChunkProvider chunkProvider;
 
-
   private boolean isFullScreen = false;
   private Node terrainNode = new Node("terrain");
   private WorldManager worldManager;
   private Set<String> activeInputs = new HashSet<>();
-  private Node characterNode;
-  private Vector3f characterVelocity = new Vector3f();
-  private float characterLookAzimuth = 0f;
-  private float characterLookElevation = 0f;
-
+  
+  private Character character;
+  
   public ChunkRenderer(ChunkProvider chunkProvider) {
     this.chunkProvider = chunkProvider;
     setDisplayMode();
@@ -102,8 +100,8 @@ public class ChunkRenderer extends SimpleApplication {
   }
 
   private void setupCharacter() {
-    characterNode = new Node("character");
-    characterNode.setLocalTranslation(worldManager.getGlobalPosition(new Vector3i().add(32, 62, 32)));
+    character = new Character(new Node("character"));
+    character.getNode().setLocalTranslation(worldManager.getGlobalPosition(new Vector3i().add(32, 62, 32)));
 
     Box characterMesh = new Box(0.5f, 1.5f, 0.5f);
     Geometry characterModel = new Geometry("CharacterModel", characterMesh);
@@ -115,9 +113,9 @@ public class ChunkRenderer extends SimpleApplication {
     mat.setColor("Diffuse", color);
     characterModel.setMaterial(mat);
 
-    characterNode.attachChild(characterModel);
+    character.getNode().attachChild(characterModel);
 
-    rootNode.attachChild(characterNode);
+    rootNode.attachChild(character.getNode());
   }
 
   private void setupCamera() {
@@ -153,13 +151,13 @@ public class ChunkRenderer extends SimpleApplication {
       @Override
       public void onAnalog(String name, float value, float tpf) {
         if (name.equals(InputActions.LOOK_LEFT)) {
-          characterLookAzimuth += value * MOUSE_X_SPEED;
+          character.setLookAzimuth(character.getLookAzimuth() + value * MOUSE_X_SPEED);
         } else if (name.equals(InputActions.LOOK_RIGHT)) {
-          characterLookAzimuth -= value * MOUSE_X_SPEED;
+          character.setLookAzimuth(character.getLookAzimuth() - value * MOUSE_X_SPEED);
         } else if (name.equals(InputActions.LOOK_UP)) {
-          characterLookElevation -= value * MOUSE_Y_SPEED;
+          character.setLookElevation(character.getLookElevation() - value * MOUSE_Y_SPEED);
         } else if (name.equals(InputActions.LOOK_DOWN)) {
-          characterLookElevation += value * MOUSE_Y_SPEED;
+          character.setLookElevation(character.getLookElevation() + value * MOUSE_Y_SPEED);
         }
       }
     }, InputActions.LOOK_LEFT, InputActions.LOOK_RIGHT, InputActions.LOOK_UP, InputActions.LOOK_DOWN);
@@ -169,8 +167,8 @@ public class ChunkRenderer extends SimpleApplication {
     inputManager.addListener(new ActionListener() {
       @Override
       public void onAction(String name, boolean isPressed, float tpf) {
-        if (isPressed && canJump(characterNode)) {
-          characterVelocity.y += 0.5;
+        if (isPressed && canJump(character.getNode())) {
+          character.setVelocity(character.getVelocity().add(new Vector3f(0.0f, 0.5f, 0.0f)));
         }
       }
     }, InputActions.JUMP);
@@ -306,9 +304,9 @@ public class ChunkRenderer extends SimpleApplication {
     }
 
     // apply gravity
-    characterVelocity.y -= tpf * 0.5;
-    Vector3f characterPos = characterNode.getLocalTranslation();
-    characterPos = characterPos.add(characterVelocity);
+    character.setVelocity(character.getVelocity().add(new Vector3f(0.0f, -tpf*0.5f, 0.0f)));
+    Vector3f characterPos = character.getPosition();
+    characterPos = characterPos.add(character.getVelocity());
 
     // check if character falls below ground level, lift up to ground level
     while (true) {
@@ -317,7 +315,8 @@ public class ChunkRenderer extends SimpleApplication {
       if (collideWith == 0) {
         break;
       }
-      characterVelocity.y = 0;
+      Vector3f oldVelocity = character.getVelocity();
+      character.setVelocity(new Vector3f(oldVelocity.x, 0.0f, oldVelocity.z));
       characterPos = characterPos.add(0, 0.01f, 0);
     }
 
@@ -325,20 +324,20 @@ public class ChunkRenderer extends SimpleApplication {
     Vector3f oldPos = characterPos.clone();
     final float walkSpeed = 10;
     if (activeInputs.contains(InputActions.WALK_FORWARD)) {
-      characterPos.z += FastMath.cos(characterLookAzimuth) * tpf * walkSpeed;
-      characterPos.x += FastMath.sin(characterLookAzimuth) * tpf * walkSpeed;
+      characterPos.z += FastMath.cos(character.getLookAzimuth()) * tpf * walkSpeed;
+      characterPos.x += FastMath.sin(character.getLookAzimuth()) * tpf * walkSpeed;
     }
     if (activeInputs.contains(InputActions.WALK_BACKWARD)) {
-      characterPos.z -= FastMath.cos(characterLookAzimuth) * tpf * walkSpeed;
-      characterPos.x -= FastMath.sin(characterLookAzimuth) * tpf * walkSpeed;
+      characterPos.z -= FastMath.cos(character.getLookAzimuth()) * tpf * walkSpeed;
+      characterPos.x -= FastMath.sin(character.getLookAzimuth()) * tpf * walkSpeed;
     }
     if (activeInputs.contains(InputActions.STRAFE_LEFT)) {
-      characterPos.z -= FastMath.sin(characterLookAzimuth) * tpf * walkSpeed;
-      characterPos.x -= -FastMath.cos(characterLookAzimuth) * tpf * walkSpeed;
+      characterPos.z -= FastMath.sin(character.getLookAzimuth()) * tpf * walkSpeed;
+      characterPos.x -= -FastMath.cos(character.getLookAzimuth()) * tpf * walkSpeed;
     }
     if (activeInputs.contains(InputActions.STRAFE_RIGHT)) {
-      characterPos.z += FastMath.sin(characterLookAzimuth) * tpf * walkSpeed;
-      characterPos.x += -FastMath.cos(characterLookAzimuth) * tpf * walkSpeed;
+      characterPos.z += FastMath.sin(character.getLookAzimuth()) * tpf * walkSpeed;
+      characterPos.x += -FastMath.cos(character.getLookAzimuth()) * tpf * walkSpeed;
     }
 
     // check if character hits wall. either climb it or return to old position
@@ -359,18 +358,18 @@ public class ChunkRenderer extends SimpleApplication {
       characterPos = newPos;
     }
 
-    characterNode.setLocalTranslation(characterPos);
+    character.setPosition(characterPos);
 
     // set camera position and rotation
     Quaternion quat = new Quaternion();
-    quat.fromAngles(characterLookElevation, characterLookAzimuth, 0.0f);
+    quat.fromAngles(character.getLookElevation(), character.getLookAzimuth(), 0.0f);
     cam.setRotation(quat);
 
-    Vector3f camPos = characterNode.getLocalTranslation().clone();
+    Vector3f camPos = character.getPosition().clone();
     Vector3f lookDir = quat.mult(Vector3f.UNIT_Z);
     camPos.addLocal(lookDir.mult(-10));
 
-    Vector3f coll = worldManager.getTerrainCollisionPoint(characterNode.getLocalTranslation(), camPos, 0.0f);
+    Vector3f coll = worldManager.getTerrainCollisionPoint(character.getPosition(), camPos, 0.0f);
     if (coll != null) {
       camPos.set(coll);
     }
