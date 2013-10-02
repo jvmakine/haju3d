@@ -1,5 +1,6 @@
 package fi.haju.haju3d.client;
 
+import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Node;
 
@@ -47,6 +48,12 @@ public class Character {
   
   public void setPosition(Vector3f position) {
     node.setLocalTranslation(position);
+  }
+  
+  public Quaternion getLookQuaternion() {
+    Quaternion quat = new Quaternion();
+    quat.fromAngles(getLookElevation(), getLookAzimuth(), 0.0f);
+    return quat;
   }
   
 }

@@ -361,8 +361,7 @@ public class ChunkRenderer extends SimpleApplication {
     character.setPosition(characterPos);
 
     // set camera position and rotation
-    Quaternion quat = new Quaternion();
-    quat.fromAngles(character.getLookElevation(), character.getLookAzimuth(), 0.0f);
+    Quaternion quat = character.getLookQuaternion();
     cam.setRotation(quat);
 
     Vector3f camPos = character.getPosition().clone();
