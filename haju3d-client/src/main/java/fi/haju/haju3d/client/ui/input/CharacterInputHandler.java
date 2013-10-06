@@ -11,7 +11,6 @@ import com.jme3.input.controls.AnalogListener;
 import com.jme3.input.controls.KeyTrigger;
 import com.jme3.input.controls.MouseAxisTrigger;
 import com.jme3.input.controls.MouseButtonTrigger;
-import com.jme3.input.event.MouseButtonEvent;
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Node;
 
@@ -19,6 +18,7 @@ import fi.haju.haju3d.client.Character;
 import fi.haju.haju3d.client.TilePosition;
 import fi.haju.haju3d.client.ui.ChunkRenderer;
 import fi.haju.haju3d.client.ui.ChunkSpatial;
+import fi.haju.haju3d.client.ui.ViewMode;
 import fi.haju.haju3d.client.ui.WorldManager;
 import fi.haju.haju3d.protocol.world.Tile;
 
@@ -87,16 +87,36 @@ public class CharacterInputHandler {
       }
     }, InputActions.JUMP);
 
-    // toggle flycam
-    inputManager.addMapping(InputActions.TOGGLE_FLYCAM, new KeyTrigger(KeyInput.KEY_RETURN));
+    // view modes
+    inputManager.addMapping(InputActions.VIEWMODE_FLYCAM, new KeyTrigger(KeyInput.KEY_F1));
     inputManager.addListener(new ActionListener() {
       @Override
       public void onAction(String name, boolean isPressed, float tpf) {
         if (isPressed) {
-          renderer.toggleFlyCam();
+          renderer.setViewMode(ViewMode.FLYCAM);
         }
       }
-    }, InputActions.TOGGLE_FLYCAM);
+    }, InputActions.VIEWMODE_FLYCAM);
+    
+    inputManager.addMapping(InputActions.VIEWMODE_FIRST_PERSON, new KeyTrigger(KeyInput.KEY_F2));
+    inputManager.addListener(new ActionListener() {
+      @Override
+      public void onAction(String name, boolean isPressed, float tpf) {
+        if (isPressed) {
+          renderer.setViewMode(ViewMode.FIRST_PERSON);
+        }
+      }
+    }, InputActions.VIEWMODE_FIRST_PERSON);
+    
+    inputManager.addMapping(InputActions.VIEWMODE_THIRD_PERSON, new KeyTrigger(KeyInput.KEY_F3));
+    inputManager.addListener(new ActionListener() {
+      @Override
+      public void onAction(String name, boolean isPressed, float tpf) {
+        if (isPressed) {
+          renderer.setViewMode(ViewMode.THIRD_PERSON);
+        }
+      }
+    }, InputActions.VIEWMODE_THIRD_PERSON);
 
     // toggle fullscreen
     inputManager.addMapping(InputActions.CHANGE_FULL_SCREEN, new KeyTrigger(KeyInput.KEY_F));

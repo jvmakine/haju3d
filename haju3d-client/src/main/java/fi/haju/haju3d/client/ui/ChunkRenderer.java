@@ -62,6 +62,8 @@ public class ChunkRenderer extends SimpleApplication {
   private TilePosition selectedTile;
   private Node selectedVoxelNode;
   
+  private ViewMode viewMode = ViewMode.FLYCAM;
+  
   public ChunkRenderer(ChunkProvider chunkProvider) {
     this.chunkProvider = chunkProvider;
     setDisplayMode();
@@ -238,7 +240,7 @@ public class ChunkRenderer extends SimpleApplication {
   }
 
   private void updateCharacter(float tpf) {
-    if (flyCam.isEnabled()) {
+    if (viewMode == ViewMode.FLYCAM) {
       return;
     }
     if (worldManager.getChunkSpatial(getCurrentChunkIndex()) == null) {
@@ -308,7 +310,7 @@ public class ChunkRenderer extends SimpleApplication {
 
     Vector3f camPos = character.getPosition().clone();
     Vector3f lookDir = quat.mult(Vector3f.UNIT_Z);
-    camPos.addLocal(lookDir.mult(-10));
+    if(viewMode == ViewMode.THIRD_PERSON) camPos.addLocal(lookDir.mult(-10));
 
     Vector3f coll = worldManager.getTerrainCollisionPoint(character.getPosition(), camPos, 0.0f);
     if (coll != null) {
@@ -350,9 +352,21 @@ public class ChunkRenderer extends SimpleApplication {
     restart();
   }
 
-  public void toggleFlyCam() {
-    flyCam.setEnabled(!flyCam.isEnabled());
-    inputManager.setCursorVisible(false);
+  public void setViewMode(ViewMode mode) {
+    if(mode == ViewMode.FLYCAM) {
+      flyCam.setEnabled(true);
+      inputManager.setCursorVisible(false);
+      rootNode.detachChild(character.getNode());
+    } else if(mode == ViewMode.FIRST_PERSON) {
+      flyCam.setEnabled(false);
+      inputManager.setCursorVisible(false);
+      rootNode.detachChild(character.getNode());
+    } else if(mode == ViewMode.THIRD_PERSON) {
+      flyCam.setEnabled(false);
+      inputManager.setCursorVisible(false);
+      rootNode.attachChild(character.getNode());
+    }
+    viewMode = mode;
   }
 
   public TilePosition getSelectedTile() {

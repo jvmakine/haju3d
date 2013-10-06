@@ -2,7 +2,9 @@ package fi.haju.haju3d.client.ui.input;
 
 public final class InputActions {
   
-  public static final String TOGGLE_FLYCAM = "Toggle Flycam";
+  public static final String VIEWMODE_FLYCAM = "Flycam mode";
+  public static final String VIEWMODE_FIRST_PERSON = "First person mode";
+  public static final String VIEWMODE_THIRD_PERSON = "Third person mode";
   public static final String JUMP = "Jump";
   public static final String WALK_BACKWARD = "Walk Backward";
   public static final String WALK_FORWARD = "Walk Forward";

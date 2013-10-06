@@ -8,7 +8,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.jme3.collision.CollisionResults;
 import com.jme3.math.Ray;

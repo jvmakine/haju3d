@@ -18,4 +18,8 @@ A S D W : Move the camera/character
 
 SPACE : Jump
 
-ENTER : Toggle flycam and third person view
+F1 : Set FlyCam mode
+F2 : Set First Person perspective mode
+F3 : Set Third Person perspective mode
+
+Left Mouse Button : Dig
