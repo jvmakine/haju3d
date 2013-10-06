@@ -12,8 +12,10 @@ import com.google.common.collect.Sets;
 import com.jme3.collision.CollisionResults;
 import com.jme3.math.Ray;
 import com.jme3.math.Vector3f;
+import com.jme3.scene.Spatial;
 
 import fi.haju.haju3d.client.ChunkProvider;
+import fi.haju.haju3d.client.TilePosition;
 import fi.haju.haju3d.client.ui.mesh.ChunkSpatialBuilder;
 import fi.haju.haju3d.protocol.Vector3i;
 import fi.haju.haju3d.protocol.world.Chunk;
@@ -21,7 +23,7 @@ import fi.haju.haju3d.protocol.world.World;
 
 public class WorldManager {
   
-  private static final float SCALE = 1;
+  static final float SCALE = 1;
   
   private World world = new World();
   private ChunkProvider chunkProvider;
@@ -66,13 +68,35 @@ public class WorldManager {
   }
   
   public Vector3f getTerrainCollisionPoint(Vector3f from, Vector3f to, float distanceFix) {
+    return getCollisionPoint(from, to, distanceFix, false);
+  }
+  
+  public TilePosition getVoxelCollisionPoint(Vector3f from, Vector3f to) {
+    Vector3f collision = getCollisionPoint(from, to, 0.0f, true);
+    if(collision == null) return null;
+    // Move collision to the middle of the tile
+    Vector3f collisionTile = collision.add(to.subtract(from).normalize().mult(SCALE/2.0f));
+    Vector3i chunkPos = new Vector3i(
+        (int) (collisionTile.x / world.getChunkSize() / SCALE), 
+        (int) (collisionTile.y / world.getChunkSize() / SCALE), 
+        (int) (collisionTile.z / world.getChunkSize() / SCALE));
+    Vector3i tilePos = new Vector3i(
+        (int) (collisionTile.x / SCALE - chunkPos.x * world.getChunkSize()),
+        (int) (collisionTile.y / SCALE - chunkPos.y * world.getChunkSize()),
+        (int) (collisionTile.z / SCALE - chunkPos.z * world.getChunkSize())
+        );
+    return new TilePosition(chunkPos, tilePos);
+  }
+  
+  private Vector3f getCollisionPoint(Vector3f from, Vector3f to, float distanceFix, boolean useBoxes) {
     Set<Vector3i> chunkPositions = Sets.newHashSet(getChunkIndexForLocation(from), getChunkIndexForLocation(to));
     Ray ray = new Ray(from, to.subtract(from).normalize());
     float distance = from.distance(to);
     for (Vector3i pos : chunkPositions) {
       ChunkSpatial cs = getChunkSpatial(pos);
       CollisionResults collision = new CollisionResults();
-      if (cs != null && cs.lowDetail.collideWith(ray, collision) != 0) {
+      Spatial spatial = cs == null ? null : (useBoxes ? cs.cubes : cs.lowDetail); 
+      if (spatial != null && spatial.collideWith(ray, collision) != 0) {
         Vector3f closest = collision.getClosestCollision().getContactPoint();
         boolean collided = closest.distance(from) <= distance + distanceFix;
         if (collided) {
@@ -147,6 +171,10 @@ public class WorldManager {
 
   public ChunkSpatial getChunkSpatial(Vector3i pos) {
     return chunkSpatials.get(pos);
+  }
+
+  public int getChunkSize() {
+    return world.getChunkSize();
   }
 
 

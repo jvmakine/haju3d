@@ -29,6 +29,7 @@ import com.jme3.water.WaterFilter;
 import fi.haju.haju3d.client.Character;
 import fi.haju.haju3d.client.ChunkProvider;
 import fi.haju.haju3d.client.CloseEventHandler;
+import fi.haju.haju3d.client.TilePosition;
 import fi.haju.haju3d.client.ui.input.InputActions;
 import fi.haju.haju3d.client.ui.input.CharacterInputHandler;
 import fi.haju.haju3d.client.ui.mesh.ChunkSpatialBuilder;
@@ -55,6 +56,9 @@ public class ChunkRenderer extends SimpleApplication {
   private CharacterInputHandler inputHandler;
   
   private Character character;
+  
+  private TilePosition selectedTile;
+  private Node selectedVoxelNode;
   
   public ChunkRenderer(ChunkProvider chunkProvider) {
     this.chunkProvider = chunkProvider;
@@ -85,6 +89,7 @@ public class ChunkRenderer extends SimpleApplication {
     setupLighting();
     setupCharacter();
     setupPostFilters();
+    setupSelector();
     
     inputHandler = new CharacterInputHandler(character, worldManager, this);
     inputHandler.register(inputManager);
@@ -155,6 +160,22 @@ public class ChunkRenderer extends SimpleApplication {
     dlsr.setShadowIntensity(0.4f);
     dlsr.setEdgeFilteringMode(EdgeFilteringMode.PCF4);
     viewPort.addProcessor(dlsr);
+  }
+  
+  private void setupSelector() {
+    Box selectorMesh = new Box(WorldManager.SCALE/2 * 1.05f, WorldManager.SCALE/2 * 1.05f, WorldManager.SCALE/2 * 1.05f);
+    Geometry selectorModel = new Geometry("SelectorModel", selectorMesh);
+
+    ColorRGBA color = ColorRGBA.Red;
+    Material mat = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
+    mat.setBoolean("UseMaterialColors", true);
+    mat.setColor("Ambient", color);
+    mat.setColor("Diffuse", color);
+    mat.getAdditionalRenderState().setWireframe(true);
+    selectorModel.setMaterial(mat);
+    
+    selectedVoxelNode = new Node();
+    selectedVoxelNode.attachChild(selectorModel);
   }
 
   private void setupPostFilters() {
@@ -293,6 +314,13 @@ public class ChunkRenderer extends SimpleApplication {
     }
 
     cam.setLocation(camPos);
+    
+    selectedTile = worldManager.getVoxelCollisionPoint(character.getPosition(), character.getPosition().add(cam.getDirection().normalize().mult(10.0f)));
+    rootNode.detachChild(selectedVoxelNode);
+    if(selectedTile != null) {
+      selectedVoxelNode.setLocalTranslation(selectedTile.getWorldPosition(WorldManager.SCALE, worldManager.getChunkSize()));
+      rootNode.attachChild(selectedVoxelNode);
+    }
   }
 
   private BoundingVolume makeCharacterBoundingVolume(Vector3f characterPos) {

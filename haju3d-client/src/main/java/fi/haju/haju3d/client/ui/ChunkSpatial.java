@@ -5,4 +5,5 @@ import com.jme3.scene.Spatial;
 public class ChunkSpatial {
   public Spatial lowDetail;
   public Spatial highDetail;
+  public Spatial cubes;
 }
