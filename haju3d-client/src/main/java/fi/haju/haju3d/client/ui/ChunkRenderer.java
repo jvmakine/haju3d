@@ -40,6 +40,8 @@ import fi.haju.haju3d.protocol.Vector3i;
  */
 public class ChunkRenderer extends SimpleApplication {
   
+  private static final float SELECTOR_DISTANCE = 10.0f;
+
   private static final float MOVE_SPEED = 40;
   
   private static final int CHUNK_CUT_OFF = 3;
@@ -315,7 +317,7 @@ public class ChunkRenderer extends SimpleApplication {
 
     cam.setLocation(camPos);
     
-    selectedTile = worldManager.getVoxelCollisionPoint(character.getPosition(), character.getPosition().add(cam.getDirection().normalize().mult(10.0f)));
+    selectedTile = worldManager.getVoxelCollisionPoint(character.getPosition(), character.getPosition().add(cam.getDirection().normalize().mult(SELECTOR_DISTANCE)));
     rootNode.detachChild(selectedVoxelNode);
     if(selectedTile != null) {
       selectedVoxelNode.setLocalTranslation(selectedTile.getWorldPosition(WorldManager.SCALE, worldManager.getChunkSize()));
@@ -351,6 +353,10 @@ public class ChunkRenderer extends SimpleApplication {
   public void toggleFlyCam() {
     flyCam.setEnabled(!flyCam.isEnabled());
     inputManager.setCursorVisible(false);
+  }
+
+  public TilePosition getSelectedTile() {
+    return selectedTile;
   }
   
 }
