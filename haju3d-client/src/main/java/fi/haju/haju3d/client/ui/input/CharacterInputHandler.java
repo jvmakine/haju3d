@@ -20,6 +20,7 @@ import fi.haju.haju3d.client.ui.ChunkRenderer;
 import fi.haju.haju3d.client.ui.ChunkSpatial;
 import fi.haju.haju3d.client.ui.ViewMode;
 import fi.haju.haju3d.client.ui.WorldManager;
+import fi.haju.haju3d.client.ui.mesh.ChunkSpatialBuilder;
 import fi.haju.haju3d.protocol.world.Tile;
 
 public class CharacterInputHandler {
@@ -136,10 +137,30 @@ public class CharacterInputHandler {
           TilePosition tile = renderer.getSelectedTile();
           if(tile != null) {
             ChunkSpatial chunkSpatial = worldManager.getChunkSpatial(tile.getChunkPosition());
-            chunkSpatial.chunk.set(tile.getTileWithinChunk().x, 
-                tile.getTileWithinChunk().y, 
-                tile.getTileWithinChunk().z, Tile.AIR);
+            int x = tile.getTileWithinChunk().x;
+            int y = tile.getTileWithinChunk().y;
+            int z = tile.getTileWithinChunk().z;
+            chunkSpatial.chunk.set(x, y, z, Tile.AIR);
             worldManager.rebuildChunkSpatial(chunkSpatial);
+            // Update also the bordering chunks if necessary
+            if(x < ChunkSpatialBuilder.SMOOTH_BUFFER) {
+              worldManager.rebuildChunkSpatial(worldManager.getChunkSpatial(tile.getChunkPosition().add(-1, 0, 0)));
+            }
+            if(x >= worldManager.getChunkSize() - ChunkSpatialBuilder.SMOOTH_BUFFER) {
+              worldManager.rebuildChunkSpatial(worldManager.getChunkSpatial(tile.getChunkPosition().add(1, 0, 0)));
+            }
+            if(y < ChunkSpatialBuilder.SMOOTH_BUFFER) {
+              worldManager.rebuildChunkSpatial(worldManager.getChunkSpatial(tile.getChunkPosition().add(0, -1, 0)));
+            }
+            if(y >= worldManager.getChunkSize() - ChunkSpatialBuilder.SMOOTH_BUFFER) {
+              worldManager.rebuildChunkSpatial(worldManager.getChunkSpatial(tile.getChunkPosition().add(0, 1, 0)));
+            }
+            if(z < ChunkSpatialBuilder.SMOOTH_BUFFER) {
+              worldManager.rebuildChunkSpatial(worldManager.getChunkSpatial(tile.getChunkPosition().add(0, 0, -1)));
+            }
+            if(z >= worldManager.getChunkSize() - ChunkSpatialBuilder.SMOOTH_BUFFER) {
+              worldManager.rebuildChunkSpatial(worldManager.getChunkSpatial(tile.getChunkPosition().add(0, 0, 1)));
+            }
             System.out.println("Dig: " + tile);
           }
         }

@@ -36,7 +36,7 @@ import fi.haju.haju3d.protocol.world.Tile;
 import fi.haju.haju3d.protocol.world.World;
 
 public class ChunkSpatialBuilder {
-  private static final int SMOOTH_BUFFER = 3;
+  public static final int SMOOTH_BUFFER = 3;
   private static final Logger LOGGER = LoggerFactory.getLogger(ChunkSpatialBuilder.class);
   private Material lowMaterial;
   private Material highMaterial;
@@ -76,6 +76,7 @@ public class ChunkSpatialBuilder {
   }
   
   public void rebuildChunkSpatial(World world, ChunkSpatial spatial) {
+    LOGGER.info("Updating chunk spatial at " + spatial.chunk.getPosition());
     // TODO: Optimize the cube mesh to be reused when smoothing detail meshes
     spatial.cubes = makeSpatial(world, spatial.chunk.getPosition(), false, false);
     spatial.lowDetail = makeSpatial(world, spatial.chunk.getPosition(), true, true);
@@ -83,6 +84,7 @@ public class ChunkSpatialBuilder {
   }
   
   public ChunkSpatial makeChunkSpatial(World world, Vector3i chunkIndex) {
+    LOGGER.info("Making chunk spatial at " + chunkIndex);
     ChunkSpatial lodSpatial = new ChunkSpatial();
     // TODO: Optimize the cube mesh to be reused when smoothing detail meshes
     lodSpatial.cubes = makeSpatial(world, chunkIndex, false, false);
@@ -101,8 +103,6 @@ public class ChunkSpatialBuilder {
   }
   
   public Mesh makeMesh(World world, Vector3i chunkIndex, boolean useSimpleMesh, boolean smooth) {
-    LOGGER.info("makeMesh:" + chunkIndex);
-    
     MyMesh myMesh;
     synchronized (world) {
       myMesh = makeCubeMesh(world, chunkIndex);
