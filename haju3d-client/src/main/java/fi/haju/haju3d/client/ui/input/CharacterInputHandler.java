@@ -17,7 +17,7 @@ import fi.haju.haju3d.client.Character;
 import fi.haju.haju3d.client.ui.ChunkRenderer;
 import fi.haju.haju3d.client.ui.WorldManager;
 
-public class WorldInputHandler {
+public class CharacterInputHandler {
   
   public static final float MOUSE_X_SPEED = 3.0f;
   public static final float MOUSE_Y_SPEED = MOUSE_X_SPEED;
@@ -27,7 +27,7 @@ public class WorldInputHandler {
   private final ChunkRenderer renderer;
   private final Set<String> activeInputs = new HashSet<>();
   
-  public WorldInputHandler(Character character, WorldManager worldManager, ChunkRenderer renderer) {
+  public CharacterInputHandler(Character character, WorldManager worldManager, ChunkRenderer renderer) {
     this.character = character;
     this.worldManager = worldManager;
     this.renderer = renderer;

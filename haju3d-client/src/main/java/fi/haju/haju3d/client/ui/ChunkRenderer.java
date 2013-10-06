@@ -30,7 +30,7 @@ import fi.haju.haju3d.client.Character;
 import fi.haju.haju3d.client.ChunkProvider;
 import fi.haju.haju3d.client.CloseEventHandler;
 import fi.haju.haju3d.client.ui.input.InputActions;
-import fi.haju.haju3d.client.ui.input.WorldInputHandler;
+import fi.haju.haju3d.client.ui.input.CharacterInputHandler;
 import fi.haju.haju3d.client.ui.mesh.ChunkSpatialBuilder;
 import fi.haju.haju3d.protocol.Vector3i;
 
@@ -52,7 +52,7 @@ public class ChunkRenderer extends SimpleApplication {
   private boolean isFullScreen = false;
   private Node terrainNode = new Node("terrain");
   private WorldManager worldManager;
-  private WorldInputHandler inputHandler;
+  private CharacterInputHandler inputHandler;
   
   private Character character;
   
@@ -86,7 +86,7 @@ public class ChunkRenderer extends SimpleApplication {
     setupCharacter();
     setupPostFilters();
     
-    inputHandler = new WorldInputHandler(character, worldManager, this);
+    inputHandler = new CharacterInputHandler(character, worldManager, this);
     inputHandler.register(inputManager);
 
     rootNode.attachChild(terrainNode);
@@ -113,7 +113,7 @@ public class ChunkRenderer extends SimpleApplication {
 
   private void setupCamera() {
     getFlyByCamera().setMoveSpeed(MOVE_SPEED);
-    getFlyByCamera().setRotationSpeed(WorldInputHandler.MOUSE_X_SPEED);
+    getFlyByCamera().setRotationSpeed(CharacterInputHandler.MOUSE_X_SPEED);
     getCamera().setLocation(worldManager.getGlobalPosition(new Vector3i().add(32, 62, 62)));
   }
 
