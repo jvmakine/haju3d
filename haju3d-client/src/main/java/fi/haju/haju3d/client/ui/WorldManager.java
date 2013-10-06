@@ -8,6 +8,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.jme3.collision.CollisionResults;
 import com.jme3.math.Ray;
@@ -137,13 +138,18 @@ public class WorldManager {
     }
   }
 
+  public void rebuildChunkSpatial(ChunkSpatial spatial) {
+    builder.rebuildChunkSpatial(world, spatial);
+  }
+  
   private void makeChunkAt(Vector3i chunkIndex) {
     // need 3x3 chunks around meshing area so that mesh borders can be handled correctly
     List<Chunk> chunks = chunkProvider.getChunks(chunkIndex.getSurroundingPositions());
     for (Chunk c : chunks) {
       world.setChunk(c.getPosition(), c);
     }
-    chunkSpatials.put(chunkIndex, builder.makeChunkSpatial(world, chunkIndex));
+    ChunkSpatial spatial = builder.makeChunkSpatial(world, chunkIndex);
+    chunkSpatials.put(chunkIndex, spatial);
   }
 
   public void setPosition(Vector3i position) {

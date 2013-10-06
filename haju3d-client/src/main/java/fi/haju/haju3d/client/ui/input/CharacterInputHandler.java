@@ -18,7 +18,9 @@ import com.jme3.scene.Node;
 import fi.haju.haju3d.client.Character;
 import fi.haju.haju3d.client.TilePosition;
 import fi.haju.haju3d.client.ui.ChunkRenderer;
+import fi.haju.haju3d.client.ui.ChunkSpatial;
 import fi.haju.haju3d.client.ui.WorldManager;
+import fi.haju.haju3d.protocol.world.Tile;
 
 public class CharacterInputHandler {
   
@@ -113,6 +115,11 @@ public class CharacterInputHandler {
         if(keyPressed) {
           TilePosition tile = renderer.getSelectedTile();
           if(tile != null) {
+            ChunkSpatial chunkSpatial = worldManager.getChunkSpatial(tile.getChunkPosition());
+            chunkSpatial.chunk.set(tile.getTileWithinChunk().x, 
+                tile.getTileWithinChunk().y, 
+                tile.getTileWithinChunk().z, Tile.AIR);
+            worldManager.rebuildChunkSpatial(chunkSpatial);
             System.out.println("Dig: " + tile);
           }
         }

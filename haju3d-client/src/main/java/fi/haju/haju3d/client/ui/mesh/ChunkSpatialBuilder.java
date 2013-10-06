@@ -75,12 +75,20 @@ public class ChunkSpatialBuilder {
     return mat;
   }
   
+  public void rebuildChunkSpatial(World world, ChunkSpatial spatial) {
+    // TODO: Optimize the cube mesh to be reused when smoothing detail meshes
+    spatial.cubes = makeSpatial(world, spatial.chunk.getPosition(), false, false);
+    spatial.lowDetail = makeSpatial(world, spatial.chunk.getPosition(), true, true);
+    spatial.highDetail = makeSpatial(world, spatial.chunk.getPosition(), false, true);
+  }
+  
   public ChunkSpatial makeChunkSpatial(World world, Vector3i chunkIndex) {
     ChunkSpatial lodSpatial = new ChunkSpatial();
     // TODO: Optimize the cube mesh to be reused when smoothing detail meshes
     lodSpatial.cubes = makeSpatial(world, chunkIndex, false, false);
     lodSpatial.lowDetail = makeSpatial(world, chunkIndex, true, true);
     lodSpatial.highDetail = makeSpatial(world, chunkIndex, false, true);
+    lodSpatial.chunk = world.getChunk(chunkIndex);
     return lodSpatial;
   }
   
