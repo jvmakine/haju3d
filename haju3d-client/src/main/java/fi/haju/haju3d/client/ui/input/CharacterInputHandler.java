@@ -10,10 +10,13 @@ import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.AnalogListener;
 import com.jme3.input.controls.KeyTrigger;
 import com.jme3.input.controls.MouseAxisTrigger;
+import com.jme3.input.controls.MouseButtonTrigger;
+import com.jme3.input.event.MouseButtonEvent;
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Node;
 
 import fi.haju.haju3d.client.Character;
+import fi.haju.haju3d.client.TilePosition;
 import fi.haju.haju3d.client.ui.ChunkRenderer;
 import fi.haju.haju3d.client.ui.WorldManager;
 
@@ -101,6 +104,20 @@ public class CharacterInputHandler {
         renderer.toggleFullScreen();
       }
     }, InputActions.CHANGE_FULL_SCREEN);
+    
+    // Dig
+    inputManager.addMapping(InputActions.BUILD, new MouseButtonTrigger(MouseInput.BUTTON_LEFT));
+    inputManager.addListener(new ActionListener() {
+      @Override
+      public void onAction(String name, boolean keyPressed, float tpf) {
+        if(keyPressed) {
+          TilePosition tile = renderer.getSelectedTile();
+          if(tile != null) {
+            System.out.println("Dig: " + tile);
+          }
+        }
+      }
+    }, InputActions.BUILD);
   }
   
   private boolean canJump(Node characterNode) {
