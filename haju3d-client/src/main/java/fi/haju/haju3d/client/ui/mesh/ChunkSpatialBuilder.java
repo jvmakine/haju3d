@@ -81,6 +81,7 @@ public class ChunkSpatialBuilder {
     spatial.cubes = makeSpatial(world, spatial.chunk.getPosition(), false, false);
     spatial.lowDetail = makeSpatial(world, spatial.chunk.getPosition(), true, true);
     spatial.highDetail = makeSpatial(world, spatial.chunk.getPosition(), false, true);
+    LOGGER.info("Done");
   }
   
   public ChunkSpatial makeChunkSpatial(World world, Vector3i chunkIndex) {
@@ -103,10 +104,7 @@ public class ChunkSpatialBuilder {
   }
   
   public Mesh makeMesh(World world, Vector3i chunkIndex, boolean useSimpleMesh, boolean smooth) {
-    MyMesh myMesh;
-    synchronized (world) {
-      myMesh = makeCubeMesh(world, chunkIndex);
-    }
+    MyMesh myMesh = makeCubeMesh(world, chunkIndex);
     if(smooth) smoothMesh(myMesh);
     
     // only faces based on a real tile should be meshed; the other ones were used for smoothing context
@@ -419,99 +417,101 @@ public class ChunkSpatialBuilder {
   }
 
   private static int getZIndex(int x, int y, int z, int chunkSize) {
-    return x ^ y*chunkSize ^ z*chunkSize*chunkSize;
+    return new Random(x ^ y*chunkSize ^ z*chunkSize*chunkSize).nextInt();
   }
   
   private static MyMesh makeCubeMesh(World world, Vector3i chunkIndex) {
-    MyMesh myMesh = new MyMesh();
-    
-    Vector3i w1o = world.getWorldPosition(chunkIndex);
-    Vector3i w2o = world.getWorldPosition(chunkIndex.add(1, 1, 1));
-    
-    Vector3i w1 = w1o.add(-SMOOTH_BUFFER, -SMOOTH_BUFFER, -SMOOTH_BUFFER);
-    Vector3i w2 = w2o.add(SMOOTH_BUFFER, SMOOTH_BUFFER, SMOOTH_BUFFER);
-    
-    for (int z = w1.z; z < w2.z; z++) {
-      for (int y = w1.y; y < w2.y; y++) {
-        for (int x = w1.x; x < w2.x; x++) {
-          Tile tile = world.get(x, y, z);
-          if (tile != Tile.AIR) {
-            boolean realTile =
-                x >= w1o.x && x < w2o.x &&
-                y >= w1o.y && y < w2o.y &&
-                z >= w1o.z && z < w2o.z;
-            float color = world.getColor(x, y, z);
-            if (world.get(x, y - 1, z) == Tile.AIR) {
-              int seed = getZIndex(x, y - 1, z, world.getChunkSize()); 
-              myMesh.addFace(
-                  new Vector3f(x, y, z),
-                  new Vector3f(x + 1, y, z),
-                  new Vector3f(x + 1, y, z + 1),
-                  new Vector3f(x, y, z + 1),
-                  bottomTexture(seed, tile), color,
-                  realTile,
-                  seed);
-            }
-            if (world.get(x, y + 1, z) == Tile.AIR) {
-              int seed = getZIndex(x, y + 1, z, world.getChunkSize()); 
-              myMesh.addFace(
-                  new Vector3f(x, y + 1, z + 1),
-                  new Vector3f(x + 1, y + 1, z + 1),
-                  new Vector3f(x + 1, y + 1, z),
-                  new Vector3f(x, y + 1, z),
-                  topTexture(seed, tile), color,
-                  realTile,
-                  seed);
-            }
-            if (world.get(x - 1, y, z) == Tile.AIR) {
-              int seed = getZIndex(x - 1, y, z, world.getChunkSize()); 
-              myMesh.addFace(
-                  new Vector3f(x, y, z + 1),
-                  new Vector3f(x, y + 1, z + 1),
-                  new Vector3f(x, y + 1, z),
-                  new Vector3f(x, y, z),
-                  sideTexture(seed, tile), color,
-                  realTile,
-                  seed);
-            }
-            if (world.get(x + 1, y, z) == Tile.AIR) {
-              int seed = getZIndex(x + 1, y, z, world.getChunkSize()); 
-              myMesh.addFace(
-                  new Vector3f(x + 1, y, z),
-                  new Vector3f(x + 1, y + 1, z),
-                  new Vector3f(x + 1, y + 1, z + 1),
-                  new Vector3f(x + 1, y, z + 1),
-                  sideTexture(seed, tile), color,
-                  realTile,
-                  seed);
-            }
-            if (world.get(x, y, z - 1) == Tile.AIR) {
-              int seed = getZIndex(x, y, z - 1, world.getChunkSize()); 
-              myMesh.addFace(
-                  new Vector3f(x, y, z),
-                  new Vector3f(x, y + 1, z),
-                  new Vector3f(x + 1, y + 1, z),
-                  new Vector3f(x + 1, y, z),
-                  sideTexture(seed, tile), color,
-                  realTile,
-                  seed);
-            }
-            if (world.get(x, y, z + 1) == Tile.AIR) {
-              int seed = getZIndex(x, y, z + 1, world.getChunkSize()); 
-              myMesh.addFace(
-                  new Vector3f(x + 1, y, z + 1),
-                  new Vector3f(x + 1, y + 1, z + 1),
-                  new Vector3f(x, y + 1, z + 1),
-                  new Vector3f(x, y, z + 1),
-                  sideTexture(seed, tile), color,
-                  realTile,
-                  seed);
+    synchronized (world) {
+      MyMesh myMesh = new MyMesh();
+      
+      Vector3i w1o = world.getWorldPosition(chunkIndex);
+      Vector3i w2o = world.getWorldPosition(chunkIndex.add(1, 1, 1));
+      
+      Vector3i w1 = w1o.add(-SMOOTH_BUFFER, -SMOOTH_BUFFER, -SMOOTH_BUFFER);
+      Vector3i w2 = w2o.add(SMOOTH_BUFFER, SMOOTH_BUFFER, SMOOTH_BUFFER);
+      
+      for (int z = w1.z; z < w2.z; z++) {
+        for (int y = w1.y; y < w2.y; y++) {
+          for (int x = w1.x; x < w2.x; x++) {
+            Tile tile = world.get(x, y, z);
+            if (tile != Tile.AIR) {
+              boolean realTile =
+                  x >= w1o.x && x < w2o.x &&
+                  y >= w1o.y && y < w2o.y &&
+                  z >= w1o.z && z < w2o.z;
+              float color = world.getColor(x, y, z);
+              if (world.get(x, y - 1, z) == Tile.AIR) {
+                int seed = getZIndex(x, y - 1, z, world.getChunkSize()); 
+                myMesh.addFace(
+                    new Vector3f(x, y, z),
+                    new Vector3f(x + 1, y, z),
+                    new Vector3f(x + 1, y, z + 1),
+                    new Vector3f(x, y, z + 1),
+                    bottomTexture(seed, tile), color,
+                    realTile,
+                    seed);
+              }
+              if (world.get(x, y + 1, z) == Tile.AIR) {
+                int seed = getZIndex(x, y + 1, z, world.getChunkSize()); 
+                myMesh.addFace(
+                    new Vector3f(x, y + 1, z + 1),
+                    new Vector3f(x + 1, y + 1, z + 1),
+                    new Vector3f(x + 1, y + 1, z),
+                    new Vector3f(x, y + 1, z),
+                    topTexture(seed, tile), color,
+                    realTile,
+                    seed);
+              }
+              if (world.get(x - 1, y, z) == Tile.AIR) {
+                int seed = getZIndex(x - 1, y, z, world.getChunkSize()); 
+                myMesh.addFace(
+                    new Vector3f(x, y, z + 1),
+                    new Vector3f(x, y + 1, z + 1),
+                    new Vector3f(x, y + 1, z),
+                    new Vector3f(x, y, z),
+                    sideTexture(seed, tile), color,
+                    realTile,
+                    seed);
+              }
+              if (world.get(x + 1, y, z) == Tile.AIR) {
+                int seed = getZIndex(x + 1, y, z, world.getChunkSize()); 
+                myMesh.addFace(
+                    new Vector3f(x + 1, y, z),
+                    new Vector3f(x + 1, y + 1, z),
+                    new Vector3f(x + 1, y + 1, z + 1),
+                    new Vector3f(x + 1, y, z + 1),
+                    sideTexture(seed, tile), color,
+                    realTile,
+                    seed);
+              }
+              if (world.get(x, y, z - 1) == Tile.AIR) {
+                int seed = getZIndex(x, y, z - 1, world.getChunkSize()); 
+                myMesh.addFace(
+                    new Vector3f(x, y, z),
+                    new Vector3f(x, y + 1, z),
+                    new Vector3f(x + 1, y + 1, z),
+                    new Vector3f(x + 1, y, z),
+                    sideTexture(seed, tile), color,
+                    realTile,
+                    seed);
+              }
+              if (world.get(x, y, z + 1) == Tile.AIR) {
+                int seed = getZIndex(x, y, z + 1, world.getChunkSize()); 
+                myMesh.addFace(
+                    new Vector3f(x + 1, y, z + 1),
+                    new Vector3f(x + 1, y + 1, z + 1),
+                    new Vector3f(x, y + 1, z + 1),
+                    new Vector3f(x, y, z + 1),
+                    sideTexture(seed, tile), color,
+                    realTile,
+                    seed);
+              }
             }
           }
         }
       }
+      return myMesh;
     }
-    return myMesh;
   }
 
   private static MyTexture sideTexture(int seed, Tile tile) {
