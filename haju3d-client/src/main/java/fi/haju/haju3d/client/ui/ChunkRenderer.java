@@ -5,6 +5,7 @@ import com.jme3.asset.plugins.ClasspathLocator;
 import com.jme3.bounding.BoundingSphere;
 import com.jme3.bounding.BoundingVolume;
 import com.jme3.collision.CollisionResults;
+import com.jme3.font.BitmapText;
 import com.jme3.light.AmbientLight;
 import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
@@ -61,6 +62,8 @@ public class ChunkRenderer extends SimpleApplication {
   
   private TilePosition selectedTile;
   private Node selectedVoxelNode;
+  
+  private BitmapText crossHair;
   
   private ViewMode viewMode = ViewMode.FLYCAM;
   
@@ -124,6 +127,12 @@ public class ChunkRenderer extends SimpleApplication {
     getFlyByCamera().setMoveSpeed(MOVE_SPEED);
     getFlyByCamera().setRotationSpeed(CharacterInputHandler.MOUSE_X_SPEED);
     getCamera().setLocation(worldManager.getGlobalPosition(new Vector3i().add(32, 62, 62)));
+    
+    guiFont = assetManager.loadFont("Interface/Fonts/Default.fnt");
+    crossHair = new BitmapText(guiFont, false);
+    crossHair.setSize(guiFont.getCharSet().getRenderedSize() * 2);
+    crossHair.setText("+");
+    crossHair.setLocalTranslation(settings.getWidth() / 2 - crossHair.getLineWidth()/2, settings.getHeight() / 2 + crossHair.getLineHeight()/2, 0);
   }
 
   private void setupInput() {
@@ -357,14 +366,17 @@ public class ChunkRenderer extends SimpleApplication {
       flyCam.setEnabled(true);
       inputManager.setCursorVisible(false);
       rootNode.detachChild(character.getNode());
+      guiNode.detachChild(crossHair);
     } else if(mode == ViewMode.FIRST_PERSON) {
       flyCam.setEnabled(false);
       inputManager.setCursorVisible(false);
       rootNode.detachChild(character.getNode());
+      guiNode.attachChild(crossHair);
     } else if(mode == ViewMode.THIRD_PERSON) {
       flyCam.setEnabled(false);
       inputManager.setCursorVisible(false);
       rootNode.attachChild(character.getNode());
+      guiNode.detachChild(crossHair);
     }
     viewMode = mode;
   }
