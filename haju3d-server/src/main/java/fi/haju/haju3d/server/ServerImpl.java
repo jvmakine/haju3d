@@ -173,6 +173,11 @@ public class ServerImpl implements Server {
 
   @Override
   public void registerWorldEdits(final List<WorldEdit> edits) {
+    for(WorldEdit edit : edits) {
+      Chunk chunk = getOrGenerateChunk(edit.getPosition().getChunkPosition());
+      Vector3i p = edit.getPosition().getTileWithinChunk();
+      chunk.set(p.x, p.y, p.z, edit.getNewTile());
+    }
     for(final Client client : loggedInClients) {
       asyncCall(new Runnable() {
         @Override
