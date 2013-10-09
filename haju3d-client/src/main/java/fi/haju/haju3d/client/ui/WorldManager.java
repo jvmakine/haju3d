@@ -23,6 +23,8 @@ import fi.haju.haju3d.protocol.world.World;
 
 public class WorldManager {
   
+  private static final float PICK_ACCURACY = 0.001f;
+
   static final float SCALE = 1;
   
   private World world = new World();
@@ -74,8 +76,8 @@ public class WorldManager {
   public TilePosition getVoxelCollisionPoint(Vector3f from, Vector3f to) {
     Vector3f collision = getCollisionPoint(from, to, 0.0f, true);
     if(collision == null) return null;
-    // Move collision to the middle of the tile
-    Vector3f collisionTile = collision.add(to.subtract(from).normalize().mult(SCALE/2.0f));
+    // Move collision slightly to the other side of the polygon
+    Vector3f collisionTile = collision.add(to.subtract(from).normalize().mult(PICK_ACCURACY));
     Vector3i chunkPos = new Vector3i(
         (int) (collisionTile.x / world.getChunkSize() / SCALE), 
         (int) (collisionTile.y / world.getChunkSize() / SCALE), 
