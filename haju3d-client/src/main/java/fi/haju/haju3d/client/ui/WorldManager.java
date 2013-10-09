@@ -15,10 +15,10 @@ import com.jme3.math.Vector3f;
 import com.jme3.scene.Spatial;
 
 import fi.haju.haju3d.client.ChunkProvider;
-import fi.haju.haju3d.client.TilePosition;
 import fi.haju.haju3d.client.ui.mesh.ChunkSpatialBuilder;
 import fi.haju.haju3d.protocol.Vector3i;
 import fi.haju.haju3d.protocol.world.Chunk;
+import fi.haju.haju3d.protocol.world.TilePosition;
 import fi.haju.haju3d.protocol.world.World;
 
 public class WorldManager {

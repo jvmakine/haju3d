@@ -15,13 +15,13 @@ import com.jme3.math.Vector3f;
 import com.jme3.scene.Node;
 
 import fi.haju.haju3d.client.Character;
-import fi.haju.haju3d.client.TilePosition;
 import fi.haju.haju3d.client.ui.ChunkRenderer;
 import fi.haju.haju3d.client.ui.ChunkSpatial;
 import fi.haju.haju3d.client.ui.ViewMode;
 import fi.haju.haju3d.client.ui.WorldManager;
 import fi.haju.haju3d.client.ui.mesh.ChunkSpatialBuilder;
 import fi.haju.haju3d.protocol.world.Tile;
+import fi.haju.haju3d.protocol.world.TilePosition;
 
 public class CharacterInputHandler {
   

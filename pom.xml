@@ -11,18 +11,18 @@
   <name>Haju3d</name>
   <url>https://github.com/jvmakine/haju3d</url>
 
-  <modules>
-    <module>haju3d-common</module>
-    <module>haju3d-client</module>
-    <module>haju3d-server</module>
-  </modules>
-
   <properties>
+    <jMonkeyEngine.version>2013-05-26</jMonkeyEngine.version>
     <maven.compiler.target>1.7</maven.compiler.target>
     <maven.compiler.source>1.7</maven.compiler.source>
     <logback.version>1.0.13</logback.version>
   </properties>
 
+  <modules>
+    <module>haju3d-common</module>
+    <module>haju3d-client</module>
+    <module>haju3d-server</module>
+  </modules>
 
   <dependencies>
     <dependency>

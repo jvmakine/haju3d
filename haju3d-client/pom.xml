@@ -15,10 +15,6 @@
   <name>Haju3dClient</name>
   <url>https://github.com/jvmakine/haju3d</url>
 
-  <properties>
-    <jMonkeyEngine.version>2013-05-26</jMonkeyEngine.version>
-  </properties>
-
   <repositories>
     <repository>
       <id>project-lib</id>

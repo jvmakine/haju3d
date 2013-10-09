@@ -18,6 +18,20 @@
   
   <url>https://github.com/jvmakine/haju3d</url>
 
-  <dependencies></dependencies> 
+  <repositories>
+    <repository>
+      <id>project-lib</id>
+      <name>project-local libraries</name>
+      <url>file:${basedir}${file.separator}..${file.separator}haju3d-client${file.separator}libs</url>
+    </repository>
+  </repositories>
+
+  <dependencies>
+  	<dependency>
+      <groupId>org.jmonkeyengine</groupId>
+      <artifactId>jME3-core</artifactId>
+      <version>${jMonkeyEngine.version}</version>
+    </dependency>
+  </dependencies> 
   
 </project>

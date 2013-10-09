@@ -1,10 +1,14 @@
-package fi.haju.haju3d.client;
+package fi.haju.haju3d.protocol.world;
+
+import java.io.Serializable;
 
 import com.jme3.math.Vector3f;
 
 import fi.haju.haju3d.protocol.Vector3i;
 
-public class TilePosition {
+public class TilePosition implements Serializable {
+  private static final long serialVersionUID = 1L;
+  
   private final Vector3i chunkPosition;
   private final Vector3i tileWithinChunk;
   
