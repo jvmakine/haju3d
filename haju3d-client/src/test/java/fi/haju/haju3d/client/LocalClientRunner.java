@@ -9,15 +9,12 @@ import fi.haju.haju3d.server.world.PerlinNoiseWorldGenerator;
 
 public class LocalClientRunner {
   public static void main(String[] args) throws RemoteException {
-    Client client = new ClientImpl();
     ServerImpl server = new ServerImpl();
     PerlinNoiseWorldGenerator wg = new PerlinNoiseWorldGenerator();
-//    wg.setFastMode(true);
     server.setGenerator(wg);
-//    server.setFileMode(true);
+    ChunkRenderer app = new ChunkRenderer(new ChunkProvider(server), server);
+    Client client = new ClientImpl(app);
     server.login(client);
-    
-    ChunkRenderer app = new ChunkRenderer(new ChunkProvider(server));
     app.start();
   }
 }

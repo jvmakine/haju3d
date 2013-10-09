@@ -14,14 +14,17 @@ import fi.haju.haju3d.protocol.Server;
  */
 public class ClientRunner {
 
-  public static void main(String[] args) throws Exception {
-    final Client client = new ClientImpl();
-    Client stub = (Client)UnicastRemoteObject.exportObject(client, 5251);
+  public static void main(String[] args) throws Exception {  
+    
     Registry registry = LocateRegistry.getRegistry(5250);
     Server server = (Server)registry.lookup("haju3d_server");
+        
+    ChunkRenderer app = new ChunkRenderer(new ChunkProvider(server), server);
+    
+    final Client client = new ClientImpl(app);
+    Client stub = (Client)UnicastRemoteObject.exportObject(client, 5251);
     server.login(stub);
-  
-    ChunkRenderer app = new ChunkRenderer(new ChunkProvider(server));
+    
     app.setCloseEventHandler(new CloseEventHandler() {
       @Override
       public void onClose() {

@@ -33,6 +33,7 @@ import fi.haju.haju3d.client.CloseEventHandler;
 import fi.haju.haju3d.client.ui.input.InputActions;
 import fi.haju.haju3d.client.ui.input.CharacterInputHandler;
 import fi.haju.haju3d.client.ui.mesh.ChunkSpatialBuilder;
+import fi.haju.haju3d.protocol.Server;
 import fi.haju.haju3d.protocol.Vector3i;
 import fi.haju.haju3d.protocol.world.TilePosition;
 
@@ -67,8 +68,11 @@ public class ChunkRenderer extends SimpleApplication {
   
   private ViewMode viewMode = ViewMode.FLYCAM;
   
-  public ChunkRenderer(ChunkProvider chunkProvider) {
+  private Server server;
+  
+  public ChunkRenderer(ChunkProvider chunkProvider, Server server) {
     this.chunkProvider = chunkProvider;
+    this.server = server;
     setDisplayMode();
   }
 
@@ -87,6 +91,7 @@ public class ChunkRenderer extends SimpleApplication {
 
     assetManager.registerLocator("assets", new ClasspathLocator().getClass());
     this.builder = new ChunkSpatialBuilder(assetManager);
+    //TODO: The worldmanager should be injected to this class
     this.worldManager = new WorldManager(chunkProvider, builder);
     this.worldManager.start();
     
@@ -98,7 +103,7 @@ public class ChunkRenderer extends SimpleApplication {
     setupPostFilters();
     setupSelector();
     
-    inputHandler = new CharacterInputHandler(character, worldManager, this);
+    inputHandler = new CharacterInputHandler(character, worldManager, this, server);
     inputHandler.register(inputManager);
 
     rootNode.attachChild(terrainNode);
@@ -379,6 +384,10 @@ public class ChunkRenderer extends SimpleApplication {
       guiNode.detachChild(crossHair);
     }
     viewMode = mode;
+  }
+  
+  public WorldManager getWorldManager() {
+    return worldManager;
   }
 
   public TilePosition getSelectedTile() {

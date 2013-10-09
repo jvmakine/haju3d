@@ -1,8 +1,10 @@
 package fi.haju.haju3d.client.ui.input;
 
+import java.rmi.RemoteException;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.google.common.collect.Lists;
 import com.jme3.input.InputManager;
 import com.jme3.input.KeyInput;
 import com.jme3.input.MouseInput;
@@ -16,10 +18,10 @@ import com.jme3.scene.Node;
 
 import fi.haju.haju3d.client.Character;
 import fi.haju.haju3d.client.ui.ChunkRenderer;
-import fi.haju.haju3d.client.ui.ChunkSpatial;
 import fi.haju.haju3d.client.ui.ViewMode;
 import fi.haju.haju3d.client.ui.WorldManager;
-import fi.haju.haju3d.client.ui.mesh.ChunkSpatialBuilder;
+import fi.haju.haju3d.protocol.Server;
+import fi.haju.haju3d.protocol.interaction.WorldEdit;
 import fi.haju.haju3d.protocol.world.Tile;
 import fi.haju.haju3d.protocol.world.TilePosition;
 
@@ -31,9 +33,11 @@ public class CharacterInputHandler {
   private final Character character;
   private final WorldManager worldManager;
   private final ChunkRenderer renderer;
+  private final Server server;
   private final Set<String> activeInputs = new HashSet<>();
   
-  public CharacterInputHandler(Character character, WorldManager worldManager, ChunkRenderer renderer) {
+  public CharacterInputHandler(Character character, WorldManager worldManager, ChunkRenderer renderer, Server server) {
+    this.server = server;
     this.character = character;
     this.worldManager = worldManager;
     this.renderer = renderer;
@@ -136,32 +140,11 @@ public class CharacterInputHandler {
         if(keyPressed) {
           TilePosition tile = renderer.getSelectedTile();
           if(tile != null) {
-            ChunkSpatial chunkSpatial = worldManager.getChunkSpatial(tile.getChunkPosition());
-            int x = tile.getTileWithinChunk().x;
-            int y = tile.getTileWithinChunk().y;
-            int z = tile.getTileWithinChunk().z;
-            chunkSpatial.chunk.set(x, y, z, Tile.AIR);
-            worldManager.rebuildChunkSpatial(chunkSpatial);
-            // Update also the bordering chunks if necessary
-            if(x < ChunkSpatialBuilder.SMOOTH_BUFFER) {
-              worldManager.rebuildChunkSpatial(worldManager.getChunkSpatial(tile.getChunkPosition().add(-1, 0, 0)));
+            try {
+              server.registerWorldEdits(Lists.newArrayList(new WorldEdit(tile, Tile.AIR)));
+            } catch (RemoteException e) {
+              throw new RuntimeException(e);
             }
-            if(x >= worldManager.getChunkSize() - ChunkSpatialBuilder.SMOOTH_BUFFER) {
-              worldManager.rebuildChunkSpatial(worldManager.getChunkSpatial(tile.getChunkPosition().add(1, 0, 0)));
-            }
-            if(y < ChunkSpatialBuilder.SMOOTH_BUFFER) {
-              worldManager.rebuildChunkSpatial(worldManager.getChunkSpatial(tile.getChunkPosition().add(0, -1, 0)));
-            }
-            if(y >= worldManager.getChunkSize() - ChunkSpatialBuilder.SMOOTH_BUFFER) {
-              worldManager.rebuildChunkSpatial(worldManager.getChunkSpatial(tile.getChunkPosition().add(0, 1, 0)));
-            }
-            if(z < ChunkSpatialBuilder.SMOOTH_BUFFER) {
-              worldManager.rebuildChunkSpatial(worldManager.getChunkSpatial(tile.getChunkPosition().add(0, 0, -1)));
-            }
-            if(z >= worldManager.getChunkSize() - ChunkSpatialBuilder.SMOOTH_BUFFER) {
-              worldManager.rebuildChunkSpatial(worldManager.getChunkSpatial(tile.getChunkPosition().add(0, 0, 1)));
-            }
-            System.out.println("Dig: " + tile);
           }
         }
       }

@@ -21,6 +21,7 @@ import com.google.common.collect.Lists;
 import fi.haju.haju3d.protocol.Client;
 import fi.haju.haju3d.protocol.Server;
 import fi.haju.haju3d.protocol.Vector3i;
+import fi.haju.haju3d.protocol.interaction.WorldEdit;
 import fi.haju.haju3d.protocol.world.Chunk;
 import fi.haju.haju3d.protocol.world.Tile;
 import fi.haju.haju3d.protocol.world.World;
@@ -168,6 +169,27 @@ public class ServerImpl implements Server {
       chunks.add(getChunk(pos));
     }
     return chunks;
+  }
+
+  @Override
+  public void registerWorldEdits(final List<WorldEdit> edits) {
+    for(final Client client : loggedInClients) {
+      asyncCall(new Runnable() {
+        @Override
+        public void run() {
+          try {
+            client.registerWorldEdits(edits);
+          } catch (RemoteException e) {
+            // TODO Log out the client
+            LOGGER.error("Error communicating with rhe client", e);
+          }          
+        }
+      });
+    }
+  }
+  
+  private void asyncCall(Runnable call) {
+    new Thread(call).start();
   }
 
 }
