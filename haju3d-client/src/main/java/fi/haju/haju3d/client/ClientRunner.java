@@ -1,6 +1,7 @@
 package fi.haju.haju3d.client;
 
 import java.rmi.NoSuchObjectException;
+import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
@@ -17,7 +18,7 @@ public class ClientRunner {
   public static void main(String[] args) throws Exception {  
     
     Registry registry = LocateRegistry.getRegistry(5250);
-    Server server = (Server)registry.lookup("haju3d_server");
+    final Server server = (Server)registry.lookup("haju3d_server");
         
     ChunkRenderer app = new ChunkRenderer(new ChunkProvider(server), server);
     
@@ -29,8 +30,13 @@ public class ClientRunner {
       @Override
       public void onClose() {
         try {
+          server.disconnect(client);
           UnicastRemoteObject.unexportObject(client, false);
         } catch (NoSuchObjectException e) {
+          //TODO : Proper error handling
+          e.printStackTrace();
+        } catch (RemoteException e) {
+          //TODO : Proper error handling
           e.printStackTrace();
         }
       }

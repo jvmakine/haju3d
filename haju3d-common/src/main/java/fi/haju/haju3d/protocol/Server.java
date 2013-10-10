@@ -16,4 +16,5 @@ public interface Server extends Remote {
   List<Chunk> getChunks(Collection<Vector3i> positions) throws RemoteException;
   
   void registerWorldEdits(List<WorldEdit> edits) throws RemoteException;
+  void disconnect(Client client) throws RemoteException;
 }

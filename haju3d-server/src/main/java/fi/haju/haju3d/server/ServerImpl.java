@@ -6,6 +6,7 @@ import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
@@ -32,10 +33,14 @@ public class ServerImpl implements Server {
   private static final Logger LOGGER = LoggerFactory.getLogger(ServerImpl.class);
    
   private WorldGenerator generator;
-  private List<Client> loggedInClients = new ArrayList<>();
+  private List<Client> loggedInClients = Collections.synchronizedList(new ArrayList<Client>());
   private World world = new World();
   private boolean fileMode;
   private File hajuDir = getHajuDir();
+  
+  private interface AsynchClientCall {
+    void run() throws RemoteException;
+  }
   
   public ServerImpl() {
     generator = new PerlinNoiseWorldGenerator();
@@ -111,6 +116,7 @@ public class ServerImpl implements Server {
 
   @Override
   public synchronized void login(Client client) {
+    LOGGER.info("Client " + client + " logged in");
     loggedInClients.add(client);
   }
 
@@ -179,22 +185,32 @@ public class ServerImpl implements Server {
       chunk.set(p.x, p.y, p.z, edit.getNewTile());
     }
     for(final Client client : loggedInClients) {
-      asyncCall(new Runnable() {
-        @Override
-        public void run() {
-          try {
-            client.registerWorldEdits(edits);
-          } catch (RemoteException e) {
-            // TODO Log out the client
-            LOGGER.error("Error communicating with rhe client", e);
-          }          
+      asyncCall(client, new AsynchClientCall() {        
+        public void run() throws RemoteException {
+          client.registerWorldEdits(edits);
         }
       });
     }
   }
-  
-  private void asyncCall(Runnable call) {
-    new Thread(call).start();
+    
+  private void asyncCall(final Client client, final AsynchClientCall call) {
+    new Thread(new Runnable() {
+      @Override
+      public void run() {
+        try {
+          call.run();
+        } catch (RemoteException e) {
+          LOGGER.warn("Error communicating with client " + client + " disconnecting");
+          disconnect(client);
+        }
+      }
+    }).start();
+  }
+
+  @Override
+  public void disconnect(Client client) {
+    LOGGER.info("Disconnecting " + client);
+    loggedInClients.remove(client);
   }
 
 }
