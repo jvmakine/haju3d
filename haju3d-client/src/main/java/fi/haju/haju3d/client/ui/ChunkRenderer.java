@@ -16,6 +16,7 @@ import com.jme3.math.Vector3f;
 import com.jme3.post.FilterPostProcessor;
 import com.jme3.post.filters.BloomFilter;
 import com.jme3.post.filters.CartoonEdgeFilter;
+import com.jme3.post.filters.FogFilter;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
 import com.jme3.scene.shape.Box;
@@ -233,6 +234,8 @@ public class ChunkRenderer extends SimpleApplication {
     water.setRefractionStrength(0.1f);
     fpp.addFilter(water);
 
+    FogFilter fog = new FogFilter(new ColorRGBA(0.8f, 0.8f, 1.0f, 1.0f), 0.8f, 100.0f);
+    fpp.addFilter(fog);
     viewPort.addProcessor(fpp);
   }
 
