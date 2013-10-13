@@ -31,6 +31,7 @@ import com.jme3.util.SkyFactory;
 import com.jme3.water.WaterFilter;
 
 import fi.haju.haju3d.client.Character;
+import fi.haju.haju3d.client.ClientSettings;
 import fi.haju.haju3d.client.CloseEventHandler;
 import fi.haju.haju3d.client.ui.input.InputActions;
 import fi.haju.haju3d.client.ui.input.CharacterInputHandler;
@@ -57,6 +58,8 @@ public class ChunkRenderer extends SimpleApplication {
   private WorldManager worldManager;
   @Inject
   private CharacterInputHandler inputHandler;
+
+  private ClientSettings clientSettings;
   
   private DirectionalLight light;
   private CloseEventHandler closeEventHandler;
@@ -68,8 +71,12 @@ public class ChunkRenderer extends SimpleApplication {
   private BitmapText crossHair;
   private ViewMode viewMode = ViewMode.FLYCAM;
   
-  public ChunkRenderer() {
+  @Inject
+  public ChunkRenderer(ClientSettings clientSettings) {
+    clientSettings.load();
+    this.clientSettings = clientSettings;
     setDisplayMode();
+    setShowSettings(false);
   }
 
   private void setDisplayMode() {
@@ -77,12 +84,13 @@ public class ChunkRenderer extends SimpleApplication {
     settings.setVSync(true);
     settings.setAudioRenderer(null);
     settings.setFullscreen(isFullScreen);
+    settings.setResolution(clientSettings.getScreenWidth(), clientSettings.getScreenHeight());
     setSettings(settings);
-    setShowSettings(false);
   }
 
   @Override
   public void simpleInitApp() {
+    setDisplayMode();
     Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
     assetManager.registerLocator("assets", new ClasspathLocator().getClass());
     

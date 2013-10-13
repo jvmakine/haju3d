@@ -1,3 +1,5 @@
 /target
 /*.dll
 /liblwjgl64.so
+/config.properties
+/libopenal64.so
