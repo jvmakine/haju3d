@@ -1,6 +1,8 @@
 package fi.haju.haju3d.client.ui;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +25,8 @@ import fi.haju.haju3d.protocol.world.World;
 
 public class WorldManager {
   
+  private static final int MAX_DISTANCE = 4;
+
   private static final float PICK_ACCURACY = 0.001f;
 
   static final float SCALE = 1;
@@ -110,13 +114,10 @@ public class WorldManager {
   }
   
   private void removeFarChunks(Vector3i centerChunkIndex) {
-    final int maxDistance = 3;
     Set<Vector3i> remove = new HashSet<>();
     for (Map.Entry<Vector3i, ChunkSpatial> c : chunkSpatials.entrySet()) {
       Vector3i v = c.getKey();
-      if (Math.abs(centerChunkIndex.x - v.x) > maxDistance
-          || Math.abs(centerChunkIndex.y - v.y) > maxDistance
-          || Math.abs(centerChunkIndex.z - v.z) > maxDistance) {
+      if (centerChunkIndex.distanceTo(v) > MAX_DISTANCE + 1) {
         remove.add(v);
       }
     }
@@ -128,8 +129,15 @@ public class WorldManager {
   private void makeChunkNearPosition(Vector3i centerChunkIndex) {
     List<Vector3i> indexes = new ArrayList<>();
     indexes.add(centerChunkIndex);
-    indexes.addAll(centerChunkIndex.getSurroundingPositions(1, 1, 1));
-    indexes.addAll(centerChunkIndex.getSurroundingPositions(2, 2, 2));
+    indexes.addAll(centerChunkIndex.getPositionsAtMaxDistance(MAX_DISTANCE));
+    Collections.sort(indexes, new Comparator<Vector3i>() {
+      @Override
+      public int compare(Vector3i o1, Vector3i o2) {
+        if(o1.distanceTo(position) < o2.distanceTo(position)) return -1;
+        if(o1.distanceTo(position) > o2.distanceTo(position)) return 1;
+        return 0;
+      }
+    });
     for (Vector3i i : indexes) {
       if (chunkSpatials.containsKey(i)) {
         continue;
