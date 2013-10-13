@@ -13,18 +13,21 @@ public class ClientSettings {
   
   private static final String SCREEN_WIDTH_KEY = "screenWidth";
   private static final String SCREEN_HEIGHT_KEY = "screenHeight";
-
+  private static final String CHUNK_RENDER_DISTANCE_KEY = "chunkRenderDistance";
+  
   private static final String CONFIG_FILE_NAME = "config.properties";
   
   private final Properties properties = new Properties();
   
   private int screenWidth;
   private int screenHeight;
+  private int chunkRenderDistance;
   
   public void init() {
     load();
     screenWidth = loadInt(SCREEN_WIDTH_KEY, 800);
     screenHeight = loadInt(SCREEN_HEIGHT_KEY, 800);
+    chunkRenderDistance = loadInt(CHUNK_RENDER_DISTANCE_KEY, 4);
     // Save missing properties as defaults
     save();
   }
@@ -54,6 +57,10 @@ public class ClientSettings {
     return screenHeight;
   }
   
+  public int getChunkRenderDistance() {
+    return chunkRenderDistance;
+  }
+
   private int loadInt(String key, int defval) {
     if(!properties.containsKey(key)) properties.setProperty(key, Integer.toString(defval));
     return Integer.parseInt(properties.getProperty(key));

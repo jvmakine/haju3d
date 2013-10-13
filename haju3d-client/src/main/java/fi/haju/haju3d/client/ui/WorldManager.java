@@ -19,6 +19,7 @@ import com.jme3.math.Vector3f;
 import com.jme3.scene.Spatial;
 
 import fi.haju.haju3d.client.ChunkProvider;
+import fi.haju.haju3d.client.ClientSettings;
 import fi.haju.haju3d.client.ui.mesh.ChunkSpatialBuilder;
 import fi.haju.haju3d.protocol.Vector3i;
 import fi.haju.haju3d.protocol.world.Chunk;
@@ -27,28 +28,24 @@ import fi.haju.haju3d.protocol.world.World;
 
 @Singleton
 public class WorldManager {
-  
-  private static final int MAX_DISTANCE = 4;
 
   private static final float PICK_ACCURACY = 0.001f;
 
   static final float SCALE = 1;
   
-  private World world = new World();
+  @Inject
   private ChunkProvider chunkProvider;
+  @Inject
   private ChunkSpatialBuilder builder;
-  private Map<Vector3i, ChunkSpatial> chunkSpatials = new ConcurrentHashMap<>();
+  @Inject
+  private ClientSettings settings;
   
+  private World world = new World();
+  private Map<Vector3i, ChunkSpatial> chunkSpatials = new ConcurrentHashMap<>();
   private AtomicBoolean running = new AtomicBoolean(false);
   private Object lock = new Object();
   private transient Vector3i position;
-  
-  @Inject
-  public WorldManager(ChunkProvider chunkProvider, ChunkSpatialBuilder builder) {
-    this.chunkProvider = chunkProvider;
-    this.builder = builder;
-  }
-  
+    
   private Runnable runnable = new Runnable() {
     @Override
     public void run() {
@@ -121,7 +118,7 @@ public class WorldManager {
     Set<Vector3i> remove = new HashSet<>();
     for (Map.Entry<Vector3i, ChunkSpatial> c : chunkSpatials.entrySet()) {
       Vector3i v = c.getKey();
-      if (centerChunkIndex.distanceTo(v) > MAX_DISTANCE + 1) {
+      if (centerChunkIndex.distanceTo(v) > settings.getChunkRenderDistance() + 1) {
         remove.add(v);
       }
     }
@@ -133,7 +130,7 @@ public class WorldManager {
   private void makeChunkNearPosition(Vector3i centerChunkIndex) {
     List<Vector3i> indexes = new ArrayList<>();
     indexes.add(centerChunkIndex);
-    indexes.addAll(centerChunkIndex.getPositionsAtMaxDistance(MAX_DISTANCE));
+    indexes.addAll(centerChunkIndex.getPositionsAtMaxDistance(settings.getChunkRenderDistance()));
     Collections.sort(indexes, new Comparator<Vector3i>() {
       @Override
       public int compare(Vector3i o1, Vector3i o2) {
