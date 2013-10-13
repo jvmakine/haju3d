@@ -6,6 +6,7 @@ import com.google.inject.Scopes;
 import fi.haju.haju3d.client.connection.ServerConnector;
 import fi.haju.haju3d.client.ui.ChunkRenderer;
 import fi.haju.haju3d.client.ui.WorldManager;
+import fi.haju.haju3d.client.ui.input.CharacterInputHandler;
 import fi.haju.haju3d.client.ui.mesh.ChunkSpatialBuilder;
 
 public class ClientModule extends AbstractModule {
@@ -16,6 +17,7 @@ public class ClientModule extends AbstractModule {
     bind(ChunkRenderer.class).in(Scopes.SINGLETON);
     bind(WorldManager.class).in(Scopes.SINGLETON);
     bind(ChunkSpatialBuilder.class).in(Scopes.SINGLETON);
+    bind(CharacterInputHandler.class).in(Scopes.SINGLETON);
   }
 
 }

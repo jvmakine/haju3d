@@ -31,7 +31,6 @@ import com.jme3.water.WaterFilter;
 
 import fi.haju.haju3d.client.Character;
 import fi.haju.haju3d.client.CloseEventHandler;
-import fi.haju.haju3d.client.connection.ServerConnector;
 import fi.haju.haju3d.client.ui.input.InputActions;
 import fi.haju.haju3d.client.ui.input.CharacterInputHandler;
 import fi.haju.haju3d.client.ui.mesh.ChunkSpatialBuilder;
@@ -55,24 +54,16 @@ public class ChunkRenderer extends SimpleApplication {
   @Inject
   private WorldManager worldManager;
   @Inject
-  private ServerConnector server;
+  private CharacterInputHandler inputHandler;
   
   private DirectionalLight light;
   private CloseEventHandler closeEventHandler;
-
   private boolean isFullScreen = false;
   private Node terrainNode = new Node("terrain");
-  
-  
-  private CharacterInputHandler inputHandler;
-  
-  private Character character;
-  
+  private Character character; 
   private TilePosition selectedTile;
   private Node selectedVoxelNode;
-  
   private BitmapText crossHair;
-  
   private ViewMode viewMode = ViewMode.FLYCAM;
   
   public ChunkRenderer() {
@@ -104,8 +95,7 @@ public class ChunkRenderer extends SimpleApplication {
     setupPostFilters();
     setupSelector();
     
-    inputHandler = new CharacterInputHandler(character, worldManager, this, server);
-    inputHandler.register(inputManager);
+    this.inputHandler.register(inputManager);
 
     rootNode.attachChild(terrainNode);
   }
@@ -395,6 +385,10 @@ public class ChunkRenderer extends SimpleApplication {
 
   public TilePosition getSelectedTile() {
     return selectedTile;
+  }
+
+  public Character getCharacter() {
+    return character;
   }
   
 }

@@ -1,10 +1,10 @@
 package fi.haju.haju3d.client.ui.input;
 
-import java.rmi.RemoteException;
 import java.util.HashSet;
 import java.util.Set;
 
 import com.google.common.collect.Lists;
+import com.google.inject.Inject;
 import com.jme3.input.InputManager;
 import com.jme3.input.KeyInput;
 import com.jme3.input.MouseInput;
@@ -17,10 +17,10 @@ import com.jme3.math.Vector3f;
 import com.jme3.scene.Node;
 
 import fi.haju.haju3d.client.Character;
+import fi.haju.haju3d.client.connection.ServerConnector;
 import fi.haju.haju3d.client.ui.ChunkRenderer;
 import fi.haju.haju3d.client.ui.ViewMode;
 import fi.haju.haju3d.client.ui.WorldManager;
-import fi.haju.haju3d.protocol.Server;
 import fi.haju.haju3d.protocol.interaction.WorldEdit;
 import fi.haju.haju3d.protocol.world.Tile;
 import fi.haju.haju3d.protocol.world.TilePosition;
@@ -30,20 +30,20 @@ public class CharacterInputHandler {
   public static final float MOUSE_X_SPEED = 3.0f;
   public static final float MOUSE_Y_SPEED = MOUSE_X_SPEED;
   
-  private final Character character;
   private final WorldManager worldManager;
   private final ChunkRenderer renderer;
-  private final Server server;
+  private final ServerConnector server;
   private final Set<String> activeInputs = new HashSet<>();
   
-  public CharacterInputHandler(Character character, WorldManager worldManager, ChunkRenderer renderer, Server server) {
+  @Inject
+  public CharacterInputHandler(WorldManager worldManager, ChunkRenderer renderer, ServerConnector server) {
     this.server = server;
-    this.character = character;
     this.worldManager = worldManager;
     this.renderer = renderer;
   }
 
   public void register(final InputManager inputManager) {
+    final Character character = renderer.getCharacter();
     // moving
     inputManager.addMapping(InputActions.STRAFE_LEFT, new KeyTrigger(KeyInput.KEY_A));
     inputManager.addMapping(InputActions.STRAFE_RIGHT, new KeyTrigger(KeyInput.KEY_D));
@@ -140,11 +140,7 @@ public class CharacterInputHandler {
         if(keyPressed) {
           TilePosition tile = renderer.getSelectedTile();
           if(tile != null) {
-            try {
-              server.registerWorldEdits(Lists.newArrayList(new WorldEdit(tile, Tile.AIR)));
-            } catch (RemoteException e) {
-              throw new RuntimeException(e);
-            }
+            server.registerWorldEdits(Lists.newArrayList(new WorldEdit(tile, Tile.AIR)));
           }
         }
       }
