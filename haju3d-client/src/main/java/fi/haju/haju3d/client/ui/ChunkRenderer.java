@@ -73,7 +73,7 @@ public class ChunkRenderer extends SimpleApplication {
   
   @Inject
   public ChunkRenderer(ClientSettings clientSettings) {
-    clientSettings.load();
+    clientSettings.init();
     this.clientSettings = clientSettings;
     setDisplayMode();
     setShowSettings(false);

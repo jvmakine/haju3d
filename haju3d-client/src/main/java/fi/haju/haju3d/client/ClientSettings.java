@@ -21,16 +21,21 @@ public class ClientSettings {
   private int screenWidth;
   private int screenHeight;
   
-  public void load() {
+  public void init() {
+    load();
+    screenWidth = loadInt(SCREEN_WIDTH_KEY, 800);
+    screenHeight = loadInt(SCREEN_HEIGHT_KEY, 800);
+    // Save missing properties as defaults
+    save();
+  }
+
+  private void load() {
     try {
       properties.load(new FileInputStream(CONFIG_FILE_NAME));
     } catch (FileNotFoundException e) {
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
-    screenWidth = loadInt(SCREEN_WIDTH_KEY, 800);
-    screenHeight = loadInt(SCREEN_HEIGHT_KEY, 800);
-    save();
   }
   
   private void save() {
