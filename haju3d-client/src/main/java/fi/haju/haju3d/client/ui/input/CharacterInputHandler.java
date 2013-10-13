@@ -30,17 +30,14 @@ public class CharacterInputHandler {
   public static final float MOUSE_X_SPEED = 3.0f;
   public static final float MOUSE_Y_SPEED = MOUSE_X_SPEED;
   
-  private final WorldManager worldManager;
-  private final ChunkRenderer renderer;
-  private final ServerConnector server;
-  private final Set<String> activeInputs = new HashSet<>();
-  
   @Inject
-  public CharacterInputHandler(WorldManager worldManager, ChunkRenderer renderer, ServerConnector server) {
-    this.server = server;
-    this.worldManager = worldManager;
-    this.renderer = renderer;
-  }
+  private WorldManager worldManager;
+  @Inject
+  private ChunkRenderer renderer;
+  @Inject
+  private ServerConnector server;
+  
+  private final Set<String> activeInputs = new HashSet<>();
 
   public void register(final InputManager inputManager) {
     final Character character = renderer.getCharacter();
