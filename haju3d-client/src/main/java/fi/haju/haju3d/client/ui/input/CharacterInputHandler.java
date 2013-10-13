@@ -5,6 +5,7 @@ import java.util.Set;
 
 import com.google.common.collect.Lists;
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.jme3.input.InputManager;
 import com.jme3.input.KeyInput;
 import com.jme3.input.MouseInput;
@@ -25,6 +26,7 @@ import fi.haju.haju3d.protocol.interaction.WorldEdit;
 import fi.haju.haju3d.protocol.world.Tile;
 import fi.haju.haju3d.protocol.world.TilePosition;
 
+@Singleton
 public class CharacterInputHandler {
   
   public static final float MOUSE_X_SPEED = 3.0f;

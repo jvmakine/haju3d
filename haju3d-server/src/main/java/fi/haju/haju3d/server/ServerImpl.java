@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Lists;
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 
 import fi.haju.haju3d.protocol.Client;
 import fi.haju.haju3d.protocol.Server;
@@ -28,6 +29,7 @@ import fi.haju.haju3d.protocol.world.Tile;
 import fi.haju.haju3d.protocol.world.World;
 import fi.haju.haju3d.server.world.WorldGenerator;
 
+@Singleton
 public class ServerImpl implements Server {
   private static final Logger LOGGER = LoggerFactory.getLogger(ServerImpl.class);
 

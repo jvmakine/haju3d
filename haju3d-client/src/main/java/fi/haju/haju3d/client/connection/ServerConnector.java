@@ -7,12 +7,15 @@ import java.rmi.registry.Registry;
 import java.util.Collection;
 import java.util.List;
 
+import com.google.inject.Singleton;
+
 import fi.haju.haju3d.protocol.Client;
 import fi.haju.haju3d.protocol.Server;
 import fi.haju.haju3d.protocol.Vector3i;
 import fi.haju.haju3d.protocol.interaction.WorldEdit;
 import fi.haju.haju3d.protocol.world.Chunk;
 
+@Singleton
 public class ServerConnector implements Server {
 
   private Server remoteServer;

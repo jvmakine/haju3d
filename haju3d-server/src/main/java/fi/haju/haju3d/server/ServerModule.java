@@ -10,7 +10,6 @@ public class ServerModule extends AbstractModule {
 
   @Override
   protected void configure() {
-    bind(ServerImpl.class).in(Scopes.SINGLETON);
     bind(WorldGenerator.class).to(PerlinNoiseWorldGenerator.class).in(Scopes.SINGLETON);
   }
 }

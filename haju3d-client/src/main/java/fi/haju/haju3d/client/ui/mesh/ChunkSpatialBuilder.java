@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.jme3.asset.AssetManager;
 import com.jme3.asset.TextureKey;
 import com.jme3.material.Material;
@@ -37,6 +38,7 @@ import fi.haju.haju3d.protocol.Vector3i;
 import fi.haju.haju3d.protocol.world.Tile;
 import fi.haju.haju3d.protocol.world.World;
 
+@Singleton
 public class ChunkSpatialBuilder {
   public static final int SMOOTH_BUFFER = 3;
   private static final Logger LOGGER = LoggerFactory.getLogger(ChunkSpatialBuilder.class);

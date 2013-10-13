@@ -12,6 +12,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.collect.Sets;
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.jme3.collision.CollisionResults;
 import com.jme3.math.Ray;
 import com.jme3.math.Vector3f;
@@ -24,6 +25,7 @@ import fi.haju.haju3d.protocol.world.Chunk;
 import fi.haju.haju3d.protocol.world.TilePosition;
 import fi.haju.haju3d.protocol.world.World;
 
+@Singleton
 public class WorldManager {
   
   private static final int MAX_DISTANCE = 4;

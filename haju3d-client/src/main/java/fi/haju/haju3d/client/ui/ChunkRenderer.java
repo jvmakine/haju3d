@@ -1,6 +1,7 @@
 package fi.haju.haju3d.client.ui;
 
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.plugins.ClasspathLocator;
 import com.jme3.bounding.BoundingSphere;
@@ -40,6 +41,7 @@ import fi.haju.haju3d.protocol.world.TilePosition;
 /**
  * Renderer application for rendering chunks from the server
  */
+@Singleton
 public class ChunkRenderer extends SimpleApplication {
   
   private static final float SELECTOR_DISTANCE = 10.0f;
