@@ -9,7 +9,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Random;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.SerializationException;
@@ -18,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Lists;
+import com.google.inject.Inject;
 
 import fi.haju.haju3d.protocol.Client;
 import fi.haju.haju3d.protocol.Server;
@@ -26,13 +26,14 @@ import fi.haju.haju3d.protocol.interaction.WorldEdit;
 import fi.haju.haju3d.protocol.world.Chunk;
 import fi.haju.haju3d.protocol.world.Tile;
 import fi.haju.haju3d.protocol.world.World;
-import fi.haju.haju3d.server.world.PerlinNoiseWorldGenerator;
 import fi.haju.haju3d.server.world.WorldGenerator;
 
 public class ServerImpl implements Server {
   private static final Logger LOGGER = LoggerFactory.getLogger(ServerImpl.class);
-   
+
+  @Inject
   private WorldGenerator generator;
+  
   private List<Client> loggedInClients = Collections.synchronizedList(new ArrayList<Client>());
   private World world = new World();
   private boolean fileMode;
@@ -43,8 +44,6 @@ public class ServerImpl implements Server {
   }
   
   public ServerImpl() {
-    generator = new PerlinNoiseWorldGenerator();
-    generator.setSeed(new Random().nextInt());
   }
   
   public void setFileMode(boolean fileMode) {
