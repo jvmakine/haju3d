@@ -460,7 +460,7 @@ public class ChunkSpatialBuilder {
                     new Vector3f(x, y, z + 1),
                     bottomTexture(seed, tile), color,
                     realTile,
-                    seed);
+                    seed, tile);
               }
               if (world.get(x, y + 1, z) == Tile.AIR) {
                 int seed = getZIndex(x, y + 1, z, world.getChunkSize()); 
@@ -471,7 +471,7 @@ public class ChunkSpatialBuilder {
                     new Vector3f(x, y + 1, z),
                     topTexture(seed, tile), color,
                     realTile,
-                    seed);
+                    seed, tile);
               }
               if (world.get(x - 1, y, z) == Tile.AIR) {
                 int seed = getZIndex(x - 1, y, z, world.getChunkSize()); 
@@ -482,7 +482,7 @@ public class ChunkSpatialBuilder {
                     new Vector3f(x, y, z),
                     sideTexture(seed, tile), color,
                     realTile,
-                    seed);
+                    seed, tile);
               }
               if (world.get(x + 1, y, z) == Tile.AIR) {
                 int seed = getZIndex(x + 1, y, z, world.getChunkSize()); 
@@ -493,7 +493,7 @@ public class ChunkSpatialBuilder {
                     new Vector3f(x + 1, y, z + 1),
                     sideTexture(seed, tile), color,
                     realTile,
-                    seed);
+                    seed, tile);
               }
               if (world.get(x, y, z - 1) == Tile.AIR) {
                 int seed = getZIndex(x, y, z - 1, world.getChunkSize()); 
@@ -504,7 +504,7 @@ public class ChunkSpatialBuilder {
                     new Vector3f(x + 1, y, z),
                     sideTexture(seed, tile), color,
                     realTile,
-                    seed);
+                    seed, tile);
               }
               if (world.get(x, y, z + 1) == Tile.AIR) {
                 int seed = getZIndex(x, y, z + 1, world.getChunkSize()); 
@@ -515,7 +515,7 @@ public class ChunkSpatialBuilder {
                     new Vector3f(x, y, z + 1),
                     sideTexture(seed, tile), color,
                     realTile,
-                    seed);
+                    seed, tile);
               }
             }
           }
@@ -570,16 +570,18 @@ public class ChunkSpatialBuilder {
         f.calcCenter();
       }
       for (Map.Entry<MyVertex, List<MyFaceAndIndex>> e : myMesh.vertexFaces.entrySet()) {
+        MyVertex vertex = e.getKey();
         Vector3f sum = Vector3f.ZERO.clone();
         List<MyFaceAndIndex> faces = e.getValue();
-        boolean hasBrick = false;
+        int minSmooths = Integer.MAX_VALUE;
         for (MyFaceAndIndex f : faces) {
           sum.addLocal(f.face.getCenter());
-          hasBrick = hasBrick | (f.face.texture == MyTexture.BRICK);
+          minSmooths = Math.min(TileRenderPropertyProvider.getProperties(f.face.tile).getMaxSmooths(), minSmooths);
         }
         sum.divideLocal(faces.size());
-        if (!hasBrick) {
-          newPos.put(e.getKey(), sum);
+        if (vertex.smooths < minSmooths) {
+          vertex.smooths++;
+          newPos.put(vertex, sum);
         }
       }
       for (Map.Entry<MyVertex, Vector3f> e : newPos.entrySet()) {

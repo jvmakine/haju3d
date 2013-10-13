@@ -29,6 +29,7 @@ import fi.haju.haju3d.client.ui.mesh.MyMesh;
 import fi.haju.haju3d.client.ui.mesh.MyMesh.MyFaceAndIndex;
 import fi.haju.haju3d.client.ui.mesh.MyTexture;
 import fi.haju.haju3d.client.ui.mesh.MyVertex;
+import fi.haju.haju3d.protocol.world.Tile;
 
 public class ShaderTestingApp extends SimpleApplication {
   public static void main(String[] args) {
@@ -96,7 +97,8 @@ public class ShaderTestingApp extends SimpleApplication {
             new Vector3f(x, y, z),
             texture,
             1.0f, true,
-            zindex);
+            zindex,
+            Tile.ROCK);
       }
     }
     

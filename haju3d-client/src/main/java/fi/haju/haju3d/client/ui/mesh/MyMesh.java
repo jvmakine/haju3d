@@ -7,6 +7,8 @@ import java.util.Map;
 
 import com.jme3.math.Vector3f;
 
+import fi.haju.haju3d.protocol.world.Tile;
+
 public class MyMesh {
   private Map<Vector3f, MyVertex> vectorToVertex = new HashMap<>();
   public Map<MyVertex, List<MyFaceAndIndex>> vertexFaces = new HashMap<>();
@@ -19,8 +21,9 @@ public class MyMesh {
 
   public void addFace(
       Vector3f v1, Vector3f v2, Vector3f v3, Vector3f v4,
-      MyTexture texture, float color, boolean realTile, int zIndex) {
-    MyFace face = new MyFace(getVertex(v1), getVertex(v2), getVertex(v3), getVertex(v4), texture, color, realTile, zIndex);
+      MyTexture texture, float color, boolean realTile, int zIndex,
+      Tile tile) {
+    MyFace face = new MyFace(getVertex(v1), getVertex(v2), getVertex(v3), getVertex(v4), texture, color, realTile, zIndex, tile);
 
     addVertexFace(face, face.v1, 1);
     addVertexFace(face, face.v2, 2);
