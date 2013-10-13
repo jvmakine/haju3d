@@ -1,14 +1,14 @@
 package fi.haju.haju3d.client;
 
 import java.rmi.NoSuchObjectException;
-import java.rmi.RemoteException;
-import java.rmi.registry.LocateRegistry;
-import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 
+import com.google.inject.Guice;
+import com.google.inject.Injector;
+
+import fi.haju.haju3d.client.connection.ServerConnector;
 import fi.haju.haju3d.client.ui.ChunkRenderer;
 import fi.haju.haju3d.protocol.Client;
-import fi.haju.haju3d.protocol.Server;
 
 /**
  * Class to start the client
@@ -17,10 +17,10 @@ public class ClientRunner {
 
   public static void main(String[] args) throws Exception {  
     
-    Registry registry = LocateRegistry.getRegistry(5250);
-    final Server server = (Server)registry.lookup("haju3d_server");
-        
-    ChunkRenderer app = new ChunkRenderer(new ChunkProvider(server), server);
+    Injector injector = Guice.createInjector(new ClientModule());
+    final ServerConnector server = injector.getInstance(ServerConnector.class);
+    server.connect();
+    ChunkRenderer app = injector.getInstance(ChunkRenderer.class);
     
     final Client client = new ClientImpl(app);
     Client stub = (Client)UnicastRemoteObject.exportObject(client, 5251);
@@ -33,9 +33,6 @@ public class ClientRunner {
           server.disconnect(client);
           UnicastRemoteObject.unexportObject(client, false);
         } catch (NoSuchObjectException e) {
-          //TODO : Proper error handling
-          e.printStackTrace();
-        } catch (RemoteException e) {
           //TODO : Proper error handling
           e.printStackTrace();
         }

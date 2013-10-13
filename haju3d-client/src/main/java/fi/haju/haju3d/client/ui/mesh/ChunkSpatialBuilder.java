@@ -13,6 +13,7 @@ import java.util.Random;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.inject.Inject;
 import com.jme3.asset.AssetManager;
 import com.jme3.asset.TextureKey;
 import com.jme3.material.Material;
@@ -29,6 +30,7 @@ import com.jme3.texture.Texture.WrapMode;
 import com.jme3.texture.TextureArray;
 import com.jme3.util.BufferUtils;
 
+import fi.haju.haju3d.client.ui.ChunkRenderer;
 import fi.haju.haju3d.client.ui.ChunkSpatial;
 import fi.haju.haju3d.client.ui.mesh.MyMesh.MyFaceAndIndex;
 import fi.haju.haju3d.protocol.Vector3i;
@@ -40,8 +42,15 @@ public class ChunkSpatialBuilder {
   private static final Logger LOGGER = LoggerFactory.getLogger(ChunkSpatialBuilder.class);
   private Material lowMaterial;
   private Material highMaterial;
+  private ChunkRenderer chunkRenderer;
   
-  public ChunkSpatialBuilder(AssetManager assetManager) {
+  @Inject
+  public ChunkSpatialBuilder(ChunkRenderer renderer) {
+    this.chunkRenderer = renderer;
+  }
+
+  public void init() {
+    AssetManager assetManager = chunkRenderer.getAssetManager();
     Map<MyTexture, String> textureToFilename = new HashMap<>();
     textureToFilename.put(MyTexture.DIRT, "new-dirt.png");
     textureToFilename.put(MyTexture.GRASS, "new-grass.png");
@@ -65,7 +74,7 @@ public class ChunkSpatialBuilder {
     this.lowMaterial = makeMaterial(assetManager, textures, "fi/haju/haju3d/client/shaders/Lighting.j3md");
     this.highMaterial = makeMaterial(assetManager, textures, "fi/haju/haju3d/client/shaders/Terrain.j3md");
   }
-
+  
   private Material makeMaterial(AssetManager assetManager, TextureArray textures, String materialFile) {
     Material mat = new Material(assetManager, materialFile);
     mat.setBoolean("UseMaterialColors", true);

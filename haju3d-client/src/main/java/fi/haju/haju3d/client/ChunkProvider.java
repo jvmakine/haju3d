@@ -1,6 +1,5 @@
 package fi.haju.haju3d.client;
 
-import java.rmi.RemoteException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -12,18 +11,20 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
+import com.google.inject.Inject;
 
-import fi.haju.haju3d.protocol.Server;
+import fi.haju.haju3d.client.connection.ServerConnector;
 import fi.haju.haju3d.protocol.Vector3i;
 import fi.haju.haju3d.protocol.world.Chunk;
 
 public class ChunkProvider {
   private static final Logger LOGGER = LoggerFactory.getLogger(ChunkProvider.class);
     
-  private final Server server;
+  private final ServerConnector server;
   private Map<Vector3i, Chunk> chunkCache = new ConcurrentHashMap<Vector3i, Chunk>();
-  
-  public ChunkProvider(Server server) {
+
+  @Inject
+  public ChunkProvider(ServerConnector server) {
     this.server = server;
   }
 
@@ -35,16 +36,12 @@ public class ChunkProvider {
       }
     });
     if(!newPositions.isEmpty()) {
-      try {
-        LOGGER.info("Requested " + newPositions);
-        List<Chunk> chunks = server.getChunks(Lists.newArrayList(newPositions));
-        for (Chunk c : chunks) {
-          chunkCache.put(c.getPosition(), c);
-        }
-        return chunks;
-      } catch (RemoteException e) {
-        throw new RuntimeException(e);
+      LOGGER.info("Requested " + newPositions);
+      List<Chunk> chunks = server.getChunks(Lists.newArrayList(newPositions));
+      for (Chunk c : chunks) {
+        chunkCache.put(c.getPosition(), c);
       }
+      return chunks;
     }
     return Lists.newArrayList();
   }

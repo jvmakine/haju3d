@@ -1,5 +1,6 @@
 package fi.haju.haju3d.client.ui;
 
+import com.google.inject.Inject;
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.plugins.ClasspathLocator;
 import com.jme3.bounding.BoundingSphere;
@@ -29,12 +30,11 @@ import com.jme3.util.SkyFactory;
 import com.jme3.water.WaterFilter;
 
 import fi.haju.haju3d.client.Character;
-import fi.haju.haju3d.client.ChunkProvider;
 import fi.haju.haju3d.client.CloseEventHandler;
+import fi.haju.haju3d.client.connection.ServerConnector;
 import fi.haju.haju3d.client.ui.input.InputActions;
 import fi.haju.haju3d.client.ui.input.CharacterInputHandler;
 import fi.haju.haju3d.client.ui.mesh.ChunkSpatialBuilder;
-import fi.haju.haju3d.protocol.Server;
 import fi.haju.haju3d.protocol.Vector3i;
 import fi.haju.haju3d.protocol.world.TilePosition;
 
@@ -50,14 +50,20 @@ public class ChunkRenderer extends SimpleApplication {
   private static final int CHUNK_CUT_OFF = 3;
   private static final Vector3f lightDir = new Vector3f(-0.9140114f, 0.29160172f, -0.2820493f).negate();
 
+  @Inject
   private ChunkSpatialBuilder builder;
+  @Inject
+  private WorldManager worldManager;
+  @Inject
+  private ServerConnector server;
+  
   private DirectionalLight light;
   private CloseEventHandler closeEventHandler;
-  private ChunkProvider chunkProvider;
 
   private boolean isFullScreen = false;
   private Node terrainNode = new Node("terrain");
-  private WorldManager worldManager;
+  
+  
   private CharacterInputHandler inputHandler;
   
   private Character character;
@@ -69,11 +75,7 @@ public class ChunkRenderer extends SimpleApplication {
   
   private ViewMode viewMode = ViewMode.FLYCAM;
   
-  private Server server;
-  
-  public ChunkRenderer(ChunkProvider chunkProvider, Server server) {
-    this.chunkProvider = chunkProvider;
-    this.server = server;
+  public ChunkRenderer() {
     setDisplayMode();
   }
 
@@ -89,11 +91,9 @@ public class ChunkRenderer extends SimpleApplication {
   @Override
   public void simpleInitApp() {
     Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
-
     assetManager.registerLocator("assets", new ClasspathLocator().getClass());
-    this.builder = new ChunkSpatialBuilder(assetManager);
-    //TODO: The worldmanager should be injected to this class
-    this.worldManager = new WorldManager(chunkProvider, builder);
+    
+    this.builder.init();
     this.worldManager.start();
     
     setupInput();

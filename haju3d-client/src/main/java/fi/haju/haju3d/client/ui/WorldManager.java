@@ -11,6 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.common.collect.Sets;
+import com.google.inject.Inject;
 import com.jme3.collision.CollisionResults;
 import com.jme3.math.Ray;
 import com.jme3.math.Vector3f;
@@ -40,6 +41,7 @@ public class WorldManager {
   private Object lock = new Object();
   private transient Vector3i position;
   
+  @Inject
   public WorldManager(ChunkProvider chunkProvider, ChunkSpatialBuilder builder) {
     this.chunkProvider = chunkProvider;
     this.builder = builder;
