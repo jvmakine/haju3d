@@ -172,7 +172,7 @@ public class WorldManager {
   public void start() {
     if (!running.get()) {
       running.set(true);
-      Thread thread = new Thread(runnable);
+      Thread thread = new Thread(runnable, "WorldManager");
       thread.setPriority(3);
       thread.start();
     }
