@@ -23,3 +23,4 @@ F2 : Set First Person perspective mode
 F3 : Set Third Person perspective mode
 
 Left Mouse Button : Dig
+Right Mouse button : Build
