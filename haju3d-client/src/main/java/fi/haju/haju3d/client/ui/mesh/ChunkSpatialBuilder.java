@@ -389,8 +389,6 @@ public class ChunkSpatialBuilder {
       m.setBuffer(Type.Normal, 3, vertexNormals);
       m.setBuffer(Type.TexCoord, 3, textures);
       m.setBuffer(Type.Index, 1, indexes);
-//      m.setBuffer(Type.Color, 4, colors);
-      
       m.updateBound();
       return m;
     }
