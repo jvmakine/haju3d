@@ -37,6 +37,7 @@ import fi.haju.haju3d.client.ui.input.InputActions;
 import fi.haju.haju3d.client.ui.input.CharacterInputHandler;
 import fi.haju.haju3d.client.ui.mesh.ChunkSpatialBuilder;
 import fi.haju.haju3d.protocol.Vector3i;
+import fi.haju.haju3d.protocol.world.Tile;
 import fi.haju.haju3d.protocol.world.TilePosition;
 
 /**
@@ -70,7 +71,9 @@ public class ChunkRenderer extends SimpleApplication {
   private TilePosition selectedBuildTile;
   private Node selectedVoxelNode;
   private BitmapText crossHair;
+  private BitmapText selectedMaterialGui;
   private ViewMode viewMode = ViewMode.FLYCAM;
+  private Tile selectedBuildMaterial = Tile.BRICK;
   
   @Inject
   public ChunkRenderer(ClientSettings clientSettings) {
@@ -140,6 +143,19 @@ public class ChunkRenderer extends SimpleApplication {
     crossHair.setSize(guiFont.getCharSet().getRenderedSize() * 2);
     crossHair.setText("+");
     crossHair.setLocalTranslation(settings.getWidth() / 2 - crossHair.getLineWidth()/2, settings.getHeight() / 2 + crossHair.getLineHeight()/2, 0);
+  }
+  
+  private void showSelectedMaterial() {
+    guiFont = assetManager.loadFont("Interface/Fonts/Default.fnt");
+    selectedMaterialGui = new BitmapText(guiFont, false);
+    selectedMaterialGui.setSize(guiFont.getCharSet().getRenderedSize() * 2);
+    selectedMaterialGui.setText(selectedBuildMaterial.name());
+    selectedMaterialGui.setLocalTranslation(20, settings.getHeight() - 20, 0);
+    guiNode.attachChild(selectedMaterialGui);
+  }
+  
+  private void hideSelectedMaterial() {
+    guiNode.detachChild(selectedMaterialGui);
   }
 
   private void setupInput() {
@@ -377,16 +393,19 @@ public class ChunkRenderer extends SimpleApplication {
       inputManager.setCursorVisible(false);
       rootNode.detachChild(character.getNode());
       guiNode.detachChild(crossHair);
+      hideSelectedMaterial();
     } else if(mode == ViewMode.FIRST_PERSON) {
       flyCam.setEnabled(false);
       inputManager.setCursorVisible(false);
       rootNode.detachChild(character.getNode());
       guiNode.attachChild(crossHair);
+      showSelectedMaterial();
     } else if(mode == ViewMode.THIRD_PERSON) {
       flyCam.setEnabled(false);
       inputManager.setCursorVisible(false);
       rootNode.attachChild(character.getNode());
       guiNode.detachChild(crossHair);
+      hideSelectedMaterial();
     }
     viewMode = mode;
   }
@@ -401,6 +420,16 @@ public class ChunkRenderer extends SimpleApplication {
 
   public TilePosition getSelectedBuildTile() {
     return selectedBuildTile;
+  }
+
+  public Tile getSelectedBuildMaterial() {
+    return selectedBuildMaterial;
+  }
+
+  public void setSelectedBuildMaterial(Tile selectedBuildMaterial) {
+    this.selectedBuildMaterial = selectedBuildMaterial;
+    hideSelectedMaterial();
+    if(viewMode == ViewMode.FIRST_PERSON) showSelectedMaterial();
   }
 
   public Character getCharacter() {

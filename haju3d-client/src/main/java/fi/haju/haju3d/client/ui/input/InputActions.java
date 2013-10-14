@@ -16,6 +16,7 @@ public final class InputActions {
   public static final String LOOK_DOWN = "Look Down";
   public static final String DIG = "Dig";
   public static final String BUILD = "Build";
+  public static final String CHANGE_MATERIAL_UP = "Change material up";
   public static final String CHANGE_FULL_SCREEN = "fullscreen";
   
   private InputActions() {

@@ -22,5 +22,7 @@ F1 : Set FlyCam mode
 F2 : Set First Person perspective mode
 F3 : Set Third Person perspective mode
 
++ : Change build material
+
 Left Mouse Button : Dig
 Right Mouse button : Build

@@ -152,12 +152,28 @@ public class CharacterInputHandler {
         if(keyPressed) {
           TilePosition tile = renderer.getSelectedBuildTile();
           if(tile != null) {
-            server.registerWorldEdits(Lists.newArrayList(new WorldEdit(tile, Tile.BRICK)));
+            server.registerWorldEdits(Lists.newArrayList(new WorldEdit(tile, renderer.getSelectedBuildMaterial())));
           }
         }
       }
     }, InputActions.BUILD);
+    inputManager.addMapping(InputActions.CHANGE_MATERIAL_UP, new KeyTrigger(KeyInput.KEY_ADD));
+    inputManager.addListener(new ActionListener() {
+      @Override
+      public void onAction(String name, boolean keyPressed, float tpf) {
+        if(keyPressed) {
+          Tile next = renderer.getSelectedBuildMaterial();
+          do {
+            int i = next.ordinal();
+            if(i >= Tile.values().length - 1) next = Tile.values()[0];
+            else next = Tile.values()[++i];
+          } while (next == Tile.AIR);
+          renderer.setSelectedBuildMaterial(next);
+        }
+      }
+    }, InputActions.CHANGE_MATERIAL_UP);
   }
+  
   
   private boolean canJump(Node characterNode) {
     Vector3f pos = characterNode.getLocalTranslation();
