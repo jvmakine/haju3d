@@ -86,34 +86,33 @@ public class ChunkSpatialBuilder {
   
   public void rebuildChunkSpatial(World world, ChunkSpatial spatial) {
     LOGGER.info("Updating chunk spatial at " + spatial.chunk.getPosition());
-    // TODO: Optimize the cube mesh to be reused when smoothing detail meshes
-    spatial.cubes = makeSpatial(world, spatial.chunk.getPosition(), false, false);
-    spatial.lowDetail = makeSpatial(world, spatial.chunk.getPosition(), true, true);
-    spatial.highDetail = makeSpatial(world, spatial.chunk.getPosition(), false, true);
+    MyMesh myMesh = makeCubeMesh(world, spatial.chunk.getPosition());
+    spatial.cubes = makeSpatial(world, spatial.chunk.getPosition(), false, false, myMesh.clone());
+    spatial.lowDetail = makeSpatial(world, spatial.chunk.getPosition(), true, true, myMesh.clone());
+    spatial.highDetail = makeSpatial(world, spatial.chunk.getPosition(), false, true, myMesh);
     LOGGER.info("Done");
   }
   
   public ChunkSpatial makeChunkSpatial(World world, Vector3i chunkIndex) {
     LOGGER.info("Making chunk spatial at " + chunkIndex);
     ChunkSpatial lodSpatial = new ChunkSpatial();
-    // TODO: Optimize the cube mesh to be reused when smoothing detail meshes
-    lodSpatial.cubes = makeSpatial(world, chunkIndex, false, false);
-    lodSpatial.lowDetail = makeSpatial(world, chunkIndex, true, true);
-    lodSpatial.highDetail = makeSpatial(world, chunkIndex, false, true);
+    MyMesh myMesh = makeCubeMesh(world, chunkIndex);
+    lodSpatial.cubes = makeSpatial(world, chunkIndex, false, false, myMesh.clone());
+    lodSpatial.lowDetail = makeSpatial(world, chunkIndex, true, true, myMesh.clone());
+    lodSpatial.highDetail = makeSpatial(world, chunkIndex, false, true, myMesh);
     lodSpatial.chunk = world.getChunk(chunkIndex);
     return lodSpatial;
   }
   
-  public Spatial makeSpatial(World world, Vector3i chunkIndex, boolean useSimpleMesh, boolean smooth) {
-    Mesh m = makeMesh(world, chunkIndex, useSimpleMesh, smooth);
+  public Spatial makeSpatial(World world, Vector3i chunkIndex, boolean useSimpleMesh, boolean smooth, MyMesh myMesh) {
+    Mesh m = makeMesh(world, chunkIndex, useSimpleMesh, smooth, myMesh);
     final Geometry groundObject = new Geometry("ColoredMesh", m);
     groundObject.setMaterial(useSimpleMesh ? lowMaterial : highMaterial);
     groundObject.setShadowMode(ShadowMode.CastAndReceive);
     return groundObject;
   }
   
-  public Mesh makeMesh(World world, Vector3i chunkIndex, boolean useSimpleMesh, boolean smooth) {
-    MyMesh myMesh = makeCubeMesh(world, chunkIndex);
+  public Mesh makeMesh(World world, Vector3i chunkIndex, boolean useSimpleMesh, boolean smooth, MyMesh myMesh) {
     if(smooth) smoothMesh(myMesh);
     
     // only faces based on a real tile should be meshed; the other ones were used for smoothing context
