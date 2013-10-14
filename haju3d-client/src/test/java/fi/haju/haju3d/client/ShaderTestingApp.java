@@ -1,6 +1,5 @@
 package fi.haju.haju3d.client;
 
-import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -48,10 +47,6 @@ public class ShaderTestingApp extends SimpleApplication {
   
   private void loadTextures() {
     Map<MyTexture, String> textureToFilename = new HashMap<>();
-//    textureToFilename.put(MyTexture.DIRT, "mc-dirt.png");
-//    textureToFilename.put(MyTexture.GRASS, "mc-grass.png");
-//    textureToFilename.put(MyTexture.ROCK, "mc-rock.png");
-//    textureToFilename.put(MyTexture.BRICK, "mc-brick.png");
     textureToFilename.put(MyTexture.DIRT, "new-dirt.png");
     textureToFilename.put(MyTexture.GRASS, "new-grass.png");
     textureToFilename.put(MyTexture.ROCK, "new-rock.png");
@@ -185,16 +180,4 @@ public class ShaderTestingApp extends SimpleApplication {
     
   }
   
-  private static void putUvs(FloatBuffer textureUvs, float u, float v, int ti) {
-    textureUvs.put(u + 0.25f).put(v + 0.25f).put(ti);
-    textureUvs.put(u + 0.25f).put(v + 0.0f).put(ti);
-    textureUvs.put(u + 0.0f).put(v + 0.0f).put(ti);
-    textureUvs.put(u + 0.0f).put(v + 0.25f).put(ti);
-    
-  }
-
-  private static void putVector(FloatBuffer vertexes, Vector3f v) {
-    vertexes.put(v.x).put(v.y).put(v.z);
-  }
-
 }

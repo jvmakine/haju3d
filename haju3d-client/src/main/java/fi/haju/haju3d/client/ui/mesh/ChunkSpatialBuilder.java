@@ -44,13 +44,10 @@ public class ChunkSpatialBuilder {
   private static final Logger LOGGER = LoggerFactory.getLogger(ChunkSpatialBuilder.class);
   private Material lowMaterial;
   private Material highMaterial;
-  private ChunkRenderer chunkRenderer;
   
   @Inject
-  public ChunkSpatialBuilder(ChunkRenderer renderer) {
-    this.chunkRenderer = renderer;
-  }
-
+  private ChunkRenderer chunkRenderer;
+  
   public void init() {
     AssetManager assetManager = chunkRenderer.getAssetManager();
     Map<MyTexture, String> textureToFilename = new HashMap<>();
