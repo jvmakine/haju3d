@@ -533,13 +533,13 @@ public class ChunkSpatialBuilder {
         MyVertex vertex = e.getKey();
         Vector3f sum = Vector3f.ZERO.clone();
         List<MyFaceAndIndex> faces = e.getValue();
-        int minSmooths = Integer.MAX_VALUE;
+        int maxSmooths = SMOOTH_BUFFER;
         for (MyFaceAndIndex f : faces) {
           sum.addLocal(f.face.getCenter());
-          minSmooths = Math.min(TileRenderPropertyProvider.getProperties(f.face.tile).getMaxSmooths(), minSmooths);
+          maxSmooths = Math.min(TileRenderPropertyProvider.getProperties(f.face.tile).getMaxSmooths(), maxSmooths);
         }
         sum.divideLocal(faces.size());
-        if (vertex.smooths < minSmooths) {
+        if (vertex.smooths < maxSmooths) {
           vertex.smooths++;
           newPos.put(vertex, sum);
         }
