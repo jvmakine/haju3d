@@ -437,19 +437,21 @@ public class ChunkSpatialBuilder {
       Vector3i w1 = w1o.add(-SMOOTH_BUFFER, -SMOOTH_BUFFER, -SMOOTH_BUFFER);
       Vector3i w2 = w2o.add(SMOOTH_BUFFER, SMOOTH_BUFFER, SMOOTH_BUFFER);
       
+      int chunkSize = world.getChunkSize();
+      
       for (int z = w1.z; z < w2.z; z++) {
         for (int y = w1.y; y < w2.y; y++) {
           for (int x = w1.x; x < w2.x; x++) {
             Tile tile = world.get(x, y, z);
-            TileProperties properties = TileRenderPropertyProvider.getProperties(tile); 
             if (tile != Tile.AIR) {
+              TileProperties properties = TileRenderPropertyProvider.getProperties(tile);
               boolean realTile =
                   x >= w1o.x && x < w2o.x &&
                   y >= w1o.y && y < w2o.y &&
                   z >= w1o.z && z < w2o.z;
               float color = world.getColor(x, y, z);
               if (world.get(x, y - 1, z) == Tile.AIR) {
-                int seed = getZIndex(x, y - 1, z, world.getChunkSize()); 
+                int seed = getZIndex(x, y - 1, z, chunkSize); 
                 myMesh.addFace(
                     new Vector3f(x, y, z),
                     new Vector3f(x + 1, y, z),
@@ -460,7 +462,7 @@ public class ChunkSpatialBuilder {
                     seed, tile);
               }
               if (world.get(x, y + 1, z) == Tile.AIR) {
-                int seed = getZIndex(x, y + 1, z, world.getChunkSize()); 
+                int seed = getZIndex(x, y + 1, z, chunkSize); 
                 myMesh.addFace(
                     new Vector3f(x, y + 1, z + 1),
                     new Vector3f(x + 1, y + 1, z + 1),
@@ -471,7 +473,7 @@ public class ChunkSpatialBuilder {
                     seed, tile);
               }
               if (world.get(x - 1, y, z) == Tile.AIR) {
-                int seed = getZIndex(x - 1, y, z, world.getChunkSize()); 
+                int seed = getZIndex(x - 1, y, z, chunkSize); 
                 myMesh.addFace(
                     new Vector3f(x, y, z + 1),
                     new Vector3f(x, y + 1, z + 1),
@@ -482,7 +484,7 @@ public class ChunkSpatialBuilder {
                     seed, tile);
               }
               if (world.get(x + 1, y, z) == Tile.AIR) {
-                int seed = getZIndex(x + 1, y, z, world.getChunkSize()); 
+                int seed = getZIndex(x + 1, y, z, chunkSize); 
                 myMesh.addFace(
                     new Vector3f(x + 1, y, z),
                     new Vector3f(x + 1, y + 1, z),
@@ -493,7 +495,7 @@ public class ChunkSpatialBuilder {
                     seed, tile);
               }
               if (world.get(x, y, z - 1) == Tile.AIR) {
-                int seed = getZIndex(x, y, z - 1, world.getChunkSize()); 
+                int seed = getZIndex(x, y, z - 1, chunkSize); 
                 myMesh.addFace(
                     new Vector3f(x, y, z),
                     new Vector3f(x, y + 1, z),
@@ -504,7 +506,7 @@ public class ChunkSpatialBuilder {
                     seed, tile);
               }
               if (world.get(x, y, z + 1) == Tile.AIR) {
-                int seed = getZIndex(x, y, z + 1, world.getChunkSize()); 
+                int seed = getZIndex(x, y, z + 1, chunkSize); 
                 myMesh.addFace(
                     new Vector3f(x + 1, y, z + 1),
                     new Vector3f(x + 1, y + 1, z + 1),
