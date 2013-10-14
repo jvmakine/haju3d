@@ -80,18 +80,31 @@ public class WorldManager {
   
   public TilePosition getVoxelCollisionPoint(Vector3f from, Vector3f to) {
     Vector3f collision = getCollisionPoint(from, to, 0.0f, true);
+    int chunkSize = world.getChunkSize();
     if(collision == null) return null;
     // Move collision slightly to the other side of the polygon
     Vector3f collisionTile = collision.add(to.subtract(from).normalize().mult(PICK_ACCURACY));
     Vector3i chunkPos = new Vector3i(
-        (int) (collisionTile.x / world.getChunkSize() / SCALE), 
-        (int) (collisionTile.y / world.getChunkSize() / SCALE), 
-        (int) (collisionTile.z / world.getChunkSize() / SCALE));
+        (int) (collisionTile.x / chunkSize / SCALE), 
+        (int) (collisionTile.y / chunkSize / SCALE), 
+        (int) (collisionTile.z / chunkSize / SCALE));
     Vector3i tilePos = new Vector3i(
-        (int) (collisionTile.x / SCALE - chunkPos.x * world.getChunkSize()),
-        (int) (collisionTile.y / SCALE - chunkPos.y * world.getChunkSize()),
-        (int) (collisionTile.z / SCALE - chunkPos.z * world.getChunkSize())
+        (int) (collisionTile.x / SCALE - chunkPos.x * chunkSize),
+        (int) (collisionTile.y / SCALE - chunkPos.y * chunkSize),
+        (int) (collisionTile.z / SCALE - chunkPos.z * chunkSize)
         );
+    if(tilePos.x < 0) {
+      chunkPos.x -= 1;
+      tilePos.x += chunkSize - 1;
+    }
+    if(tilePos.y < 0) {
+      chunkPos.y -= 1;
+      tilePos.y += chunkSize - 1;
+    }
+    if(tilePos.z < 0) {
+      chunkPos.z -= 1;
+      tilePos.z += chunkSize - 1;
+    }
     return new TilePosition(chunkPos, tilePos);
   }
   
