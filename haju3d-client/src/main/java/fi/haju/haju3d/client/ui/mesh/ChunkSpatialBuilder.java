@@ -34,6 +34,7 @@ import com.jme3.util.BufferUtils;
 import fi.haju.haju3d.client.ui.ChunkRenderer;
 import fi.haju.haju3d.client.ui.ChunkSpatial;
 import fi.haju.haju3d.client.ui.mesh.MyMesh.MyFaceAndIndex;
+import fi.haju.haju3d.client.ui.mesh.TileRenderPropertyProvider.TileProperties;
 import fi.haju.haju3d.protocol.Vector3i;
 import fi.haju.haju3d.protocol.world.Tile;
 import fi.haju.haju3d.protocol.world.World;
@@ -442,6 +443,7 @@ public class ChunkSpatialBuilder {
         for (int y = w1.y; y < w2.y; y++) {
           for (int x = w1.x; x < w2.x; x++) {
             Tile tile = world.get(x, y, z);
+            TileProperties properties = TileRenderPropertyProvider.getProperties(tile); 
             if (tile != Tile.AIR) {
               boolean realTile =
                   x >= w1o.x && x < w2o.x &&
@@ -455,7 +457,7 @@ public class ChunkSpatialBuilder {
                     new Vector3f(x + 1, y, z),
                     new Vector3f(x + 1, y, z + 1),
                     new Vector3f(x, y, z + 1),
-                    bottomTexture(seed, tile), color,
+                    properties.getSideTexture(seed), color,
                     realTile,
                     seed, tile);
               }
@@ -466,7 +468,7 @@ public class ChunkSpatialBuilder {
                     new Vector3f(x + 1, y + 1, z + 1),
                     new Vector3f(x + 1, y + 1, z),
                     new Vector3f(x, y + 1, z),
-                    topTexture(seed, tile), color,
+                    properties.getTopTexture(seed), color,
                     realTile,
                     seed, tile);
               }
@@ -477,7 +479,7 @@ public class ChunkSpatialBuilder {
                     new Vector3f(x, y + 1, z + 1),
                     new Vector3f(x, y + 1, z),
                     new Vector3f(x, y, z),
-                    sideTexture(seed, tile), color,
+                    properties.getSideTexture(seed), color,
                     realTile,
                     seed, tile);
               }
@@ -488,7 +490,7 @@ public class ChunkSpatialBuilder {
                     new Vector3f(x + 1, y + 1, z),
                     new Vector3f(x + 1, y + 1, z + 1),
                     new Vector3f(x + 1, y, z + 1),
-                    sideTexture(seed, tile), color,
+                    properties.getSideTexture(seed), color,
                     realTile,
                     seed, tile);
               }
@@ -499,7 +501,7 @@ public class ChunkSpatialBuilder {
                     new Vector3f(x, y + 1, z),
                     new Vector3f(x + 1, y + 1, z),
                     new Vector3f(x + 1, y, z),
-                    sideTexture(seed, tile), color,
+                    properties.getSideTexture(seed), color,
                     realTile,
                     seed, tile);
               }
@@ -510,7 +512,7 @@ public class ChunkSpatialBuilder {
                     new Vector3f(x + 1, y + 1, z + 1),
                     new Vector3f(x, y + 1, z + 1),
                     new Vector3f(x, y, z + 1),
-                    sideTexture(seed, tile), color,
+                    properties.getSideTexture(seed), color,
                     realTile,
                     seed, tile);
               }
@@ -521,45 +523,7 @@ public class ChunkSpatialBuilder {
       return myMesh;
     }
   }
-
-  private static MyTexture sideTexture(int seed, Tile tile) {
-    return baseTexture(seed, tile);
-  }
-
-  private static MyTexture bottomTexture(int seed, Tile tile) {
-    return baseTexture(seed, tile);
-  }
   
-  private static final MyTexture[] GRASSES = new MyTexture[] {MyTexture.GRASS, MyTexture.GRASS2};
-  private static final MyTexture[] ROCKS = new MyTexture[] {MyTexture.ROCK, MyTexture.ROCK2};
-  
-  private static <T> T sample(int seed, T[] array) {
-    Random r = new Random(seed);
-    return array[r.nextInt(array.length)];
-  }
-  
-  private static MyTexture topTexture(int seed, Tile tile) {
-    switch (tile) {
-    case GROUND:
-      return sample(seed, GRASSES);
-    default:
-      return baseTexture(seed, tile);
-    }
-  }
-  
-  private static MyTexture baseTexture(int seed, Tile tile) {
-    switch (tile) {
-    case GROUND:
-      return MyTexture.DIRT;
-    case ROCK:
-      return sample(seed, ROCKS);
-    case BRICK:
-      return MyTexture.BRICK;
-    case AIR:
-    }
-    throw new IllegalStateException("Unknown case: " + tile);
-  }
-
   private static void smoothMesh(MyMesh myMesh) {
     for (int i = 0; i < SMOOTH_BUFFER; i++) {
       Map<MyVertex, Vector3f> newPos = new HashMap<>();
