@@ -67,6 +67,7 @@ public class ChunkRenderer extends SimpleApplication {
   private Node terrainNode = new Node("terrain");
   private Character character; 
   private TilePosition selectedTile;
+  private TilePosition selectedBuildTile;
   private Node selectedVoxelNode;
   private BitmapText crossHair;
   private ViewMode viewMode = ViewMode.FLYCAM;
@@ -337,6 +338,7 @@ public class ChunkRenderer extends SimpleApplication {
     cam.setLocation(camPos);
     
     selectedTile = worldManager.getVoxelCollisionPoint(character.getPosition(), character.getPosition().add(cam.getDirection().normalize().mult(SELECTOR_DISTANCE)));
+    selectedBuildTile = worldManager.getVoxelCollisionDirection(character.getPosition(), character.getPosition().add(cam.getDirection().normalize().mult(SELECTOR_DISTANCE)));
     rootNode.detachChild(selectedVoxelNode);
     if(selectedTile != null) {
       selectedVoxelNode.setLocalTranslation(selectedTile.getWorldPosition(WorldManager.SCALE, worldManager.getChunkSize()));
@@ -395,6 +397,10 @@ public class ChunkRenderer extends SimpleApplication {
 
   public TilePosition getSelectedTile() {
     return selectedTile;
+  }
+
+  public TilePosition getSelectedBuildTile() {
+    return selectedBuildTile;
   }
 
   public Character getCharacter() {

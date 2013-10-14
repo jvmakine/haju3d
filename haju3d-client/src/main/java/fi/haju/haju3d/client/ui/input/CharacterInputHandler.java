@@ -132,7 +132,7 @@ public class CharacterInputHandler {
     }, InputActions.CHANGE_FULL_SCREEN);
     
     // Dig
-    inputManager.addMapping(InputActions.BUILD, new MouseButtonTrigger(MouseInput.BUTTON_LEFT));
+    inputManager.addMapping(InputActions.DIG, new MouseButtonTrigger(MouseInput.BUTTON_LEFT));
     inputManager.addListener(new ActionListener() {
       @Override
       public void onAction(String name, boolean keyPressed, float tpf) {
@@ -140,6 +140,19 @@ public class CharacterInputHandler {
           TilePosition tile = renderer.getSelectedTile();
           if(tile != null) {
             server.registerWorldEdits(Lists.newArrayList(new WorldEdit(tile, Tile.AIR)));
+          }
+        }
+      }
+    }, InputActions.DIG);
+    // Build
+    inputManager.addMapping(InputActions.BUILD, new MouseButtonTrigger(MouseInput.BUTTON_RIGHT));
+    inputManager.addListener(new ActionListener() {
+      @Override
+      public void onAction(String name, boolean keyPressed, float tpf) {
+        if(keyPressed) {
+          TilePosition tile = renderer.getSelectedBuildTile();
+          if(tile != null) {
+            server.registerWorldEdits(Lists.newArrayList(new WorldEdit(tile, Tile.BRICK)));
           }
         }
       }
