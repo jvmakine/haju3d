@@ -1,4 +1,4 @@
-package fi.haju.haju3d.client;
+package fi.haju.haju3d.client.chunk;
 
 import java.util.List;
 
