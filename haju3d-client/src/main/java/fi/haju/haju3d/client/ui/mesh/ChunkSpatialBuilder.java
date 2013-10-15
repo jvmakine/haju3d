@@ -58,6 +58,8 @@ public class ChunkSpatialBuilder {
     textureToFilename.put(MyTexture.ROCK, "new-rock.png");
     textureToFilename.put(MyTexture.ROCK2, "new-rock2.png");
     textureToFilename.put(MyTexture.BRICK, "new-brick.png");
+    textureToFilename.put(MyTexture.WOOD1, "wood1.png");
+    textureToFilename.put(MyTexture.WOOD2, "wood2.png");
     
     List<Image> images = new ArrayList<Image>();
     for (MyTexture tex : MyTexture.values()) {

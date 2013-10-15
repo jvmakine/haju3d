@@ -23,6 +23,10 @@ public class TileRenderPropertyProvider {
           3,
           Lists.newArrayList(MyTexture.ROCK, MyTexture.ROCK2),
           Lists.newArrayList(MyTexture.ROCK, MyTexture.ROCK2)))
+      .put(Tile.WOOD, new TileProperties(
+          2,
+          Lists.newArrayList(MyTexture.WOOD1, MyTexture.WOOD2),
+          Lists.newArrayList(MyTexture.WOOD1, MyTexture.WOOD2)))
       .build();
   
   public static TileProperties getProperties(Tile tile) {

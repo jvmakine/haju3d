@@ -238,6 +238,21 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
       }
     }
     
+    // add trees
+    for(int i = 0; i < 4; ++i) {
+      int x = r.nextInt(w - 3);
+      int z = r.nextInt(d - 3);
+      int y = findGround(chunk, h, x, z);
+      if (y >= 1 && y < h - 20 && chunk.get(x, y-1, z) == Tile.GROUND) {
+        for(int k = r.nextInt(10) + 10; k >= 0; k--) {
+          chunk.set(x, y + k, z, Tile.WOOD);
+          chunk.set(x+1, y + k, z, Tile.WOOD);
+          chunk.set(x+1, y + k, z+1, Tile.WOOD);
+          chunk.set(x, y + k, z+1, Tile.WOOD);
+        }
+      }
+    }
+    
     if (fastMode) {
       return chunk;
     } else {
