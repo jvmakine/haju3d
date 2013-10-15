@@ -60,6 +60,10 @@ public final class Chunk implements Serializable {
     return tile != null ? tile : byteToTile.get(tiles.get(x, y, z));
   }
   
+  public Tile get(Vector3i pos) {
+    return tile != null ? tile : byteToTile.get(tiles.get(pos.x, pos.y, pos.z));
+  }
+  
   public float getColor(int x, int y, int z) {
     return tile != null ? 0.0f : colors.get(x, y, z) / 127f;
   }
@@ -82,5 +86,12 @@ public final class Chunk implements Serializable {
 
   public Vector3i getPosition() {
     return position;
+  }
+
+  public boolean isWithin(Vector3i pos) {
+    return
+        pos.x > 0 && pos.x < getWidth()
+        && pos.y > 0 && pos.y < getHeight()
+        && pos.z > 0 && pos.z < getDepth();
   }
 }

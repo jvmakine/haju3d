@@ -94,5 +94,9 @@ public class Vector3i implements Serializable {
   public String toString() {
     return "[" + x + "," + y + "," + z + "]";
   }
+
+  public Vector3i add(Vector3i v) {
+    return add(v.x, v.y, v.z);
+  }
   
 }

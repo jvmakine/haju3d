@@ -8,6 +8,7 @@ import java.util.Random;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import fi.haju.haju3d.protocol.Vector3i;
@@ -239,24 +240,71 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
     }
     
     // add trees
-    for(int i = 0; i < 4; ++i) {
-      int x = r.nextInt(w - 3);
-      int z = r.nextInt(d - 3);
-      int y = findGround(chunk, h, x, z);
-      if (y >= 1 && y < h - 20 && chunk.get(x, y-1, z) == Tile.GROUND) {
-        for(int k = r.nextInt(10) + 10; k >= 0; k--) {
-          chunk.set(x, y + k, z, Tile.WOOD);
-          chunk.set(x+1, y + k, z, Tile.WOOD);
-          chunk.set(x+1, y + k, z+1, Tile.WOOD);
-          chunk.set(x, y + k, z+1, Tile.WOOD);
-        }
-      }
-    }
+    generateTrees(chunk, r);
     
     if (fastMode) {
       return chunk;
     } else {
       return filterFloaters(chunk);
+    }
+  }
+
+  private class BranchState {
+    public int length;
+    public Vector3i place;
+    public Vector3i dir;
+    
+    public BranchState(int length, Vector3i place, Vector3i dir) {
+      this.length = length;
+      this.place = place;
+      this.dir = dir;
+    }
+    
+  }
+  
+  private void generateTrees(Chunk chunk, Random r) {
+    for(int i = 0; i < 4; ++i) {
+      int x = r.nextInt(chunk.getWidth() - 3);
+      int z = r.nextInt(chunk.getDepth() - 3);
+      int y = findGround(chunk, chunk.getHeight(), x, z);
+      if (y >= 1 && y < chunk.getHeight() - 20 && chunk.get(x, y-1, z) == Tile.GROUND) {
+        List<BranchState> branches = Lists.newArrayList();
+        for(int k = r.nextInt(10) + 10; k >= 0; k--) {
+          chunk.set(x, y + k, z, Tile.WOOD);
+          chunk.set(x+1, y + k, z, Tile.WOOD);
+          chunk.set(x+1, y + k, z+1, Tile.WOOD);
+          chunk.set(x, y + k, z+1, Tile.WOOD);
+          if(k > 5) {
+            if(r.nextInt(6) == 0) branches.add(new BranchState(r.nextInt(10) + 7, new Vector3i(x, y+k, z), new Vector3i(-1, 0, 0)));
+            if(r.nextInt(6) == 0) branches.add(new BranchState(r.nextInt(10) + 7, new Vector3i(x+1, y+k, z), new Vector3i(0, 0, -1)));
+            if(r.nextInt(6) == 0) branches.add(new BranchState(r.nextInt(10) + 7, new Vector3i(x+1, y+k, z+1), new Vector3i(1, 0, 0)));
+            if(r.nextInt(6) == 0) branches.add(new BranchState(r.nextInt(10) + 7, new Vector3i(x, y+k, z+1), new Vector3i(0, 0, 1)));
+          }
+        }
+        while(!branches.isEmpty()) {
+          BranchState state = branches.remove(0);
+          Vector3i next = state.place;
+          if(state.length <= 0) continue;
+          // go up
+          if(r.nextInt(4) == 0) next = next.add(0, 1, 0);
+          // go sideways
+          else if(r.nextInt(4) == 0) {
+            int s = r.nextInt(4);
+            switch(s) {
+            case 0 : next = next.add(1, 0, 0); break;
+            case 1 : next = next.add(-1, 0, 0); break;
+            case 2 : next = next.add(0, 0, 1); break;
+            default : next = next.add(0, 0, -1); break;
+            }
+          }
+          // go straight
+          else next = next.add(state.dir);
+          if(!chunk.isWithin(next)) continue;
+          if(!chunk.get(next).equals(Tile.AIR) && !chunk.get(next).equals(Tile.WOOD)) continue;
+          chunk.set(next.x, next.y, next.z, Tile.WOOD);
+          branches.add(new BranchState(state.length - 1, next, state.dir));
+        }
+      }
     }
   }
 
