@@ -148,7 +148,7 @@ public class ChunkRenderer extends SimpleApplication {
   private void showSelectedMaterial() {
     guiFont = assetManager.loadFont("Interface/Fonts/Default.fnt");
     selectedMaterialGui = new BitmapText(guiFont, false);
-    selectedMaterialGui.setSize(guiFont.getCharSet().getRenderedSize() * 2);
+    selectedMaterialGui.setSize(guiFont.getCharSet().getRenderedSize() * 1.5f);
     selectedMaterialGui.setText(selectedBuildMaterial.name());
     selectedMaterialGui.setLocalTranslation(20, settings.getHeight() - 20, 0);
     guiNode.attachChild(selectedMaterialGui);
