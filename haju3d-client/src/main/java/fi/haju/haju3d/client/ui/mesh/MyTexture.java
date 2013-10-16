@@ -7,4 +7,5 @@ public enum MyTexture {
   ROCK, ROCK2,
   BRICK,
   WOOD1, WOOD2,
+  COBBLESTONE1
 }
