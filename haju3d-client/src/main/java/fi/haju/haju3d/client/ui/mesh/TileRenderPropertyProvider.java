@@ -28,7 +28,7 @@ public class TileRenderPropertyProvider {
           Lists.newArrayList(MyTexture.WOOD1, MyTexture.WOOD2),
           Lists.newArrayList(MyTexture.WOOD1, MyTexture.WOOD2)))
       .put(Tile.COBBLESTONE, new TileProperties(
-          0,
+          1,
           Lists.newArrayList(MyTexture.COBBLESTONE1),
           Lists.newArrayList(MyTexture.COBBLESTONE1)))
       .build();

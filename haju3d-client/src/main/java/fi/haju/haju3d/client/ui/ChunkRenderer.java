@@ -118,7 +118,7 @@ public class ChunkRenderer extends SimpleApplication {
     character = new Character(new Node("character"));
     character.getNode().setLocalTranslation(worldManager.getGlobalPosition(new Vector3i().add(32, 62, 32)));
 
-    Box characterMesh = new Box(0.5f, 1.5f, 0.5f);
+    Box characterMesh = new Box(0.3f, 0.8f, 0.3f);
     Geometry characterModel = new Geometry("CharacterModel", characterMesh);
 
     ColorRGBA color = ColorRGBA.Red;
@@ -350,10 +350,14 @@ public class ChunkRenderer extends SimpleApplication {
       camPos.set(coll);
     }
 
+    if(viewMode == ViewMode.FIRST_PERSON) {
+      camPos = camPos.add(new Vector3f(0, 0.5f, 0));
+    }
+    
     cam.setLocation(camPos);
     
-    selectedTile = worldManager.getVoxelCollisionPoint(character.getPosition(), character.getPosition().add(cam.getDirection().normalize().mult(SELECTOR_DISTANCE)));
-    selectedBuildTile = worldManager.getVoxelCollisionDirection(character.getPosition(), character.getPosition().add(cam.getDirection().normalize().mult(SELECTOR_DISTANCE)));
+    selectedTile = worldManager.getVoxelCollisionPoint(camPos, camPos.add(cam.getDirection().normalize().mult(SELECTOR_DISTANCE)));
+    selectedBuildTile = worldManager.getVoxelCollisionDirection(camPos, camPos.add(cam.getDirection().normalize().mult(SELECTOR_DISTANCE)));
     rootNode.detachChild(selectedVoxelNode);
     if(selectedTile != null) {
       selectedVoxelNode.setLocalTranslation(selectedTile.getWorldPosition(WorldManager.SCALE, worldManager.getChunkSize()));
@@ -362,7 +366,7 @@ public class ChunkRenderer extends SimpleApplication {
   }
 
   private BoundingVolume makeCharacterBoundingVolume(Vector3f characterPos) {
-    return new BoundingSphere(1, characterPos.add(0, -0.5f, 0));
+    return new BoundingSphere(0.6f, characterPos.add(0, -0.3f, 0));
   }
 
   @Override
