@@ -137,6 +137,7 @@ public class ChunkRenderer extends SimpleApplication {
     getFlyByCamera().setMoveSpeed(MOVE_SPEED);
     getFlyByCamera().setRotationSpeed(CharacterInputHandler.MOUSE_X_SPEED);
     getCamera().setLocation(worldManager.getGlobalPosition(new Vector3i().add(32, 62, 62)));
+    getCamera().setFrustumPerspective(45f, (float) getCamera().getWidth() / getCamera().getHeight(), 0.1f, 200f);
     
     guiFont = assetManager.loadFont("Interface/Fonts/Default.fnt");
     crossHair = new BitmapText(guiFont, false);
@@ -250,7 +251,7 @@ public class ChunkRenderer extends SimpleApplication {
     water.setRefractionStrength(0.1f);
     fpp.addFilter(water);
 
-    FogFilter fog = new FogFilter(new ColorRGBA(0.8f, 0.8f, 1.0f, 1.0f), 0.8f, 100.0f);
+    FogFilter fog = new FogFilter(new ColorRGBA(0.8f, 0.8f, 1.0f, 1.0f), 0.6f, 100.0f);
     fpp.addFilter(fog);
     viewPort.addProcessor(fpp);
   }
