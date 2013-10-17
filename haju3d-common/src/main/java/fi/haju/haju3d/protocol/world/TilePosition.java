@@ -35,13 +35,13 @@ public class TilePosition implements Serializable {
     
   public static TilePosition getTilePosition(float scale, int chunkSize, Vector3f position) {
     Vector3i chunkPos = new Vector3i(
-        (int) (position.x / chunkSize / scale), 
-        (int) (position.y / chunkSize / scale), 
-        (int) (position.z / chunkSize / scale));
+        (int) Math.floor(position.x / chunkSize / scale), 
+        (int) Math.floor(position.y / chunkSize / scale), 
+        (int) Math.floor(position.z / chunkSize / scale));
     Vector3i tilePos = new Vector3i(
-        (int) (position.x / scale - chunkPos.x * chunkSize),
-        (int) (position.y / scale - chunkPos.y * chunkSize),
-        (int) (position.z / scale - chunkPos.z * chunkSize)
+        (int) Math.floor(position.x / scale - chunkPos.x * chunkSize),
+        (int) Math.floor(position.y / scale - chunkPos.y * chunkSize),
+        (int) Math.floor(position.z / scale - chunkPos.z * chunkSize)
         );
     if(tilePos.x < 0) {
       chunkPos.x -= 1;
@@ -55,6 +55,7 @@ public class TilePosition implements Serializable {
       chunkPos.z -= 1;
       tilePos.z += chunkSize - 1;
     }
+    System.out.println(position + " -> " + chunkPos + ", " + tilePos);
     return new TilePosition(chunkPos, tilePos);
   }
   
