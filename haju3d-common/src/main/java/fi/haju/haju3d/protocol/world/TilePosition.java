@@ -55,7 +55,6 @@ public class TilePosition implements Serializable {
       chunkPos.z -= 1;
       tilePos.z += chunkSize - 1;
     }
-    System.out.println(position + " -> " + chunkPos + ", " + tilePos);
     return new TilePosition(chunkPos, tilePos);
   }
   
