@@ -251,7 +251,7 @@ public class ChunkRenderer extends SimpleApplication {
     water.setRefractionStrength(0.1f);
     fpp.addFilter(water);
 
-    FogFilter fog = new FogFilter(new ColorRGBA(0.8f, 0.8f, 1.0f, 1.0f), 0.6f, 100.0f);
+    FogFilter fog = new FogFilter(new ColorRGBA(0.8f, 0.8f, 1.0f, 1.0f), 0.6f, 200.0f);
     fpp.addFilter(fog);
     viewPort.addProcessor(fpp);
   }
