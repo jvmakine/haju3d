@@ -99,9 +99,10 @@ public class ShaderTestingApp extends SimpleApplication {
         }
       });
     }
-
+    myMesh.calcVertexNormals();
     //Mesh m = new NewMeshBuilder(mesh).build();
-    Mesh m = new ChunkSpatialBuilder.NewMeshBuilder(myMesh, myMesh.faces).build();
+
+    Mesh m = new ChunkSpatialBuilder.NewMeshBuilder(myMesh).build();
     
     /*
     // simple faces

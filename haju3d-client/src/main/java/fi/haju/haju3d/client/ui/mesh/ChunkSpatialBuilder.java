@@ -33,7 +33,7 @@ import java.util.*;
 
 @Singleton
 public class ChunkSpatialBuilder {
-  public static final int SMOOTH_BUFFER = 3;
+  public static final int SMOOTH_BUFFER = 2;
   private static final Logger LOGGER = LoggerFactory.getLogger(ChunkSpatialBuilder.class);
   private Material lowMaterial;
   private Material highMaterial;
@@ -83,38 +83,18 @@ public class ChunkSpatialBuilder {
   public void rebuildChunkSpatial(World world, ChunkSpatial chunkSpatial) {
     LOGGER.info("Updating chunk spatial at " + chunkSpatial.chunk.getPosition());
     MyMesh myMesh = makeCubeMesh(world, chunkSpatial.chunk.getPosition());
-    chunkSpatial.cubes = makeSpatial(false, false, myMesh.clone());
-    chunkSpatial.lowDetail = makeSpatial(true, true, myMesh.clone());
-    chunkSpatial.highDetail = makeSpatial(false, true, myMesh);
+    chunkSpatial.cubes = makeCubeSpatial(myMesh);
+
+    // common processing for non-cube meshes
+    prepareMesh(myMesh);
+
+    chunkSpatial.lowDetail = makeSpatial(true, myMesh);
+    chunkSpatial.highDetail = makeSpatial(false, myMesh);
     LOGGER.info("Done");
   }
 
-  public ChunkSpatial makeChunkSpatial(World world, Vector3i chunkIndex) {
-    LOGGER.info("Making chunk spatial at " + chunkIndex);
-    ChunkSpatial chunkSpatial = new ChunkSpatial();
-    chunkSpatial.chunk = world.getChunk(chunkIndex);
-    rebuildChunkSpatial(world, chunkSpatial);
-    return chunkSpatial;
-  }
-
-  public Spatial makeSpatial(boolean useSimpleMesh, boolean smooth, MyMesh myMesh) {
-    Mesh m = makeMesh(useSimpleMesh, smooth, myMesh);
-    final Geometry groundObject = new Geometry("ColoredMesh", m);
-    groundObject.setMaterial(useSimpleMesh ? lowMaterial : highMaterial);
-    groundObject.setShadowMode(ShadowMode.CastAndReceive);
-    return groundObject;
-  }
-
-  public Mesh makeMesh(boolean useSimpleMesh, boolean smooth, MyMesh myMesh) {
-    if (smooth) smoothMesh(myMesh);
-
-    // only faces based on a real tile should be meshed; the other ones were used for smoothing context
-    List<MyFace> realFaces = new ArrayList<>();
-    for (MyFace face : myMesh.faces) {
-      if (face.realTile) {
-        realFaces.add(face);
-      }
-    }
+  public void prepareMesh(MyMesh myMesh) {
+    smoothMesh(myMesh);
     for (MyFace face : myMesh.faces) {
       face.normal = face.v2.v.subtract(face.v1.v).cross(face.v4.v.subtract(face.v1.v)).normalize();
     }
@@ -126,12 +106,36 @@ public class ChunkSpatialBuilder {
         }
       });
     }
+    myMesh.calcVertexNormals();
+  }
 
-    if (useSimpleMesh) {
-      return new SimpleMeshBuilder(myMesh, realFaces).build();
-    } else {
-      return new NewMeshBuilder(myMesh, realFaces).build();
+  private Spatial makeCubeSpatial(MyMesh myMesh) {
+    // normals are not meaningful for cube spatial, just assign something
+    for (MyFace face : myMesh.faces) {
+      face.normal = Vector3f.UNIT_Z;
     }
+    for (MyVertex v : myMesh.vertexFaces.keySet()) {
+      myMesh.vertexToNormal.put(v, Vector3f.UNIT_Z);
+    }
+    Geometry geom = new Geometry("ColoredMesh", new SimpleMeshBuilder(myMesh).build());
+    myMesh.vertexToNormal.clear();
+    return geom;
+  }
+
+  public ChunkSpatial makeChunkSpatial(World world, Vector3i chunkIndex) {
+    LOGGER.info("Making chunk spatial at " + chunkIndex);
+    ChunkSpatial chunkSpatial = new ChunkSpatial();
+    chunkSpatial.chunk = world.getChunk(chunkIndex);
+    rebuildChunkSpatial(world, chunkSpatial);
+    return chunkSpatial;
+  }
+
+  public Spatial makeSpatial(boolean useSimpleMesh, MyMesh myMesh) {
+    Mesh m = useSimpleMesh ? new SimpleMeshBuilder(myMesh).build() : new NewMeshBuilder(myMesh).build();
+    final Geometry groundObject = new Geometry("ColoredMesh", m);
+    groundObject.setMaterial(useSimpleMesh ? lowMaterial : highMaterial);
+    groundObject.setShadowMode(ShadowMode.CastAndReceive);
+    return groundObject;
   }
 
 
@@ -148,9 +152,9 @@ public class ChunkSpatialBuilder {
 
     private MyMesh mesh;
     private int i;
-    private Map<MyVertex, Vector3f> vertexToNormal = new HashMap<>();
 
-    public NewMeshBuilder(MyMesh mesh, List<MyFace> realFaces) {
+    public NewMeshBuilder(MyMesh mesh) {
+      List<MyFace> realFaces = mesh.getRealFaces();
       this.mesh = mesh;
       this.realFaces = realFaces;
       int mul = 4;
@@ -162,13 +166,6 @@ public class ChunkSpatialBuilder {
       this.textureUvs4 = BufferUtils.createFloatBuffer(realFaces.size() * 4 * 3 * mul);
       this.indexes = BufferUtils.createIntBuffer(realFaces.size() * 6 * mul);
       this.allUvs = new FloatBuffer[] {textureUvs, textureUvs2, textureUvs3, textureUvs4};
-
-      for (MyFace face : realFaces) {
-        calcVertexNormal(mesh.vertexFaces, vertexToNormal, face.v1);
-        calcVertexNormal(mesh.vertexFaces, vertexToNormal, face.v2);
-        calcVertexNormal(mesh.vertexFaces, vertexToNormal, face.v3);
-        calcVertexNormal(mesh.vertexFaces, vertexToNormal, face.v4);
-      }
     }
 
     public Mesh build() {
@@ -181,10 +178,10 @@ public class ChunkSpatialBuilder {
         Vector3f v3 = face.v3.v;
         Vector3f v4 = face.v4.v;
 
-        Vector3f n1 = vertexToNormal.get(face.v1);
-        Vector3f n2 = vertexToNormal.get(face.v2);
-        Vector3f n3 = vertexToNormal.get(face.v3);
-        Vector3f n4 = vertexToNormal.get(face.v4);
+        Vector3f n1 = mesh.vertexToNormal.get(face.v1);
+        Vector3f n2 = mesh.vertexToNormal.get(face.v2);
+        Vector3f n3 = mesh.vertexToNormal.get(face.v3);
+        Vector3f n4 = mesh.vertexToNormal.get(face.v4);
 
         Vector3f v12 = v1.add(v2).mult(0.5f);
         Vector3f v23 = v2.add(v3).mult(0.5f);
@@ -317,21 +314,15 @@ public class ChunkSpatialBuilder {
     }
   }
 
-  private static class SimpleMeshBuilder {
-    private List<MyFace> realFaces;
-    private Map<MyVertex, Vector3f> vertexToNormal = new HashMap<>();
+  public static class SimpleMeshBuilder {
+    private MyMesh myMesh;
 
-    public SimpleMeshBuilder(MyMesh myMesh, List<MyFace> realFaces) {
-      this.realFaces = realFaces;
-      for (MyFace face : realFaces) {
-        calcVertexNormal(myMesh.vertexFaces, vertexToNormal, face.v1);
-        calcVertexNormal(myMesh.vertexFaces, vertexToNormal, face.v2);
-        calcVertexNormal(myMesh.vertexFaces, vertexToNormal, face.v3);
-        calcVertexNormal(myMesh.vertexFaces, vertexToNormal, face.v4);
-      }
+    public SimpleMeshBuilder(MyMesh myMesh) {
+      this.myMesh = myMesh;
     }
 
     public Mesh build() {
+      List<MyFace> realFaces = myMesh.getRealFaces();
 
       FloatBuffer vertexes = BufferUtils.createFloatBuffer(realFaces.size() * 4 * 3);
       FloatBuffer vertexNormals = BufferUtils.createFloatBuffer(realFaces.size() * 4 * 3);
@@ -352,10 +343,10 @@ public class ChunkSpatialBuilder {
           putVector(vertexNormals, face.normal);
           putVector(vertexNormals, face.normal);
         } else {
-          putVector(vertexNormals, vertexToNormal.get(face.v1));
-          putVector(vertexNormals, vertexToNormal.get(face.v2));
-          putVector(vertexNormals, vertexToNormal.get(face.v3));
-          putVector(vertexNormals, vertexToNormal.get(face.v4));
+          putVector(vertexNormals, myMesh.vertexToNormal.get(face.v1));
+          putVector(vertexNormals, myMesh.vertexToNormal.get(face.v2));
+          putVector(vertexNormals, myMesh.vertexToNormal.get(face.v3));
+          putVector(vertexNormals, myMesh.vertexToNormal.get(face.v4));
         }
 
         int ti = face.texture.ordinal();
@@ -386,24 +377,6 @@ public class ChunkSpatialBuilder {
     }
   }
 
-  private static void calcVertexNormal(
-      Map<MyVertex, List<MyFaceAndIndex>> vertexFaces,
-      Map<MyVertex, Vector3f> vertexToNormal,
-      MyVertex v1) {
-
-    if (vertexToNormal.containsKey(v1)) {
-      return;
-    }
-
-    Vector3f sum = Vector3f.ZERO.clone();
-    for (MyFaceAndIndex f : vertexFaces.get(v1)) {
-      sum.addLocal(f.face.normal);
-    }
-    sum.normalizeLocal();
-
-    vertexToNormal.put(v1, sum);
-  }
-
   private static void putVector(FloatBuffer vertexes, Vector3f v) {
     vertexes.put(v.x).put(v.y).put(v.z);
   }
@@ -419,7 +392,7 @@ public class ChunkSpatialBuilder {
     return new Random(x ^ y * chunkSize ^ z * chunkSize * chunkSize).nextInt();
   }
 
-  private static MyMesh makeCubeMesh(World world, Vector3i chunkIndex) {
+  public static MyMesh makeCubeMesh(World world, Vector3i chunkIndex) {
     synchronized (world) {
       MyMesh myMesh = new MyMesh();
 
@@ -518,7 +491,7 @@ public class ChunkSpatialBuilder {
 
   private static void smoothMesh(MyMesh myMesh) {
     for (int i = 0; i < SMOOTH_BUFFER; i++) {
-      Map<MyVertex, Vector3f> newPos = new HashMap<>();
+      Map<MyVertex, Vector3f> newPos = new HashMap<>(myMesh.vertexFaces.size());
       for (MyFace f : myMesh.faces) {
         f.calcCenter();
       }

@@ -14,6 +14,7 @@ public class MyMesh {
   private Map<Vector3f, MyVertex> vectorToVertex = new HashMap<>();
   public Map<MyVertex, List<MyFaceAndIndex>> vertexFaces = new HashMap<>();
   public List<MyFace> faces = new ArrayList<>();
+  public Map<MyVertex, Vector3f> vertexToNormal = new HashMap<>();
 
   public MyMesh() {
   }
@@ -63,8 +64,37 @@ public class MyMesh {
     faces.add(fi);
   }
 
-  public MyMesh clone() {
-    return new MyMesh(Maps.newHashMap(vectorToVertex), Maps.newHashMap(vertexFaces), Lists.newArrayList(faces));
+  public void calcVertexNormals() {
+    for (MyFace face : faces) {
+      calcVertexNormal(face.v1);
+      calcVertexNormal(face.v2);
+      calcVertexNormal(face.v3);
+      calcVertexNormal(face.v4);
+    }
   }
 
+  public List<MyFace> getRealFaces() {
+    List<MyFace> realFaces = new ArrayList<>();
+    for (MyFace face : faces) {
+      if (face.realTile) {
+        realFaces.add(face);
+      }
+    }
+    return realFaces;
+  }
+
+  private void calcVertexNormal(MyVertex v1) {
+
+    if (vertexToNormal.containsKey(v1)) {
+      return;
+    }
+
+    Vector3f sum = Vector3f.ZERO.clone();
+    for (MyFaceAndIndex f : vertexFaces.get(v1)) {
+      sum.addLocal(f.face.normal);
+    }
+    sum.normalizeLocal();
+
+    vertexToNormal.put(v1, sum);
+  }
 }

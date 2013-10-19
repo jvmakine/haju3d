@@ -29,6 +29,10 @@ public final class Chunk implements Serializable {
     }
   }
 
+  public static interface GetValue {
+    Tile getValue(int x, int y, int z);
+  }
+
   public Chunk(int width, int height, int depth, int seed, Vector3i position) {
     this.seed = seed;
     this.position = position;
@@ -52,6 +56,19 @@ public final class Chunk implements Serializable {
     this.width = width;
     this.height = height;
     this.depth = depth;
+  }
+
+  public void set(GetValue getValue) {
+    int w = getWidth();
+    int h = getHeight();
+    int d = getDepth();
+    for (int x = 0; x < w; x++) {
+      for (int y = 0; y < h; y++) {
+        for (int z = 0; z < d; z++) {
+          set(x, y, z, getValue.getValue(x, y, z));
+        }
+      }
+    }
   }
 
   public void set(int x, int y, int z, Tile value) {

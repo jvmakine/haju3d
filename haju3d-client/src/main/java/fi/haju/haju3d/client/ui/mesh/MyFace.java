@@ -29,7 +29,7 @@ public class MyFace {
   }
 
   public void calcCenter() {
-    this.center = v1.v.clone().addLocal(v2.v).addLocal(v3.v).addLocal(v4.v).divide(4);
+    this.center = v1.v.clone().addLocal(v2.v).addLocal(v3.v).addLocal(v4.v).divideLocal(4);
   }
 
   public Vector3f getCenter() {
