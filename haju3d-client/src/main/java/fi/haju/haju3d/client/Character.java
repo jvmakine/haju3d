@@ -17,15 +17,15 @@ public class Character {
   public Vector3f getVelocity() {
     return velocity;
   }
-  
+
   public float getLookAzimuth() {
     return lookAzimuth;
   }
-  
+
   public float getLookElevation() {
     return lookElevation;
   }
-  
+
   public Node getNode() {
     return node;
   }
@@ -41,19 +41,19 @@ public class Character {
   public void setLookElevation(float lookElevation) {
     this.lookElevation = lookElevation;
   }
-  
+
   public Vector3f getPosition() {
     return node.getLocalTranslation();
   }
-  
+
   public void setPosition(Vector3f position) {
     node.setLocalTranslation(position);
   }
-  
+
   public Quaternion getLookQuaternion() {
     Quaternion quat = new Quaternion();
     quat.fromAngles(getLookElevation(), getLookAzimuth(), 0.0f);
     return quat;
   }
-  
+
 }

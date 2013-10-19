@@ -1,24 +1,23 @@
 package fi.haju.haju3d.client.ui.mesh;
 
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.jme3.math.Vector3f;
+import fi.haju.haju3d.protocol.world.Tile;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.jme3.math.Vector3f;
-
-import fi.haju.haju3d.protocol.world.Tile;
-
 public class MyMesh {
   private Map<Vector3f, MyVertex> vectorToVertex = new HashMap<>();
   public Map<MyVertex, List<MyFaceAndIndex>> vertexFaces = new HashMap<>();
   public List<MyFace> faces = new ArrayList<>();
-  
+
   public MyMesh() {
   }
-  
+
   private MyMesh(Map<Vector3f, MyVertex> vectorToVertex, Map<MyVertex, List<MyFaceAndIndex>> vertexFaces, List<MyFace> faces) {
     this.vectorToVertex = vectorToVertex;
     this.vertexFaces = vertexFaces;
@@ -63,9 +62,9 @@ public class MyMesh {
     fi.index = vertexIndex;
     faces.add(fi);
   }
-  
+
   public MyMesh clone() {
     return new MyMesh(Maps.newHashMap(vectorToVertex), Maps.newHashMap(vertexFaces), Lists.newArrayList(faces));
   }
-  
+
 }

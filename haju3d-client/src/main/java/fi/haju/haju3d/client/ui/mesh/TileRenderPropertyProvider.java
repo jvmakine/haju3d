@@ -1,15 +1,14 @@
 package fi.haju.haju3d.client.ui.mesh;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
+import fi.haju.haju3d.protocol.world.Tile;
+
 import java.util.List;
 import java.util.Map;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
-
-import fi.haju.haju3d.protocol.world.Tile;
-
 public class TileRenderPropertyProvider {
-  
+
   private static final Map<Tile, TileProperties> properties = ImmutableMap.<Tile, TileProperties>builder()
       .put(Tile.BRICK, new TileProperties(
           0,
@@ -32,11 +31,11 @@ public class TileRenderPropertyProvider {
           Lists.newArrayList(MyTexture.COBBLESTONE1),
           Lists.newArrayList(MyTexture.COBBLESTONE1)))
       .build();
-  
+
   public static TileProperties getProperties(Tile tile) {
     return properties.get(tile);
   }
-  
+
   public static class TileProperties {
     private final int maxSmooths;
     private final List<MyTexture> topTextures;
@@ -59,7 +58,7 @@ public class TileRenderPropertyProvider {
     public MyTexture getSideTexture(int seed) {
       return sideTextures.get(Math.abs(seed) % sideTextures.size());
     }
-    
+
   }
-  
+
 }

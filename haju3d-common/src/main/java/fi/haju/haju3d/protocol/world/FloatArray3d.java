@@ -1,17 +1,17 @@
 package fi.haju.haju3d.protocol.world;
 
-import java.io.Serializable;
-
 import fi.haju.haju3d.util.noise.InterpolationUtil;
+
+import java.io.Serializable;
 
 public final class FloatArray3d implements Serializable {
   private static final long serialVersionUID = 1L;
-  
+
   private final float[] data;
   private final int width;
   private final int height;
   private final int depth;
-  
+
   public static interface Initializer {
     float getValue(int x, int y, int z);
   }
@@ -22,25 +22,25 @@ public final class FloatArray3d implements Serializable {
     this.depth = depth;
     this.data = new float[width * height * depth];
   }
-  
+
   public FloatArray3d(int width, int height, int depth, Initializer initializer) {
     this.width = width;
     this.height = height;
     this.depth = depth;
     this.data = new float[width * height * depth];
-    for(int x = 0; x < width; ++x) {
-      for(int y = 0; y < height; ++y) {
-        for(int z = 0; z < depth; ++z) {
+    for (int x = 0; x < width; ++x) {
+      for (int y = 0; y < height; ++y) {
+        for (int z = 0; z < depth; ++z) {
           set(x, y, z, initializer.getValue(x, y, z));
         }
       }
     }
   }
-  
+
   public void set(int x, int y, int z, float value) {
     data[getIndex(x, y, z)] = value;
   }
-  
+
   public void add(int x, int y, int z, float value) {
     data[getIndex(x, y, z)] += value;
   }
@@ -56,11 +56,11 @@ public final class FloatArray3d implements Serializable {
   public float get(int x, int y, int z) {
     return data[getIndex(x, y, z)];
   }
-  
-  public float getInterpolated(float tx, float ty, float tz)  {
+
+  public float getInterpolated(float tx, float ty, float tz) {
     int tw = width;
     int td = depth;
-    
+
     int x = (int) tx;
     int y = (int) ty;
     int z = (int) tz;

@@ -1,25 +1,8 @@
 package fi.haju.haju3d.server;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.Serializable;
-import java.rmi.RemoteException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.SerializationException;
-import org.apache.commons.lang3.SerializationUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-
 import fi.haju.haju3d.protocol.Client;
 import fi.haju.haju3d.protocol.Server;
 import fi.haju.haju3d.protocol.Vector3i;
@@ -28,6 +11,17 @@ import fi.haju.haju3d.protocol.world.Chunk;
 import fi.haju.haju3d.protocol.world.Tile;
 import fi.haju.haju3d.protocol.world.World;
 import fi.haju.haju3d.server.world.WorldGenerator;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.SerializationException;
+import org.apache.commons.lang3.SerializationUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.Serializable;
+import java.rmi.RemoteException;
+import java.util.*;
 
 @Singleton
 public class ServerImpl implements Server {
@@ -35,30 +29,30 @@ public class ServerImpl implements Server {
 
   @Inject
   private WorldGenerator generator;
-  
+
   private List<Client> loggedInClients = Collections.synchronizedList(new ArrayList<Client>());
   private World world = new World();
   private boolean fileMode;
   private File hajuDir = getHajuDir();
-  
+
   private interface AsynchClientCall {
     void run() throws RemoteException;
   }
-  
+
   public ServerImpl() {
   }
-  
+
   public void setFileMode(boolean fileMode) {
     this.fileMode = fileMode;
   }
-  
+
   private void createAndSaveWorld() {
     LOGGER.info("createAndSaveWorld");
-    
+
     int sz = world.getChunkSize();
     int chunks = 10;
     Chunk worldChunk = generator.generateChunk(new Vector3i(), sz * chunks, sz, sz * chunks);
-    
+
     HashSet<Vector3i> validChunks = new HashSet<>();
     for (int x = 0; x < chunks; x++) {
       for (int z = 0; z < chunks; z++) {
@@ -76,10 +70,10 @@ public class ServerImpl implements Server {
         writeObjectToFile(chunkFile(position), chunk);
       }
     }
-    
+
     writeObjectToFile(validChunksFile(), validChunks);
   }
-  
+
   private static void writeObjectToFile(File file, Serializable object) {
     try {
       FileUtils.writeByteArrayToFile(file, SerializationUtils.serialize(object));
@@ -87,7 +81,7 @@ public class ServerImpl implements Server {
       throw new RuntimeException(e);
     }
   }
-  
+
   @SuppressWarnings("unchecked")
   private static <T> T readObjectFromFile(File file) throws IOException {
     try {
@@ -96,7 +90,7 @@ public class ServerImpl implements Server {
       throw new IOException(e);
     }
   }
-  
+
   private File chunkFile(Vector3i position) {
     return new File(hajuDir, "ch#" + position.x + "#" + position.z);
   }
@@ -110,7 +104,7 @@ public class ServerImpl implements Server {
     hajuDir.mkdirs();
     return hajuDir;
   }
-  
+
   public void setGenerator(WorldGenerator generator) {
     this.generator = generator;
   }
@@ -125,15 +119,15 @@ public class ServerImpl implements Server {
   public synchronized void logout(Client client) {
     loggedInClients.remove(client);
   }
-  
+
   @Override
   public Chunk getChunk(Vector3i position) throws RemoteException {
     return getOrGenerateChunk(position);
   }
-  
+
   private synchronized Chunk getOrGenerateChunk(Vector3i position) {
     LOGGER.info("getOrGenerateChunk: " + position);
-    
+
     if (fileMode) {
       int sz = world.getChunkSize();
       if (position.y < 0) {
@@ -158,8 +152,8 @@ public class ServerImpl implements Server {
         return getOrGenerateChunk(position);
       }
     }
-    
-    if(world.hasChunk(position)) {
+
+    if (world.hasChunk(position)) {
       return world.getChunk(position);
     } else {
       int sz = world.getChunkSize();
@@ -172,7 +166,7 @@ public class ServerImpl implements Server {
   @Override
   public List<Chunk> getChunks(Collection<Vector3i> positions) throws RemoteException {
     List<Chunk> chunks = Lists.newArrayList();
-    for(Vector3i pos : positions) {
+    for (Vector3i pos : positions) {
       chunks.add(getChunk(pos));
     }
     return chunks;
@@ -180,20 +174,20 @@ public class ServerImpl implements Server {
 
   @Override
   public void registerWorldEdits(final List<WorldEdit> edits) {
-    for(WorldEdit edit : edits) {
+    for (WorldEdit edit : edits) {
       Chunk chunk = getOrGenerateChunk(edit.getPosition().getChunkPosition());
       Vector3i p = edit.getPosition().getTileWithinChunk();
       chunk.set(p.x, p.y, p.z, edit.getNewTile());
     }
-    for(final Client client : loggedInClients) {
-      asyncCall(client, new AsynchClientCall() {        
+    for (final Client client : loggedInClients) {
+      asyncCall(client, new AsynchClientCall() {
         public void run() throws RemoteException {
           client.registerWorldEdits(edits);
         }
       });
     }
   }
-    
+
   private void asyncCall(final Client client, final AsynchClientCall call) {
     new Thread(new Runnable() {
       @Override

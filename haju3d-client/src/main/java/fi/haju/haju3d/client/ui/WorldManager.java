@@ -1,15 +1,5 @@
 package fi.haju.haju3d.client.ui;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -17,7 +7,6 @@ import com.jme3.collision.CollisionResults;
 import com.jme3.math.Ray;
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Spatial;
-
 import fi.haju.haju3d.client.ClientSettings;
 import fi.haju.haju3d.client.chunk.ChunkProvider;
 import fi.haju.haju3d.client.ui.mesh.ChunkSpatialBuilder;
@@ -26,26 +15,30 @@ import fi.haju.haju3d.protocol.world.Chunk;
 import fi.haju.haju3d.protocol.world.TilePosition;
 import fi.haju.haju3d.protocol.world.World;
 
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 @Singleton
 public class WorldManager {
 
   private static final float PICK_ACCURACY = 0.001f;
 
   public static final float SCALE = 1;
-  
+
   @Inject
   private ChunkProvider chunkProvider;
   @Inject
   private ChunkSpatialBuilder builder;
   @Inject
   private ClientSettings settings;
-  
+
   private World world = new World();
   private Map<Vector3i, ChunkSpatial> chunkSpatials = new ConcurrentHashMap<>();
   private AtomicBoolean running = new AtomicBoolean(false);
   private Object lock = new Object();
   private transient Vector3i position;
-    
+
   private Runnable runnable = new Runnable() {
     @Override
     public void run() {
@@ -61,41 +54,41 @@ public class WorldManager {
       }
     }
   };
-  
+
   private Vector3i getWorldPosition(Vector3f location) {
     return new Vector3i((int) Math.floor(location.x / SCALE), (int) Math.floor(location.y / SCALE), (int) Math.floor(location.z / SCALE));
   }
-  
+
   public Vector3i getChunkIndexForLocation(Vector3f location) {
     return world.getChunkIndex(getWorldPosition(location));
   }
-  
+
   public Vector3f getGlobalPosition(Vector3i worldPosition) {
     return new Vector3f(worldPosition.x * SCALE, worldPosition.y * SCALE, worldPosition.z * SCALE);
   }
-  
+
   public Vector3f getTerrainCollisionPoint(Vector3f from, Vector3f to, float distanceFix) {
     return getCollisionPoint(from, to, distanceFix, false);
   }
-  
+
   public TilePosition getVoxelCollisionPoint(Vector3f from, Vector3f to) {
     Vector3f collision = getCollisionPoint(from, to, 0.0f, true);
     int chunkSize = world.getChunkSize();
-    if(collision == null) return null;
+    if (collision == null) return null;
     // Move collision slightly to the other side of the polygon
     Vector3f collisionTile = collision.add(to.subtract(from).normalize().mult(PICK_ACCURACY));
     return TilePosition.getTilePosition(SCALE, chunkSize, collisionTile);
   }
-  
+
   public TilePosition getVoxelCollisionDirection(Vector3f from, Vector3f to) {
     Vector3f collision = getCollisionPoint(from, to, 0.0f, true);
     int chunkSize = world.getChunkSize();
-    if(collision == null) return null;
+    if (collision == null) return null;
     // Move collision slightly to the other side of the polygon
     Vector3f collisionTile = collision.subtract(to.subtract(from).normalize().mult(PICK_ACCURACY));
     return TilePosition.getTilePosition(SCALE, chunkSize, collisionTile);
   }
-  
+
   private Vector3f getCollisionPoint(Vector3f from, Vector3f to, float distanceFix, boolean useBoxes) {
     Set<Vector3i> chunkPositions = Sets.newHashSet(getChunkIndexForLocation(from), getChunkIndexForLocation(to));
     Ray ray = new Ray(from, to.subtract(from).normalize());
@@ -103,7 +96,7 @@ public class WorldManager {
     for (Vector3i pos : chunkPositions) {
       ChunkSpatial cs = getChunkSpatial(pos);
       CollisionResults collision = new CollisionResults();
-      Spatial spatial = cs == null ? null : (useBoxes ? cs.cubes : cs.lowDetail); 
+      Spatial spatial = cs == null ? null : (useBoxes ? cs.cubes : cs.lowDetail);
       if (spatial != null && spatial.collideWith(ray, collision) != 0) {
         Vector3f closest = collision.getClosestCollision().getContactPoint();
         boolean collided = closest.distance(from) <= distance + distanceFix;
@@ -114,7 +107,7 @@ public class WorldManager {
     }
     return null;
   }
-  
+
   private void removeFarChunks(Vector3i centerChunkIndex) {
     Set<Vector3i> remove = new HashSet<>();
     for (Map.Entry<Vector3i, ChunkSpatial> c : chunkSpatials.entrySet()) {
@@ -135,8 +128,8 @@ public class WorldManager {
     Collections.sort(indexes, new Comparator<Vector3i>() {
       @Override
       public int compare(Vector3i o1, Vector3i o2) {
-        if(o1.distanceTo(position) < o2.distanceTo(position)) return -1;
-        if(o1.distanceTo(position) > o2.distanceTo(position)) return 1;
+        if (o1.distanceTo(position) < o2.distanceTo(position)) return -1;
+        if (o1.distanceTo(position) > o2.distanceTo(position)) return 1;
         return 0;
       }
     });
@@ -152,7 +145,7 @@ public class WorldManager {
   public void rebuildChunkSpatial(ChunkSpatial spatial) {
     builder.rebuildChunkSpatial(world, spatial);
   }
-  
+
   private void makeChunkAt(Vector3i chunkIndex) {
     // need 3x3 chunks around meshing area so that mesh borders can be handled correctly
     List<Chunk> chunks = chunkProvider.getChunks(chunkIndex.getSurroundingPositions());
@@ -169,7 +162,7 @@ public class WorldManager {
       lock.notify();
     }
   }
-  
+
   public void start() {
     if (!running.get()) {
       running.set(true);
@@ -178,7 +171,7 @@ public class WorldManager {
       thread.start();
     }
   }
-  
+
   public void stop() {
     running.set(false);
     synchronized (lock) {

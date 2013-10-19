@@ -33,6 +33,7 @@ public class FixTextureAlphaColor {
   private static final class Front {
     int x;
     int y;
+
     private Front(int x, int y) {
       this.x = x;
       this.y = y;
@@ -74,7 +75,7 @@ public class FixTextureAlphaColor {
   private void showAlpha() {
     for (int x = 0; x < width; x++) {
       for (int y = 0; y < height; y++) {
-        raster.setSample(x,y,3,255);
+        raster.setSample(x, y, 3, 255);
       }
     }
   }
@@ -105,8 +106,8 @@ public class FixTextureAlphaColor {
     int b = raster.getSample(x, y, 2);
     maybeAddFront(x - 1, y, r, g, b);
     maybeAddFront(x + 1, y, r, g, b);
-    maybeAddFront(x, y- 1, r, g, b);
-    maybeAddFront(x, y+1, r, g, b);
+    maybeAddFront(x, y - 1, r, g, b);
+    maybeAddFront(x, y + 1, r, g, b);
   }
 
   private void maybeAddFront(int x, int y, int r, int g, int b) {

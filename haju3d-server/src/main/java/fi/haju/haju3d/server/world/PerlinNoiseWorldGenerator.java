@@ -1,28 +1,22 @@
 package fi.haju.haju3d.server.world;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-
 import fi.haju.haju3d.protocol.Vector3i;
 import fi.haju.haju3d.protocol.world.Chunk;
 import fi.haju.haju3d.protocol.world.FloatArray3d;
 import fi.haju.haju3d.protocol.world.Tile;
 import fi.haju.haju3d.util.noise.InterpolationUtil;
 
+import java.util.*;
+
 public class PerlinNoiseWorldGenerator implements WorldGenerator {
   private int seed;
   private boolean fastMode;
-  
+
   private Map<Vector3i, PerlinNoiseScales> perlinNoises = Maps.newHashMap();
-  
+
   @Override
   public Chunk generateChunk(Vector3i position, int width, int height, int depth) {
     int realseed = seed ^ (position.x + position.y * 123 + position.z * 12347);
@@ -45,34 +39,34 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
   public void setSeed(int seed) {
     this.seed = seed;
   }
-  
+
   private static final class PerlinNoiseScales {
     public static List<Integer> SCALES = ImmutableList.of(2, 4, 8, 16, 32);
-    
+
     private Map<Integer, FloatArray3d> noises = Maps.newHashMap();
-    
+
     public PerlinNoiseScales(final Random random, int width, int height, int depth) {
-      for(int scale : SCALES) {
+      for (int scale : SCALES) {
         int nw = width / scale;
         int nh = height / scale;
         int nd = depth / scale;
-        final float amp = (float)Math.pow(0.5f * scale * 1.0f, 1.0f);
+        final float amp = (float) Math.pow(0.5f * scale * 1.0f, 1.0f);
         FloatArray3d noise = new FloatArray3d(nw, nh, nd, new FloatArray3d.Initializer() {
           @Override
           public float getValue(int x, int y, int z) {
-            return (float)((random.nextDouble() - 0.5) * amp);
+            return (float) ((random.nextDouble() - 0.5) * amp);
           }
         });
         noises.put(scale, noise);
       }
     }
-    
+
     public FloatArray3d getNoise(int scale) {
       return noises.get(scale);
     }
-    
+
   }
-  
+
   private static final class FloodFill {
     private List<Vector3i> front = new ArrayList<>();
     private Set<Vector3i> visited = new HashSet<>();
@@ -110,31 +104,31 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
       front.add(n);
     }
   }
-  
+
   private static Chunk filterFloaters(Chunk chunk) {
     Chunk ground = new Chunk(chunk.getWidth(), chunk.getHeight(), chunk.getDepth(), chunk.getSeed(), chunk.getPosition());
     new FloodFill(ground, chunk).fill();
     return ground;
   }
-  
+
   private PerlinNoiseScales getPerlinNoiseScale(Vector3i pos, Random random, int w, int h, int d) {
-    if(perlinNoises.containsKey(pos)) {
+    if (perlinNoises.containsKey(pos)) {
       return perlinNoises.get(pos);
     }
     PerlinNoiseScales noises = new PerlinNoiseScales(random, w, h, d);
     perlinNoises.put(pos, noises);
     return noises;
   }
-  
+
   private FloatArray3d make3dPerlinNoise(long seed, int w, int h, int d, Vector3i position) {
     Random random = new Random(seed);
     FloatArray3d data = new FloatArray3d(w, h, d);
     for (int scale : PerlinNoiseScales.SCALES) {
-      FloatArray3d[] surroundingScales = new FloatArray3d[3*3*3];
-      for(int x = 0; x < 2; ++x) {
-        for(int y = 0; y < 2; ++y) {
-          for(int z = 0; z < 2; ++z) {
-            surroundingScales[x + y*2 + z*4] = getPerlinNoiseScale(position.add(x, y, z), random, w, h, d).getNoise(scale);
+      FloatArray3d[] surroundingScales = new FloatArray3d[3 * 3 * 3];
+      for (int x = 0; x < 2; ++x) {
+        for (int y = 0; y < 2; ++y) {
+          for (int z = 0; z < 2; ++z) {
+            surroundingScales[x + y * 2 + z * 4] = getPerlinNoiseScale(position.add(x, y, z), random, w, h, d).getNoise(scale);
           }
         }
       }
@@ -142,7 +136,7 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
     }
     return data;
   }
-    
+
   private static float getNoiseValueFromSet(int x, int y, int z, int nw, int nh, int nd, FloatArray3d[] scales) {
     boolean xOver = x >= nw;
     boolean yOver = y >= nh;
@@ -150,23 +144,23 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
     int i = xOver ? 1 : 0;
     int j = yOver ? 1 : 0;
     int k = zOver ? 1 : 0;
-    return scales[i + j*2 + k*4].get(
+    return scales[i + j * 2 + k * 4].get(
         xOver ? x - nw : x,
         yOver ? y - nh : y,
         zOver ? z - nd : z);
   }
-  
+
   private static void add3dNoise(final Random random, FloatArray3d data, int scale, FloatArray3d[] surroundingScales) {
     int w = data.getWidth();
     int h = data.getHeight();
     int d = data.getDepth();
-       
+
     FloatArray3d centralNoise = surroundingScales[0];
-    
+
     int nw = centralNoise.getWidth();
     int nh = centralNoise.getHeight();
     int nd = centralNoise.getDepth();
-    
+
     for (int z = 0; z < d; z++) {
       float zt = (float) (z % scale) / scale;
       int zs = z / scale;
@@ -176,7 +170,7 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
         for (int x = 0; x < w; x++) {
           float xt = (float) (x % scale) / scale;
           int xs = x / scale;
-         
+
           float n1 = getNoiseValueFromSet(xs, ys, zs, nw, nh, nd, surroundingScales);
           float n2 = getNoiseValueFromSet(xs + 1, ys, zs, nw, nh, nd, surroundingScales);
           float n3 = getNoiseValueFromSet(xs, ys + 1, zs, nw, nh, nd, surroundingScales);
@@ -192,7 +186,7 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
       }
     }
   }
-  
+
   private Chunk makeChunk(Chunk chunk, int seed, Vector3i position) {
     int w = chunk.getWidth();
     int h = chunk.getHeight();
@@ -238,10 +232,10 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
         }
       }
     }
-    
+
     // add trees
     generateTrees(chunk, r);
-    
+
     if (fastMode) {
       return chunk;
     } else {
@@ -253,54 +247,66 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
     public int length;
     public Vector3i place;
     public Vector3i dir;
-    
+
     public BranchState(int length, Vector3i place, Vector3i dir) {
       this.length = length;
       this.place = place;
       this.dir = dir;
     }
-    
+
   }
-  
+
   private void generateTrees(Chunk chunk, Random r) {
-    for(int i = 0; i < 4; ++i) {
+    for (int i = 0; i < 4; ++i) {
       int x = r.nextInt(chunk.getWidth() - 3);
       int z = r.nextInt(chunk.getDepth() - 3);
       int y = findGround(chunk, chunk.getHeight(), x, z);
-      if (y >= 1 && y < chunk.getHeight() - 20 && chunk.get(x, y-1, z) == Tile.GROUND) {
+      if (y >= 1 && y < chunk.getHeight() - 20 && chunk.get(x, y - 1, z) == Tile.GROUND) {
         List<BranchState> branches = Lists.newArrayList();
-        for(int k = r.nextInt(10) + 10; k >= 0; k--) {
+        for (int k = r.nextInt(10) + 10; k >= 0; k--) {
           chunk.set(x, y + k, z, Tile.WOOD);
-          chunk.set(x+1, y + k, z, Tile.WOOD);
-          chunk.set(x+1, y + k, z+1, Tile.WOOD);
-          chunk.set(x, y + k, z+1, Tile.WOOD);
-          if(k > 5) {
-            if(r.nextInt(6) == 0) branches.add(new BranchState(r.nextInt(10) + 7, new Vector3i(x, y+k, z), new Vector3i(-1, 0, 0)));
-            if(r.nextInt(6) == 0) branches.add(new BranchState(r.nextInt(10) + 7, new Vector3i(x+1, y+k, z), new Vector3i(0, 0, -1)));
-            if(r.nextInt(6) == 0) branches.add(new BranchState(r.nextInt(10) + 7, new Vector3i(x+1, y+k, z+1), new Vector3i(1, 0, 0)));
-            if(r.nextInt(6) == 0) branches.add(new BranchState(r.nextInt(10) + 7, new Vector3i(x, y+k, z+1), new Vector3i(0, 0, 1)));
+          chunk.set(x + 1, y + k, z, Tile.WOOD);
+          chunk.set(x + 1, y + k, z + 1, Tile.WOOD);
+          chunk.set(x, y + k, z + 1, Tile.WOOD);
+          if (k > 5) {
+            if (r.nextInt(6) == 0)
+              branches.add(new BranchState(r.nextInt(10) + 7, new Vector3i(x, y + k, z), new Vector3i(-1, 0, 0)));
+            if (r.nextInt(6) == 0)
+              branches.add(new BranchState(r.nextInt(10) + 7, new Vector3i(x + 1, y + k, z), new Vector3i(0, 0, -1)));
+            if (r.nextInt(6) == 0)
+              branches.add(new BranchState(r.nextInt(10) + 7, new Vector3i(x + 1, y + k, z + 1), new Vector3i(1, 0, 0)));
+            if (r.nextInt(6) == 0)
+              branches.add(new BranchState(r.nextInt(10) + 7, new Vector3i(x, y + k, z + 1), new Vector3i(0, 0, 1)));
           }
         }
-        while(!branches.isEmpty()) {
+        while (!branches.isEmpty()) {
           BranchState state = branches.remove(0);
           Vector3i next = state.place;
-          if(state.length <= 0) continue;
+          if (state.length <= 0) continue;
           // go up
-          if(r.nextInt(4) == 0) next = next.add(0, 1, 0);
-          // go sideways
-          else if(r.nextInt(4) == 0) {
+          if (r.nextInt(4) == 0) next = next.add(0, 1, 0);
+            // go sideways
+          else if (r.nextInt(4) == 0) {
             int s = r.nextInt(4);
-            switch(s) {
-            case 0 : next = next.add(1, 0, 0); break;
-            case 1 : next = next.add(-1, 0, 0); break;
-            case 2 : next = next.add(0, 0, 1); break;
-            default : next = next.add(0, 0, -1); break;
+            switch (s) {
+            case 0:
+              next = next.add(1, 0, 0);
+              break;
+            case 1:
+              next = next.add(-1, 0, 0);
+              break;
+            case 2:
+              next = next.add(0, 0, 1);
+              break;
+            default:
+              next = next.add(0, 0, -1);
+              break;
             }
           }
           // go straight
           else next = next.add(state.dir);
-          if(!chunk.isWithin(next)) continue;
-          if(!chunk.get(next).equals(Tile.AIR) && !chunk.get(next).equals(Tile.WOOD)) continue;
+          if (!chunk.isWithin(next)) continue;
+          if (!chunk.get(next).equals(Tile.AIR) && !chunk.get(next).equals(Tile.WOOD)) continue;
           chunk.set(next.x, next.y, next.z, Tile.WOOD);
           branches.add(new BranchState(state.length - 1, next, state.dir));
         }

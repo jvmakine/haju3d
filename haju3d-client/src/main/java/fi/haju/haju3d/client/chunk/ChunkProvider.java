@@ -1,25 +1,23 @@
 package fi.haju.haju3d.client.chunk;
 
+import com.google.common.base.Predicate;
+import com.google.common.collect.Collections2;
+import com.google.common.collect.Lists;
+import com.google.inject.Inject;
+import fi.haju.haju3d.client.connection.ServerConnector;
+import fi.haju.haju3d.protocol.Vector3i;
+import fi.haju.haju3d.protocol.world.Chunk;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.base.Predicate;
-import com.google.common.collect.Collections2;
-import com.google.common.collect.Lists;
-import com.google.inject.Inject;
-
-import fi.haju.haju3d.client.connection.ServerConnector;
-import fi.haju.haju3d.protocol.Vector3i;
-import fi.haju.haju3d.protocol.world.Chunk;
-
 public class ChunkProvider {
   private static final Logger LOGGER = LoggerFactory.getLogger(ChunkProvider.class);
-    
+
   private final ServerConnector server;
   private Map<Vector3i, Chunk> chunkCache = new ConcurrentHashMap<Vector3i, Chunk>();
 
@@ -35,7 +33,7 @@ public class ChunkProvider {
         return !chunkCache.containsKey(v);
       }
     });
-    if(!newPositions.isEmpty()) {
+    if (!newPositions.isEmpty()) {
       LOGGER.info("Requested " + newPositions);
       List<Chunk> chunks = server.getChunks(Lists.newArrayList(newPositions));
       for (Chunk c : chunks) {
@@ -45,5 +43,5 @@ public class ChunkProvider {
     }
     return Lists.newArrayList();
   }
-  
+
 }

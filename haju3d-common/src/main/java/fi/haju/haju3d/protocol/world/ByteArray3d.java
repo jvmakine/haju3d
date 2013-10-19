@@ -17,11 +17,11 @@ public final class ByteArray3d implements Serializable {
     this.depth = depth;
     this.data = new byte[width * height * depth];
   }
-  
+
   public void fill(byte value) {
     Arrays.fill(data, 0, data.length, value);
   }
-  
+
   public void set(int x, int y, int z, byte value) {
     data[getIndex(x, y, z)] = value;
   }

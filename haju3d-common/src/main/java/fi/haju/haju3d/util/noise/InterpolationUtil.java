@@ -4,7 +4,7 @@ public class InterpolationUtil {
 
   private InterpolationUtil() {
   }
-  
+
   public static float interpolateLinear(float t, float v1, float v2) {
     return v1 + (v2 - v1) * t;
   }
@@ -17,7 +17,7 @@ public class InterpolationUtil {
     float z2 = interpolateLinear2d(xt, yt, n5, n6, n7, n8);
     return interpolateLinear(zt, z1, z2);
   }
-  
+
   public static float interpolateLinear2d(
       float xt, float yt, float n1, float n2, float n3, float n4) {
     float x1 = interpolateLinear(xt, n1, n2);
@@ -25,5 +25,5 @@ public class InterpolationUtil {
     return interpolateLinear(yt, x1, x2);
   }
 
-  
+
 }

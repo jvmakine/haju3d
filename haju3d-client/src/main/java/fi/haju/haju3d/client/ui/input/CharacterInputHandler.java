@@ -1,22 +1,14 @@
 package fi.haju.haju3d.client.ui.input;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.jme3.input.InputManager;
 import com.jme3.input.KeyInput;
 import com.jme3.input.MouseInput;
-import com.jme3.input.controls.ActionListener;
-import com.jme3.input.controls.AnalogListener;
-import com.jme3.input.controls.KeyTrigger;
-import com.jme3.input.controls.MouseAxisTrigger;
-import com.jme3.input.controls.MouseButtonTrigger;
+import com.jme3.input.controls.*;
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Node;
-
 import fi.haju.haju3d.client.Character;
 import fi.haju.haju3d.client.connection.ServerConnector;
 import fi.haju.haju3d.client.ui.ChunkRenderer;
@@ -26,19 +18,22 @@ import fi.haju.haju3d.protocol.interaction.WorldEdit;
 import fi.haju.haju3d.protocol.world.Tile;
 import fi.haju.haju3d.protocol.world.TilePosition;
 
+import java.util.HashSet;
+import java.util.Set;
+
 @Singleton
 public class CharacterInputHandler {
-  
+
   public static final float MOUSE_X_SPEED = 3.0f;
   public static final float MOUSE_Y_SPEED = MOUSE_X_SPEED;
-  
+
   @Inject
   private WorldManager worldManager;
   @Inject
   private ChunkRenderer renderer;
   @Inject
   private ServerConnector server;
-  
+
   private final Set<String> activeInputs = new HashSet<>();
 
   public void register(final InputManager inputManager) {
@@ -101,7 +96,7 @@ public class CharacterInputHandler {
         }
       }
     }, InputActions.VIEWMODE_FLYCAM);
-    
+
     inputManager.addMapping(InputActions.VIEWMODE_FIRST_PERSON, new KeyTrigger(KeyInput.KEY_F2));
     inputManager.addListener(new ActionListener() {
       @Override
@@ -111,7 +106,7 @@ public class CharacterInputHandler {
         }
       }
     }, InputActions.VIEWMODE_FIRST_PERSON);
-    
+
     inputManager.addMapping(InputActions.VIEWMODE_THIRD_PERSON, new KeyTrigger(KeyInput.KEY_F3));
     inputManager.addListener(new ActionListener() {
       @Override
@@ -130,15 +125,15 @@ public class CharacterInputHandler {
         renderer.toggleFullScreen();
       }
     }, InputActions.CHANGE_FULL_SCREEN);
-    
+
     // Dig
     inputManager.addMapping(InputActions.DIG, new MouseButtonTrigger(MouseInput.BUTTON_LEFT));
     inputManager.addListener(new ActionListener() {
       @Override
       public void onAction(String name, boolean keyPressed, float tpf) {
-        if(keyPressed) {
+        if (keyPressed) {
           TilePosition tile = renderer.getSelectedTile();
-          if(tile != null) {
+          if (tile != null) {
             server.registerWorldEdits(Lists.newArrayList(new WorldEdit(tile, Tile.AIR)));
           }
         }
@@ -149,9 +144,9 @@ public class CharacterInputHandler {
     inputManager.addListener(new ActionListener() {
       @Override
       public void onAction(String name, boolean keyPressed, float tpf) {
-        if(keyPressed) {
+        if (keyPressed) {
           TilePosition tile = renderer.getSelectedBuildTile();
-          if(tile != null) {
+          if (tile != null) {
             server.registerWorldEdits(Lists.newArrayList(new WorldEdit(tile, renderer.getSelectedBuildMaterial())));
           }
         }
@@ -161,11 +156,11 @@ public class CharacterInputHandler {
     inputManager.addListener(new ActionListener() {
       @Override
       public void onAction(String name, boolean keyPressed, float tpf) {
-        if(keyPressed) {
+        if (keyPressed) {
           Tile next = renderer.getSelectedBuildMaterial();
           do {
             int i = next.ordinal();
-            if(i >= Tile.values().length - 1) next = Tile.values()[0];
+            if (i >= Tile.values().length - 1) next = Tile.values()[0];
             else next = Tile.values()[++i];
           } while (next == Tile.AIR);
           renderer.setSelectedBuildMaterial(next);
@@ -173,8 +168,8 @@ public class CharacterInputHandler {
       }
     }, InputActions.CHANGE_MATERIAL_UP);
   }
-  
-  
+
+
   private boolean canJump(Node characterNode) {
     Vector3f pos = characterNode.getLocalTranslation();
     return worldManager.getTerrainCollisionPoint(pos, pos.add(new Vector3f(0, -2.0f, 0)), 0.0f) != null;
@@ -183,5 +178,5 @@ public class CharacterInputHandler {
   public Set<String> getActiveInputs() {
     return activeInputs;
   }
-  
+
 }

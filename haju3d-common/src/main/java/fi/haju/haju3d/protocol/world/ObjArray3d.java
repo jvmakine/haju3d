@@ -5,7 +5,7 @@ import java.util.Arrays;
 
 /**
  * 3d array of objects.
- * <p>
+ * <p/>
  * For enumerated types, prefer ByteArray3d which uses 1/4 or 1/8 the amount of memory.
  */
 public final class ObjArray3d<T> implements Serializable {
@@ -24,11 +24,11 @@ public final class ObjArray3d<T> implements Serializable {
     this.data = (T[]) new Object[width * height * depth];
     fill(initialValue);
   }
-  
+
   public void fill(T value) {
     Arrays.fill(data, 0, data.length, value);
   }
-  
+
   public void set(int x, int y, int z, T value) {
     data[getIndex(x, y, z)] = value;
   }

@@ -1,5 +1,12 @@
 package fi.haju.haju3d.client.connection;
 
+import com.google.inject.Singleton;
+import fi.haju.haju3d.protocol.Client;
+import fi.haju.haju3d.protocol.Server;
+import fi.haju.haju3d.protocol.Vector3i;
+import fi.haju.haju3d.protocol.interaction.WorldEdit;
+import fi.haju.haju3d.protocol.world.Chunk;
+
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
@@ -7,30 +14,22 @@ import java.rmi.registry.Registry;
 import java.util.Collection;
 import java.util.List;
 
-import com.google.inject.Singleton;
-
-import fi.haju.haju3d.protocol.Client;
-import fi.haju.haju3d.protocol.Server;
-import fi.haju.haju3d.protocol.Vector3i;
-import fi.haju.haju3d.protocol.interaction.WorldEdit;
-import fi.haju.haju3d.protocol.world.Chunk;
-
 @Singleton
 public class ServerConnector implements Server {
 
   private Server remoteServer;
-  
+
   public ServerConnector() {
   }
-  
+
   public void setRemoteServer(Server server) {
     this.remoteServer = server;
   }
-  
+
   public void connect() {
     try {
       Registry registry = LocateRegistry.getRegistry(5250);
-      remoteServer = (Server)registry.lookup("haju3d_server");
+      remoteServer = (Server) registry.lookup("haju3d_server");
     } catch (RemoteException e) {
       throw connectionError(e);
     } catch (NotBoundException e) {
@@ -81,7 +80,7 @@ public class ServerConnector implements Server {
     } catch (RemoteException e) {
       throw connectionError(e);
     }
-    
+
   }
 
   @Override
@@ -96,5 +95,5 @@ public class ServerConnector implements Server {
   private RuntimeException connectionError(Exception e) {
     return new RuntimeException(e);
   }
-  
+
 }

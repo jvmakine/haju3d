@@ -30,12 +30,11 @@ import com.jme3.texture.Texture;
 import com.jme3.texture.Texture2D;
 import com.jme3.util.SkyFactory;
 import com.jme3.water.WaterFilter;
-
 import fi.haju.haju3d.client.Character;
 import fi.haju.haju3d.client.ClientSettings;
 import fi.haju.haju3d.client.CloseEventHandler;
-import fi.haju.haju3d.client.ui.input.InputActions;
 import fi.haju.haju3d.client.ui.input.CharacterInputHandler;
+import fi.haju.haju3d.client.ui.input.InputActions;
 import fi.haju.haju3d.client.ui.mesh.ChunkSpatialBuilder;
 import fi.haju.haju3d.protocol.Vector3i;
 import fi.haju.haju3d.protocol.world.Tile;

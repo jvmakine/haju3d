@@ -1,18 +1,5 @@
 package fi.haju.haju3d.client.ui.mesh;
 
-import java.nio.FloatBuffer;
-import java.nio.IntBuffer;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.jme3.asset.AssetManager;
@@ -30,7 +17,6 @@ import com.jme3.texture.Texture.MinFilter;
 import com.jme3.texture.Texture.WrapMode;
 import com.jme3.texture.TextureArray;
 import com.jme3.util.BufferUtils;
-
 import fi.haju.haju3d.client.ui.ChunkRenderer;
 import fi.haju.haju3d.client.ui.ChunkSpatial;
 import fi.haju.haju3d.client.ui.mesh.MyMesh.MyFaceAndIndex;
@@ -38,6 +24,12 @@ import fi.haju.haju3d.client.ui.mesh.TileRenderPropertyProvider.TileProperties;
 import fi.haju.haju3d.protocol.Vector3i;
 import fi.haju.haju3d.protocol.world.Tile;
 import fi.haju.haju3d.protocol.world.World;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
+import java.util.*;
 
 @Singleton
 public class ChunkSpatialBuilder {
@@ -45,10 +37,10 @@ public class ChunkSpatialBuilder {
   private static final Logger LOGGER = LoggerFactory.getLogger(ChunkSpatialBuilder.class);
   private Material lowMaterial;
   private Material highMaterial;
-  
+
   @Inject
   private ChunkRenderer chunkRenderer;
-  
+
   public void init() {
     AssetManager assetManager = chunkRenderer.getAssetManager();
     Map<MyTexture, String> textureToFilename = new HashMap<>();
@@ -61,7 +53,7 @@ public class ChunkSpatialBuilder {
     textureToFilename.put(MyTexture.WOOD1, "wood1.png");
     textureToFilename.put(MyTexture.WOOD2, "wood2.png");
     textureToFilename.put(MyTexture.COBBLESTONE1, "cobblestone1.png");
-    
+
     List<Image> images = new ArrayList<Image>();
     for (MyTexture tex : MyTexture.values()) {
       String textureResource = "fi/haju/haju3d/client/textures/" + textureToFilename.get(tex);
@@ -73,11 +65,11 @@ public class ChunkSpatialBuilder {
     textures.setWrap(WrapMode.Repeat);
     textures.setMinFilter(MinFilter.BilinearNearestMipMap);
     textures.setAnisotropicFilter(4);
-    
+
     this.lowMaterial = makeMaterial(assetManager, textures, "fi/haju/haju3d/client/shaders/Lighting.j3md");
     this.highMaterial = makeMaterial(assetManager, textures, "fi/haju/haju3d/client/shaders/Terrain.j3md");
   }
-  
+
   private Material makeMaterial(AssetManager assetManager, TextureArray textures, String materialFile) {
     Material mat = new Material(assetManager, materialFile);
     mat.setBoolean("UseMaterialColors", true);
@@ -86,7 +78,7 @@ public class ChunkSpatialBuilder {
     mat.setColor("Diffuse", ColorRGBA.White);
     return mat;
   }
-  
+
   public void rebuildChunkSpatial(World world, ChunkSpatial spatial) {
     LOGGER.info("Updating chunk spatial at " + spatial.chunk.getPosition());
     MyMesh myMesh = makeCubeMesh(world, spatial.chunk.getPosition());
@@ -95,7 +87,7 @@ public class ChunkSpatialBuilder {
     spatial.highDetail = makeSpatial(world, spatial.chunk.getPosition(), false, true, myMesh);
     LOGGER.info("Done");
   }
-  
+
   public ChunkSpatial makeChunkSpatial(World world, Vector3i chunkIndex) {
     LOGGER.info("Making chunk spatial at " + chunkIndex);
     ChunkSpatial lodSpatial = new ChunkSpatial();
@@ -106,7 +98,7 @@ public class ChunkSpatialBuilder {
     lodSpatial.chunk = world.getChunk(chunkIndex);
     return lodSpatial;
   }
-  
+
   public Spatial makeSpatial(World world, Vector3i chunkIndex, boolean useSimpleMesh, boolean smooth, MyMesh myMesh) {
     Mesh m = makeMesh(world, chunkIndex, useSimpleMesh, smooth, myMesh);
     final Geometry groundObject = new Geometry("ColoredMesh", m);
@@ -114,13 +106,13 @@ public class ChunkSpatialBuilder {
     groundObject.setShadowMode(ShadowMode.CastAndReceive);
     return groundObject;
   }
-  
+
   public Mesh makeMesh(World world, Vector3i chunkIndex, boolean useSimpleMesh, boolean smooth, MyMesh myMesh) {
-    if(smooth) smoothMesh(myMesh);
-    
+    if (smooth) smoothMesh(myMesh);
+
     // only faces based on a real tile should be meshed; the other ones were used for smoothing context
     List<MyFace> realFaces = new ArrayList<>();
-    for (MyFace face : myMesh.faces)  {
+    for (MyFace face : myMesh.faces) {
       if (face.realTile) {
         realFaces.add(face);
       }
@@ -136,15 +128,15 @@ public class ChunkSpatialBuilder {
         }
       });
     }
-    
+
     if (useSimpleMesh) {
       return new SimpleMeshBuilder(myMesh, realFaces).build();
     } else {
       return new NewMeshBuilder(myMesh, realFaces).build();
     }
   }
-  
-  
+
+
   public static class NewMeshBuilder {
     private List<MyFace> realFaces;
     private FloatBuffer vertexes;
@@ -155,7 +147,7 @@ public class ChunkSpatialBuilder {
     private FloatBuffer textureUvs4;
     private IntBuffer indexes;
     private FloatBuffer[] allUvs;
-    
+
     private MyMesh mesh;
     private int i;
     private Map<MyVertex, Vector3f> vertexToNormal = new HashMap<>();
@@ -172,7 +164,7 @@ public class ChunkSpatialBuilder {
       this.textureUvs4 = BufferUtils.createFloatBuffer(realFaces.size() * 4 * 3 * mul);
       this.indexes = BufferUtils.createIntBuffer(realFaces.size() * 6 * mul);
       this.allUvs = new FloatBuffer[] {textureUvs, textureUvs2, textureUvs3, textureUvs4};
-      
+
       for (MyFace face : realFaces) {
         calcVertexNormal(mesh.vertexFaces, vertexToNormal, face.v1);
         calcVertexNormal(mesh.vertexFaces, vertexToNormal, face.v2);
@@ -185,27 +177,27 @@ public class ChunkSpatialBuilder {
       i = 0;
       for (MyFace face : realFaces) {
         face.calcCenter();
-        
+
         Vector3f v1 = face.v1.v;
         Vector3f v2 = face.v2.v;
         Vector3f v3 = face.v3.v;
         Vector3f v4 = face.v4.v;
-        
+
         Vector3f n1 = vertexToNormal.get(face.v1);
         Vector3f n2 = vertexToNormal.get(face.v2);
         Vector3f n3 = vertexToNormal.get(face.v3);
         Vector3f n4 = vertexToNormal.get(face.v4);
-        
+
         Vector3f v12 = v1.add(v2).mult(0.5f);
         Vector3f v23 = v2.add(v3).mult(0.5f);
         Vector3f v34 = v3.add(v4).mult(0.5f);
         Vector3f v41 = v4.add(v1).mult(0.5f);
-        
+
         Vector3f n12 = n1.add(n2).normalizeLocal();
         Vector3f n23 = n2.add(n3).normalizeLocal();
         Vector3f n34 = n3.add(n4).normalizeLocal();
         Vector3f n41 = n4.add(n1).normalizeLocal();
-        
+
         Vector3f vc = face.center;
         Vector3f nc = face.normal;
 
@@ -218,7 +210,7 @@ public class ChunkSpatialBuilder {
             0.5f, 0.0f, //below
             0.0f, 0.0f, //below right
             0.0f, 0.5f //right
-            );
+        );
 
         // v2 quadrant
         makeQuadrant(face,
@@ -229,8 +221,8 @@ public class ChunkSpatialBuilder {
             0.5f, 0.25f, //current
             0.0f, 0.25f, //right
             0.0f, 0.75f //above right
-            );
-        
+        );
+
         // v3 quadrant
         makeQuadrant(face,
             vc, v23, v3, v34,
@@ -240,7 +232,7 @@ public class ChunkSpatialBuilder {
             0.75f, 0.25f, //left
             0.25f, 0.25f, //current
             0.25f, 0.75f //above
-            );
+        );
 
         // v4 quadrant
         makeQuadrant(face,
@@ -251,7 +243,7 @@ public class ChunkSpatialBuilder {
             0.75f, 0.0f, //below left
             0.25f, 0.0f, //below
             0.25f, 0.5f //current
-            );
+        );
       }
 
       Mesh m = new Mesh();
@@ -276,7 +268,7 @@ public class ChunkSpatialBuilder {
       putVector(vertexes, v2);
       putVector(vertexes, v3);
       putVector(vertexes, v4);
-  
+
       if (face.texture == MyTexture.BRICK) {
         putVector(vertexNormals, face.normal);
         putVector(vertexNormals, face.normal);
@@ -288,7 +280,7 @@ public class ChunkSpatialBuilder {
         putVector(vertexNormals, n3);
         putVector(vertexNormals, n4);
       }
-      
+
       List<MyFaceAndIndex> faces = new ArrayList<>(mesh.vertexFaces.get(vert));
       while (faces.size() > 4) {
         // remove faces with lowest zindex, *except* the current face which should cover all of the poly
@@ -298,7 +290,7 @@ public class ChunkSpatialBuilder {
           faces.remove(0);
         }
       }
-      
+
       for (int fi = 0; fi < faces.size(); fi++) {
         MyFaceAndIndex fi1 = faces.get(fi);
         FloatBuffer uvs = allUvs[fi];
@@ -320,17 +312,17 @@ public class ChunkSpatialBuilder {
           uvs.put(0.0f).put(0.0f).put(0);
         }
       }
-      
+
       indexes.put(i + 0).put(i + 1).put(i + 3);
       indexes.put(i + 1).put(i + 2).put(i + 3);
       i += 4;
     }
   }
-  
+
   private static class SimpleMeshBuilder {
     private List<MyFace> realFaces;
     private Map<MyVertex, Vector3f> vertexToNormal = new HashMap<>();
-    
+
     public SimpleMeshBuilder(MyMesh myMesh, List<MyFace> realFaces) {
       this.realFaces = realFaces;
       for (MyFace face : realFaces) {
@@ -340,22 +332,22 @@ public class ChunkSpatialBuilder {
         calcVertexNormal(myMesh.vertexFaces, vertexToNormal, face.v4);
       }
     }
-    
+
     public Mesh build() {
-      
+
       FloatBuffer vertexes = BufferUtils.createFloatBuffer(realFaces.size() * 4 * 3);
       FloatBuffer vertexNormals = BufferUtils.createFloatBuffer(realFaces.size() * 4 * 3);
       FloatBuffer textures = BufferUtils.createFloatBuffer(realFaces.size() * 4 * 3);
       IntBuffer indexes = BufferUtils.createIntBuffer(realFaces.size() * 6);
       FloatBuffer colors = BufferUtils.createFloatBuffer(realFaces.size() * 4 * 4);
-      
+
       int i = 0;
       for (MyFace face : realFaces) {
         putVector(vertexes, face.v1.v);
         putVector(vertexes, face.v2.v);
         putVector(vertexes, face.v3.v);
         putVector(vertexes, face.v4.v);
-        
+
         if (face.texture == MyTexture.BRICK) {
           putVector(vertexNormals, face.normal);
           putVector(vertexNormals, face.normal);
@@ -367,22 +359,22 @@ public class ChunkSpatialBuilder {
           putVector(vertexNormals, vertexToNormal.get(face.v3));
           putVector(vertexNormals, vertexToNormal.get(face.v4));
         }
-        
+
         int ti = face.texture.ordinal();
         textures.put(0.25f).put(0.25f).put(ti);
         textures.put(0.25f).put(0.75f).put(ti);
         textures.put(0.75f).put(0.75f).put(ti);
         textures.put(0.75f).put(0.25f).put(ti);
-        
+
         indexes.put(i + 0).put(i + 1).put(i + 3);
         indexes.put(i + 1).put(i + 2).put(i + 3);
-        
+
         float col = face.color;
         colors.put(col).put(col).put(1).put(1);
         colors.put(col).put(col).put(1).put(1);
         colors.put(col).put(col).put(1).put(1);
         colors.put(col).put(col).put(1).put(1);
-        
+
         i += 4;
       }
 
@@ -395,22 +387,22 @@ public class ChunkSpatialBuilder {
       return m;
     }
   }
-  
+
   private static void calcVertexNormal(
       Map<MyVertex, List<MyFaceAndIndex>> vertexFaces,
       Map<MyVertex, Vector3f> vertexToNormal,
       MyVertex v1) {
-    
+
     if (vertexToNormal.containsKey(v1)) {
       return;
     }
-    
+
     Vector3f sum = Vector3f.ZERO.clone();
     for (MyFaceAndIndex f : vertexFaces.get(v1)) {
       sum.addLocal(f.face.normal);
     }
     sum.normalizeLocal();
-    
+
     vertexToNormal.put(v1, sum);
   }
 
@@ -426,21 +418,21 @@ public class ChunkSpatialBuilder {
   }
 
   private static int getZIndex(int x, int y, int z, int chunkSize) {
-    return new Random(x ^ y*chunkSize ^ z*chunkSize*chunkSize).nextInt();
+    return new Random(x ^ y * chunkSize ^ z * chunkSize * chunkSize).nextInt();
   }
-  
+
   private static MyMesh makeCubeMesh(World world, Vector3i chunkIndex) {
     synchronized (world) {
       MyMesh myMesh = new MyMesh();
-      
+
       Vector3i w1o = world.getWorldPosition(chunkIndex);
       Vector3i w2o = world.getWorldPosition(chunkIndex.add(1, 1, 1));
-      
+
       Vector3i w1 = w1o.add(-SMOOTH_BUFFER, -SMOOTH_BUFFER, -SMOOTH_BUFFER);
       Vector3i w2 = w2o.add(SMOOTH_BUFFER, SMOOTH_BUFFER, SMOOTH_BUFFER);
-      
+
       int chunkSize = world.getChunkSize();
-      
+
       for (int z = w1.z; z < w2.z; z++) {
         for (int y = w1.y; y < w2.y; y++) {
           for (int x = w1.x; x < w2.x; x++) {
@@ -449,11 +441,11 @@ public class ChunkSpatialBuilder {
               TileProperties properties = TileRenderPropertyProvider.getProperties(tile);
               boolean realTile =
                   x >= w1o.x && x < w2o.x &&
-                  y >= w1o.y && y < w2o.y &&
-                  z >= w1o.z && z < w2o.z;
+                      y >= w1o.y && y < w2o.y &&
+                      z >= w1o.z && z < w2o.z;
               float color = world.getColor(x, y, z);
               if (world.get(x, y - 1, z) == Tile.AIR) {
-                int seed = getZIndex(x, y - 1, z, chunkSize); 
+                int seed = getZIndex(x, y - 1, z, chunkSize);
                 myMesh.addFace(
                     new Vector3f(x, y, z),
                     new Vector3f(x + 1, y, z),
@@ -464,7 +456,7 @@ public class ChunkSpatialBuilder {
                     seed, tile);
               }
               if (world.get(x, y + 1, z) == Tile.AIR) {
-                int seed = getZIndex(x, y + 1, z, chunkSize); 
+                int seed = getZIndex(x, y + 1, z, chunkSize);
                 myMesh.addFace(
                     new Vector3f(x, y + 1, z + 1),
                     new Vector3f(x + 1, y + 1, z + 1),
@@ -475,7 +467,7 @@ public class ChunkSpatialBuilder {
                     seed, tile);
               }
               if (world.get(x - 1, y, z) == Tile.AIR) {
-                int seed = getZIndex(x - 1, y, z, chunkSize); 
+                int seed = getZIndex(x - 1, y, z, chunkSize);
                 myMesh.addFace(
                     new Vector3f(x, y, z + 1),
                     new Vector3f(x, y + 1, z + 1),
@@ -486,7 +478,7 @@ public class ChunkSpatialBuilder {
                     seed, tile);
               }
               if (world.get(x + 1, y, z) == Tile.AIR) {
-                int seed = getZIndex(x + 1, y, z, chunkSize); 
+                int seed = getZIndex(x + 1, y, z, chunkSize);
                 myMesh.addFace(
                     new Vector3f(x + 1, y, z),
                     new Vector3f(x + 1, y + 1, z),
@@ -497,7 +489,7 @@ public class ChunkSpatialBuilder {
                     seed, tile);
               }
               if (world.get(x, y, z - 1) == Tile.AIR) {
-                int seed = getZIndex(x, y, z - 1, chunkSize); 
+                int seed = getZIndex(x, y, z - 1, chunkSize);
                 myMesh.addFace(
                     new Vector3f(x, y, z),
                     new Vector3f(x, y + 1, z),
@@ -508,7 +500,7 @@ public class ChunkSpatialBuilder {
                     seed, tile);
               }
               if (world.get(x, y, z + 1) == Tile.AIR) {
-                int seed = getZIndex(x, y, z + 1, chunkSize); 
+                int seed = getZIndex(x, y, z + 1, chunkSize);
                 myMesh.addFace(
                     new Vector3f(x + 1, y, z + 1),
                     new Vector3f(x + 1, y + 1, z + 1),
@@ -525,7 +517,7 @@ public class ChunkSpatialBuilder {
       return myMesh;
     }
   }
-  
+
   private static void smoothMesh(MyMesh myMesh) {
     for (int i = 0; i < SMOOTH_BUFFER; i++) {
       Map<MyVertex, Vector3f> newPos = new HashMap<>();

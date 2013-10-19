@@ -1,13 +1,5 @@
 package fi.haju.haju3d.client;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.TextureKey;
 import com.jme3.light.DirectionalLight;
@@ -21,14 +13,11 @@ import com.jme3.texture.Image;
 import com.jme3.texture.Texture.MinFilter;
 import com.jme3.texture.Texture.WrapMode;
 import com.jme3.texture.TextureArray;
-
-import fi.haju.haju3d.client.ui.mesh.ChunkSpatialBuilder;
-import fi.haju.haju3d.client.ui.mesh.MyFace;
-import fi.haju.haju3d.client.ui.mesh.MyMesh;
+import fi.haju.haju3d.client.ui.mesh.*;
 import fi.haju.haju3d.client.ui.mesh.MyMesh.MyFaceAndIndex;
-import fi.haju.haju3d.client.ui.mesh.MyTexture;
-import fi.haju.haju3d.client.ui.mesh.MyVertex;
 import fi.haju.haju3d.protocol.world.Tile;
+
+import java.util.*;
 
 public class ShaderTestingApp extends SimpleApplication {
   public static void main(String[] args) {
@@ -45,14 +34,14 @@ public class ShaderTestingApp extends SimpleApplication {
 
   private TextureArray textures;
   private Map<MyTexture, String> textureToFilename;
-  
+
   private void loadTextures() {
     this.textureToFilename = new HashMap<>();
     textureToFilename.put(MyTexture.DIRT, "new-dirt.png");
     textureToFilename.put(MyTexture.GRASS, "new-grass.png");
     textureToFilename.put(MyTexture.ROCK, "new-rock.png");
     textureToFilename.put(MyTexture.BRICK, "new-brick.png");
-    
+
     List<Image> images = new ArrayList<Image>();
     for (MyTexture tex : textureToFilename.keySet()) {
       String textureResource = "fi/haju/haju3d/client/textures/" + textureToFilename.get(tex);
@@ -65,17 +54,17 @@ public class ShaderTestingApp extends SimpleApplication {
     textures.setMinFilter(MinFilter.BilinearNearestMipMap);
     textures.setAnisotropicFilter(4);
   }
-  
+
   @Override
   public void simpleInitApp() {
     loadTextures();
-    
+
     int height = 10;
     int width = 10;
-    
+
     MyMesh myMesh = new MyMesh();
     Random r = new Random(0L);
-    
+
     ArrayList<MyTexture> texs = new ArrayList<>(textureToFilename.keySet());
     int z = 0;
     for (int x = 0; x < width; x++) {
@@ -98,7 +87,7 @@ public class ShaderTestingApp extends SimpleApplication {
             Tile.ROCK);
       }
     }
-    
+
     for (MyFace face : myMesh.faces) {
       face.normal = face.v2.v.subtract(face.v1.v).cross(face.v4.v.subtract(face.v1.v)).normalize();
     }
@@ -110,7 +99,7 @@ public class ShaderTestingApp extends SimpleApplication {
         }
       });
     }
-    
+
     //Mesh m = new NewMeshBuilder(mesh).build();
     Mesh m = new ChunkSpatialBuilder.NewMeshBuilder(myMesh, myMesh.faces).build();
     
@@ -150,7 +139,7 @@ public class ShaderTestingApp extends SimpleApplication {
       i += 4;
     }
     */
-    
+
 
     //unshaded: 5500  FPS (limited?)
     //lightning, simple texture: 3900 FPS
@@ -173,13 +162,13 @@ public class ShaderTestingApp extends SimpleApplication {
     obj.setLocalScale(scale);
     obj.setLocalTranslation(-width * 0.5f * scale, -height * 0.5f * scale, 0);
     rootNode.attachChild(obj);
-    
+
     DirectionalLight light = new DirectionalLight();
     Vector3f lightDir = new Vector3f(-1, -2, -3);
     light.setDirection(lightDir.normalizeLocal());
     light.setColor(new ColorRGBA(1f, 1f, 1f, 1f).mult(1.0f));
     rootNode.addLight(light);
-    
+
   }
-  
+
 }

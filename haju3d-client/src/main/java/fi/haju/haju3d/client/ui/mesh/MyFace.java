@@ -1,7 +1,6 @@
 package fi.haju.haju3d.client.ui.mesh;
 
 import com.jme3.math.Vector3f;
-
 import fi.haju.haju3d.protocol.world.Tile;
 
 public class MyFace {
@@ -28,11 +27,11 @@ public class MyFace {
     this.zIndex = zIndex;
     this.tile = tile;
   }
-  
+
   public void calcCenter() {
     this.center = v1.v.clone().addLocal(v2.v).addLocal(v3.v).addLocal(v4.v).divide(4);
   }
-  
+
   public Vector3f getCenter() {
     return center;
   }

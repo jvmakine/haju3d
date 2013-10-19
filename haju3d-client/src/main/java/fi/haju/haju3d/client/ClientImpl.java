@@ -1,7 +1,5 @@
 package fi.haju.haju3d.client;
 
-import java.util.List;
-
 import fi.haju.haju3d.client.ui.ChunkRenderer;
 import fi.haju.haju3d.client.ui.ChunkSpatial;
 import fi.haju.haju3d.client.ui.WorldManager;
@@ -10,17 +8,19 @@ import fi.haju.haju3d.protocol.Client;
 import fi.haju.haju3d.protocol.interaction.WorldEdit;
 import fi.haju.haju3d.protocol.world.TilePosition;
 
+import java.util.List;
+
 public class ClientImpl implements Client {
 
   private final ChunkRenderer app;
-  
+
   public ClientImpl(ChunkRenderer app) {
     this.app = app;
   }
 
   @Override
   public void registerWorldEdits(List<WorldEdit> edits) {
-    for(WorldEdit edit : edits) {
+    for (WorldEdit edit : edits) {
       TilePosition tile = edit.getPosition();
       WorldManager worldManager = app.getWorldManager();
       ChunkSpatial chunkSpatial = worldManager.getChunkSpatial(tile.getChunkPosition());
@@ -31,22 +31,22 @@ public class ClientImpl implements Client {
       chunkSpatial.chunk.set(x, y, z, edit.getNewTile());
       worldManager.rebuildChunkSpatial(chunkSpatial);
       // Update also the bordering chunks if necessary
-      if(x < ChunkSpatialBuilder.SMOOTH_BUFFER) {
+      if (x < ChunkSpatialBuilder.SMOOTH_BUFFER) {
         worldManager.rebuildChunkSpatial(worldManager.getChunkSpatial(tile.getChunkPosition().add(-1, 0, 0)));
       }
-      if(x >= worldManager.getChunkSize() - ChunkSpatialBuilder.SMOOTH_BUFFER) {
+      if (x >= worldManager.getChunkSize() - ChunkSpatialBuilder.SMOOTH_BUFFER) {
         worldManager.rebuildChunkSpatial(worldManager.getChunkSpatial(tile.getChunkPosition().add(1, 0, 0)));
       }
-      if(y < ChunkSpatialBuilder.SMOOTH_BUFFER) {
+      if (y < ChunkSpatialBuilder.SMOOTH_BUFFER) {
         worldManager.rebuildChunkSpatial(worldManager.getChunkSpatial(tile.getChunkPosition().add(0, -1, 0)));
       }
-      if(y >= worldManager.getChunkSize() - ChunkSpatialBuilder.SMOOTH_BUFFER) {
+      if (y >= worldManager.getChunkSize() - ChunkSpatialBuilder.SMOOTH_BUFFER) {
         worldManager.rebuildChunkSpatial(worldManager.getChunkSpatial(tile.getChunkPosition().add(0, 1, 0)));
       }
-      if(z < ChunkSpatialBuilder.SMOOTH_BUFFER) {
+      if (z < ChunkSpatialBuilder.SMOOTH_BUFFER) {
         worldManager.rebuildChunkSpatial(worldManager.getChunkSpatial(tile.getChunkPosition().add(0, 0, -1)));
       }
-      if(z >= worldManager.getChunkSize() - ChunkSpatialBuilder.SMOOTH_BUFFER) {
+      if (z >= worldManager.getChunkSize() - ChunkSpatialBuilder.SMOOTH_BUFFER) {
         worldManager.rebuildChunkSpatial(worldManager.getChunkSpatial(tile.getChunkPosition().add(0, 0, 1)));
       }
     }

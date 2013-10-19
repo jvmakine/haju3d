@@ -1,16 +1,16 @@
 package fi.haju.haju3d.protocol;
 
+import com.google.common.collect.Lists;
+
 import java.io.Serializable;
 import java.util.List;
-
-import com.google.common.collect.Lists;
 
 public class Vector3i implements Serializable {
   private static final long serialVersionUID = 1L;
   public int x;
   public int y;
   public int z;
-  
+
   public Vector3i() {
   }
 
@@ -57,18 +57,18 @@ public class Vector3i implements Serializable {
   public Vector3i add(int x, int y, int z) {
     return new Vector3i(this.x + x, this.y + y, this.z + z);
   }
-  
+
   public int distanceTo(Vector3i other) {
-    return Math.abs(other.x - x) + Math.abs(other.y - y) + Math.abs(other.z - z); 
+    return Math.abs(other.x - x) + Math.abs(other.y - y) + Math.abs(other.z - z);
   }
-  
+
   /**
    * Returns 3x3x3 list of all positions around this position. (This vector is also included in the set)
    */
   public List<Vector3i> getSurroundingPositions() {
     return getSurroundingPositions(1, 1, 1);
   }
-  
+
   public List<Vector3i> getSurroundingPositions(int w, int h, int d) {
     List<Vector3i> positions = Lists.newArrayList();
     for (int x = -w; x <= w; x++) {
@@ -80,16 +80,16 @@ public class Vector3i implements Serializable {
     }
     return positions;
   }
-  
+
   public List<Vector3i> getPositionsAtMaxDistance(int distance) {
     List<Vector3i> positions = getSurroundingPositions(distance, distance, distance);
     List<Vector3i> result = Lists.newArrayList();
-    for(Vector3i pos : positions) {
-      if(pos.distanceTo(this) <= distance) result.add(pos);
+    for (Vector3i pos : positions) {
+      if (pos.distanceTo(this) <= distance) result.add(pos);
     }
     return result;
   }
-  
+
   @Override
   public String toString() {
     return "[" + x + "," + y + "," + z + "]";
@@ -98,5 +98,5 @@ public class Vector3i implements Serializable {
   public Vector3i add(Vector3i v) {
     return add(v.x, v.y, v.z);
   }
-  
+
 }
