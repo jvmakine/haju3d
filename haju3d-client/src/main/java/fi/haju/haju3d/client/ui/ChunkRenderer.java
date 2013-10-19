@@ -19,6 +19,7 @@ import com.jme3.post.FilterPostProcessor;
 import com.jme3.post.filters.BloomFilter;
 import com.jme3.post.filters.CartoonEdgeFilter;
 import com.jme3.post.filters.FogFilter;
+import com.jme3.renderer.queue.RenderQueue.ShadowMode;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
 import com.jme3.scene.shape.Box;
@@ -45,11 +46,11 @@ import fi.haju.haju3d.protocol.world.TilePosition;
  */
 @Singleton
 public class ChunkRenderer extends SimpleApplication {
-  
+
   private static final float SELECTOR_DISTANCE = 10.0f;
 
   private static final float MOVE_SPEED = 40;
-  
+
   private static final int CHUNK_CUT_OFF = 3;
   private static final Vector3f lightDir = new Vector3f(-0.9140114f, 0.29160172f, -0.2820493f).negate();
 
@@ -61,12 +62,12 @@ public class ChunkRenderer extends SimpleApplication {
   private CharacterInputHandler inputHandler;
 
   private ClientSettings clientSettings;
-  
+
   private DirectionalLight light;
   private CloseEventHandler closeEventHandler;
   private boolean isFullScreen = false;
   private Node terrainNode = new Node("terrain");
-  private Character character; 
+  private Character character;
   private TilePosition selectedTile;
   private TilePosition selectedBuildTile;
   private Node selectedVoxelNode;
@@ -74,7 +75,7 @@ public class ChunkRenderer extends SimpleApplication {
   private BitmapText selectedMaterialGui;
   private ViewMode viewMode = ViewMode.FLYCAM;
   private Tile selectedBuildMaterial = Tile.BRICK;
-  
+
   @Inject
   public ChunkRenderer(ClientSettings clientSettings) {
     clientSettings.init();
@@ -97,10 +98,10 @@ public class ChunkRenderer extends SimpleApplication {
     setDisplayMode();
     Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
     assetManager.registerLocator("assets", new ClasspathLocator().getClass());
-    
+
     this.builder.init();
     this.worldManager.start();
-    
+
     setupInput();
     setupCamera();
     setupSky();
@@ -108,7 +109,7 @@ public class ChunkRenderer extends SimpleApplication {
     setupCharacter();
     setupPostFilters();
     setupSelector();
-    
+
     this.inputHandler.register(inputManager);
 
     rootNode.attachChild(terrainNode);
@@ -120,6 +121,7 @@ public class ChunkRenderer extends SimpleApplication {
 
     Box characterMesh = new Box(0.3f, 0.8f, 0.3f);
     Geometry characterModel = new Geometry("CharacterModel", characterMesh);
+    characterModel.setShadowMode(ShadowMode.CastAndReceive);
 
     ColorRGBA color = ColorRGBA.Red;
     Material mat = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
@@ -138,14 +140,15 @@ public class ChunkRenderer extends SimpleApplication {
     getFlyByCamera().setRotationSpeed(CharacterInputHandler.MOUSE_X_SPEED);
     getCamera().setLocation(worldManager.getGlobalPosition(new Vector3i().add(32, 62, 62)));
     getCamera().setFrustumPerspective(45f, (float) getCamera().getWidth() / getCamera().getHeight(), 0.1f, 200f);
-    
+
     guiFont = assetManager.loadFont("Interface/Fonts/Default.fnt");
     crossHair = new BitmapText(guiFont, false);
     crossHair.setSize(guiFont.getCharSet().getRenderedSize() * 2);
     crossHair.setText("+");
-    crossHair.setLocalTranslation(settings.getWidth() / 2 - crossHair.getLineWidth()/2, settings.getHeight() / 2 + crossHair.getLineHeight()/2, 0);
+    crossHair.setLocalTranslation(settings.getWidth() / 2 - crossHair.getLineWidth() / 2,
+        settings.getHeight() / 2 + crossHair.getLineHeight() / 2, 0);
   }
-  
+
   private void showSelectedMaterial() {
     selectedMaterialGui = new BitmapText(guiFont, false);
     selectedMaterialGui.setSize(guiFont.getCharSet().getRenderedSize() * 1.5f);
@@ -153,15 +156,17 @@ public class ChunkRenderer extends SimpleApplication {
     selectedMaterialGui.setLocalTranslation(20, settings.getHeight() - 20, 0);
     guiNode.attachChild(selectedMaterialGui);
   }
-  
+
   private void hideSelectedMaterial() {
-    guiNode.detachChild(selectedMaterialGui);
+    if (selectedMaterialGui != null) {
+      guiNode.detachChild(selectedMaterialGui);
+    }
   }
 
   private void setupInput() {
-    
+
   }
-  
+
   private void updateWorldMesh() {
     worldManager.setPosition(getCurrentChunkIndex());
   }
@@ -197,9 +202,9 @@ public class ChunkRenderer extends SimpleApplication {
     dlsr.setEdgeFilteringMode(EdgeFilteringMode.PCF4);
     viewPort.addProcessor(dlsr);
   }
-  
+
   private void setupSelector() {
-    Box selectorMesh = new Box(WorldManager.SCALE/2 * 1.05f, WorldManager.SCALE/2 * 1.05f, WorldManager.SCALE/2 * 1.05f);
+    Box selectorMesh = new Box(WorldManager.SCALE / 2 * 1.05f, WorldManager.SCALE / 2 * 1.05f, WorldManager.SCALE / 2 * 1.05f);
     Geometry selectorModel = new Geometry("SelectorModel", selectorMesh);
 
     ColorRGBA color = ColorRGBA.Red;
@@ -209,7 +214,7 @@ public class ChunkRenderer extends SimpleApplication {
     mat.setColor("Diffuse", color);
     mat.getAdditionalRenderState().setWireframe(true);
     selectorModel.setMaterial(mat);
-    
+
     selectedVoxelNode = new Node();
     selectedVoxelNode.attachChild(selectorModel);
   }
@@ -282,7 +287,7 @@ public class ChunkRenderer extends SimpleApplication {
     }
 
     // apply gravity
-    character.setVelocity(character.getVelocity().add(new Vector3f(0.0f, -tpf*0.5f, 0.0f)));
+    character.setVelocity(character.getVelocity().add(new Vector3f(0.0f, -tpf * 0.5f, 0.0f)));
     Vector3f characterPos = character.getPosition();
     characterPos = characterPos.add(character.getVelocity());
 
@@ -295,7 +300,7 @@ public class ChunkRenderer extends SimpleApplication {
       }
       Vector3f oldVelocity = character.getVelocity();
       character.setVelocity(new Vector3f(oldVelocity.x, 0.0f, oldVelocity.z));
-      characterPos = characterPos.add(0, 0.01f, 0);
+      characterPos = characterPos.add(0, 0.002f, 0);
     }
 
     // move character based on used input
@@ -344,23 +349,25 @@ public class ChunkRenderer extends SimpleApplication {
 
     Vector3f camPos = character.getPosition().clone();
     Vector3f lookDir = quat.mult(Vector3f.UNIT_Z);
-    if(viewMode == ViewMode.THIRD_PERSON) camPos.addLocal(lookDir.mult(-10));
+    if (viewMode == ViewMode.THIRD_PERSON) {
+      camPos.addLocal(lookDir.mult(-10));
+    }
 
     Vector3f coll = worldManager.getTerrainCollisionPoint(character.getPosition(), camPos, 0.0f);
     if (coll != null) {
       camPos.set(coll);
     }
 
-    if(viewMode == ViewMode.FIRST_PERSON) {
+    if (viewMode == ViewMode.FIRST_PERSON) {
       camPos = camPos.add(new Vector3f(0, 0.5f, 0));
     }
-    
+
     cam.setLocation(camPos);
-    
+
     selectedTile = worldManager.getVoxelCollisionPoint(camPos, camPos.add(cam.getDirection().normalize().mult(SELECTOR_DISTANCE)));
     selectedBuildTile = worldManager.getVoxelCollisionDirection(camPos, camPos.add(cam.getDirection().normalize().mult(SELECTOR_DISTANCE)));
     rootNode.detachChild(selectedVoxelNode);
-    if(selectedTile != null) {
+    if (selectedTile != null) {
       selectedVoxelNode.setLocalTranslation(selectedTile.getWorldPosition(WorldManager.SCALE, worldManager.getChunkSize()));
       rootNode.attachChild(selectedVoxelNode);
     }
@@ -392,19 +399,19 @@ public class ChunkRenderer extends SimpleApplication {
   }
 
   public void setViewMode(ViewMode mode) {
-    if(mode == ViewMode.FLYCAM) {
+    if (mode == ViewMode.FLYCAM) {
       flyCam.setEnabled(true);
       inputManager.setCursorVisible(false);
       rootNode.detachChild(character.getNode());
       guiNode.detachChild(crossHair);
       hideSelectedMaterial();
-    } else if(mode == ViewMode.FIRST_PERSON) {
+    } else if (mode == ViewMode.FIRST_PERSON) {
       flyCam.setEnabled(false);
       inputManager.setCursorVisible(false);
       rootNode.detachChild(character.getNode());
       guiNode.attachChild(crossHair);
       showSelectedMaterial();
-    } else if(mode == ViewMode.THIRD_PERSON) {
+    } else if (mode == ViewMode.THIRD_PERSON) {
       flyCam.setEnabled(false);
       inputManager.setCursorVisible(false);
       rootNode.attachChild(character.getNode());
@@ -413,7 +420,7 @@ public class ChunkRenderer extends SimpleApplication {
     }
     viewMode = mode;
   }
-  
+
   public WorldManager getWorldManager() {
     return worldManager;
   }
@@ -433,11 +440,13 @@ public class ChunkRenderer extends SimpleApplication {
   public void setSelectedBuildMaterial(Tile selectedBuildMaterial) {
     this.selectedBuildMaterial = selectedBuildMaterial;
     hideSelectedMaterial();
-    if(viewMode == ViewMode.FIRST_PERSON) showSelectedMaterial();
+    if (viewMode == ViewMode.FIRST_PERSON) {
+      showSelectedMaterial();
+    }
   }
 
   public Character getCharacter() {
     return character;
   }
-  
+
 }
