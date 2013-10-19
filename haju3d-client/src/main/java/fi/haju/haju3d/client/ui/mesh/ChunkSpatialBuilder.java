@@ -63,6 +63,7 @@ public class ChunkSpatialBuilder {
     }
     TextureArray textures = new TextureArray(images);
     textures.setWrap(WrapMode.Repeat);
+    //TODO setting MinFilter to use MipMap causes GLError GL_INVALID_ENUM! But not idea where exactly..
     textures.setMinFilter(MinFilter.BilinearNearestMipMap);
     textures.setAnisotropicFilter(4);
 
@@ -79,35 +80,32 @@ public class ChunkSpatialBuilder {
     return mat;
   }
 
-  public void rebuildChunkSpatial(World world, ChunkSpatial spatial) {
-    LOGGER.info("Updating chunk spatial at " + spatial.chunk.getPosition());
-    MyMesh myMesh = makeCubeMesh(world, spatial.chunk.getPosition());
-    spatial.cubes = makeSpatial(world, spatial.chunk.getPosition(), false, false, myMesh.clone());
-    spatial.lowDetail = makeSpatial(world, spatial.chunk.getPosition(), true, true, myMesh.clone());
-    spatial.highDetail = makeSpatial(world, spatial.chunk.getPosition(), false, true, myMesh);
+  public void rebuildChunkSpatial(World world, ChunkSpatial chunkSpatial) {
+    LOGGER.info("Updating chunk spatial at " + chunkSpatial.chunk.getPosition());
+    MyMesh myMesh = makeCubeMesh(world, chunkSpatial.chunk.getPosition());
+    chunkSpatial.cubes = makeSpatial(false, false, myMesh.clone());
+    chunkSpatial.lowDetail = makeSpatial(true, true, myMesh.clone());
+    chunkSpatial.highDetail = makeSpatial(false, true, myMesh);
     LOGGER.info("Done");
   }
 
   public ChunkSpatial makeChunkSpatial(World world, Vector3i chunkIndex) {
     LOGGER.info("Making chunk spatial at " + chunkIndex);
-    ChunkSpatial lodSpatial = new ChunkSpatial();
-    MyMesh myMesh = makeCubeMesh(world, chunkIndex);
-    lodSpatial.cubes = makeSpatial(world, chunkIndex, false, false, myMesh.clone());
-    lodSpatial.lowDetail = makeSpatial(world, chunkIndex, true, true, myMesh.clone());
-    lodSpatial.highDetail = makeSpatial(world, chunkIndex, false, true, myMesh);
-    lodSpatial.chunk = world.getChunk(chunkIndex);
-    return lodSpatial;
+    ChunkSpatial chunkSpatial = new ChunkSpatial();
+    chunkSpatial.chunk = world.getChunk(chunkIndex);
+    rebuildChunkSpatial(world, chunkSpatial);
+    return chunkSpatial;
   }
 
-  public Spatial makeSpatial(World world, Vector3i chunkIndex, boolean useSimpleMesh, boolean smooth, MyMesh myMesh) {
-    Mesh m = makeMesh(world, chunkIndex, useSimpleMesh, smooth, myMesh);
+  public Spatial makeSpatial(boolean useSimpleMesh, boolean smooth, MyMesh myMesh) {
+    Mesh m = makeMesh(useSimpleMesh, smooth, myMesh);
     final Geometry groundObject = new Geometry("ColoredMesh", m);
     groundObject.setMaterial(useSimpleMesh ? lowMaterial : highMaterial);
     groundObject.setShadowMode(ShadowMode.CastAndReceive);
     return groundObject;
   }
 
-  public Mesh makeMesh(World world, Vector3i chunkIndex, boolean useSimpleMesh, boolean smooth, MyMesh myMesh) {
+  public Mesh makeMesh(boolean useSimpleMesh, boolean smooth, MyMesh myMesh) {
     if (smooth) smoothMesh(myMesh);
 
     // only faces based on a real tile should be meshed; the other ones were used for smoothing context
@@ -262,7 +260,7 @@ public class ChunkSpatialBuilder {
         MyFace face,
         Vector3f v1, Vector3f v2, Vector3f v3, Vector3f v4,
         Vector3f n1, Vector3f n2, Vector3f n3, Vector3f n4,
-        MyVertex vert,
+        MyVertex vertex,
         float tu1, float tv1, float tu2, float tv2, float tu3, float tv3, float tu4, float tv4) {
       putVector(vertexes, v1);
       putVector(vertexes, v2);
@@ -281,7 +279,7 @@ public class ChunkSpatialBuilder {
         putVector(vertexNormals, n4);
       }
 
-      List<MyFaceAndIndex> faces = new ArrayList<>(mesh.vertexFaces.get(vert));
+      List<MyFaceAndIndex> faces = new ArrayList<>(mesh.vertexFaces.get(vertex));
       while (faces.size() > 4) {
         // remove faces with lowest zindex, *except* the current face which should cover all of the poly
         if (faces.get(0).face == face) {
