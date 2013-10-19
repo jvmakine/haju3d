@@ -26,7 +26,7 @@ public class ClientSettings {
   public void init() {
     load();
     screenWidth = loadInt(SCREEN_WIDTH_KEY, 800);
-    screenHeight = loadInt(SCREEN_HEIGHT_KEY, 800);
+    screenHeight = loadInt(SCREEN_HEIGHT_KEY, 600);
     chunkRenderDistance = loadInt(CHUNK_RENDER_DISTANCE_KEY, 4);
     // Save missing properties as defaults
     save();
@@ -62,7 +62,9 @@ public class ClientSettings {
   }
 
   private int loadInt(String key, int defval) {
-    if(!properties.containsKey(key)) properties.setProperty(key, Integer.toString(defval));
+    if(!properties.containsKey(key)) {
+      properties.setProperty(key, Integer.toString(defval));
+    }
     return Integer.parseInt(properties.getProperty(key));
   }
   

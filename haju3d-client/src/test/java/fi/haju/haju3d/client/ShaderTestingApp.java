@@ -44,16 +44,17 @@ public class ShaderTestingApp extends SimpleApplication {
   }
 
   private TextureArray textures;
+  private Map<MyTexture, String> textureToFilename;
   
   private void loadTextures() {
-    Map<MyTexture, String> textureToFilename = new HashMap<>();
+    this.textureToFilename = new HashMap<>();
     textureToFilename.put(MyTexture.DIRT, "new-dirt.png");
     textureToFilename.put(MyTexture.GRASS, "new-grass.png");
     textureToFilename.put(MyTexture.ROCK, "new-rock.png");
     textureToFilename.put(MyTexture.BRICK, "new-brick.png");
     
     List<Image> images = new ArrayList<Image>();
-    for (MyTexture tex : MyTexture.values()) {
+    for (MyTexture tex : textureToFilename.keySet()) {
       String textureResource = "fi/haju/haju3d/client/textures/" + textureToFilename.get(tex);
       TextureKey key = new TextureKey(textureResource);
       key.setGenerateMips(true);
@@ -75,11 +76,12 @@ public class ShaderTestingApp extends SimpleApplication {
     MyMesh myMesh = new MyMesh();
     Random r = new Random(0L);
     
+    ArrayList<MyTexture> texs = new ArrayList<>(textureToFilename.keySet());
     int z = 0;
     for (int x = 0; x < width; x++) {
       for (int y = 0; y < height; y++) {
-        int ti = r.nextInt(999) % MyTexture.values().length;
-        MyTexture texture = MyTexture.values()[ti];
+        int ti = r.nextInt(999) % texs.size();
+        MyTexture texture = texs.get(ti);
         int zindex = r.nextInt(10000);
         // grass always on top
         if (texture == MyTexture.GRASS) {
