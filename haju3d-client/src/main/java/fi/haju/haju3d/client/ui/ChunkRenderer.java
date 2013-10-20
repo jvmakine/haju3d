@@ -46,6 +46,8 @@ import fi.haju.haju3d.protocol.world.TilePosition;
 @Singleton
 public class ChunkRenderer extends SimpleApplication {
 
+  private static final float GRAVITY_CONSTANT = 0.5f;
+  private static final int WALK_SPEED = 10;
   private static final float WALL_CLIMB_ACCURACY = 0.01f;
   private static final int WALL_CLIMB_LOOPS = 40;
   private static final float SELECTOR_DISTANCE = 10.0f;
@@ -282,19 +284,60 @@ public class ChunkRenderer extends SimpleApplication {
     //tpf has max value so that gc pauses etc won't cause sudden jumps
     tpf = Math.min(tpf, 1.0f / 30);
 
-    if (viewMode == ViewMode.FLYCAM) {
-      return;
-    }
-    if (worldManager.getChunkSpatial(getCurrentChunkIndex()) == null) {
+    if (viewMode == ViewMode.FLYCAM
+        || worldManager.getChunkSpatial(getCurrentChunkIndex()) == null) {
       return;
     }
 
     // apply gravity
-    character.setVelocity(character.getVelocity().add(new Vector3f(0.0f, -tpf * 0.5f, 0.0f)));
+    character.setVelocity(character.getVelocity().add(new Vector3f(0.0f, -tpf * GRAVITY_CONSTANT, 0.0f)));
     Vector3f characterPos = character.getPosition();
     characterPos = characterPos.add(character.getVelocity());
 
-    // check if character falls below ground level, lift up to ground level
+    characterPos = updateCharacterOnFloorHit(characterPos);
+    characterPos = getCharacterPositionAfterUserInput(tpf, characterPos);
+    characterPos = checkWallHit(characterPos);
+    character.setPosition(characterPos);
+
+    Vector3f camPos = getCameraPositionFromCharacter();
+    cam.setLocation(camPos);
+    updateSelectedTile(camPos);
+  }
+
+  private void updateSelectedTile(Vector3f camPos) {
+    selectedTile = worldManager.getVoxelCollisionPoint(camPos, camPos.add(cam.getDirection().normalize().mult(SELECTOR_DISTANCE)));
+    selectedBuildTile = worldManager.getVoxelCollisionDirection(camPos, camPos.add(cam.getDirection().normalize().mult(SELECTOR_DISTANCE)));
+    rootNode.detachChild(selectedVoxelNode);
+    if (selectedTile != null) {
+      selectedVoxelNode.setLocalTranslation(selectedTile.getWorldPosition(WorldManager.SCALE, worldManager.getChunkSize()));
+      rootNode.attachChild(selectedVoxelNode);
+    }
+  }
+
+  private Vector3f getCameraPositionFromCharacter() {
+    // set camera position and rotation
+    Quaternion quat = character.getLookQuaternion();
+    cam.setRotation(quat);
+    Vector3f camPos = character.getPosition().clone();
+    Vector3f lookDir = quat.mult(Vector3f.UNIT_Z);
+    if (viewMode == ViewMode.THIRD_PERSON) {
+      camPos.addLocal(lookDir.mult(-10));
+    }
+    Vector3f coll = worldManager.getTerrainCollisionPoint(character.getPosition(), camPos, 0.0f);
+    if (coll != null) {
+      camPos.set(coll);
+    }
+    if (viewMode == ViewMode.FIRST_PERSON) {
+      camPos = camPos.add(new Vector3f(0, 0.5f, 0));
+    }
+    return camPos;
+  }
+
+  /**
+   * check if character falls below ground level, lift up to ground level
+   */
+  private Vector3f updateCharacterOnFloorHit(Vector3f oldPos) {
+    Vector3f characterPos = oldPos.clone();
     while (true) {
       CollisionResults res = new CollisionResults();
       int collideWith = terrainNode.collideWith(makeCharacterBoundingVolume(characterPos), res);
@@ -305,56 +348,31 @@ public class ChunkRenderer extends SimpleApplication {
       character.setVelocity(new Vector3f(oldVelocity.x, 0.0f, oldVelocity.z));
       characterPos = characterPos.add(0, 0.002f, 0);
     }
+    return characterPos;
+  }
 
-    // move character based on used input
-    final float walkSpeed = 10;
+  /**
+   * move character based on used input
+   */
+  private Vector3f getCharacterPositionAfterUserInput(float tpf, Vector3f oldPos) {
+    Vector3f characterPos = oldPos.clone(); 
     if (inputHandler.getActiveInputs().contains(InputActions.WALK_FORWARD)) {
-      characterPos.z += FastMath.cos(character.getLookAzimuth()) * tpf * walkSpeed;
-      characterPos.x += FastMath.sin(character.getLookAzimuth()) * tpf * walkSpeed;
+      characterPos.z += FastMath.cos(character.getLookAzimuth()) * tpf * (float) WALK_SPEED;
+      characterPos.x += FastMath.sin(character.getLookAzimuth()) * tpf * (float) WALK_SPEED;
     }
     if (inputHandler.getActiveInputs().contains(InputActions.WALK_BACKWARD)) {
-      characterPos.z -= FastMath.cos(character.getLookAzimuth()) * tpf * walkSpeed;
-      characterPos.x -= FastMath.sin(character.getLookAzimuth()) * tpf * walkSpeed;
+      characterPos.z -= FastMath.cos(character.getLookAzimuth()) * tpf * (float) WALK_SPEED;
+      characterPos.x -= FastMath.sin(character.getLookAzimuth()) * tpf * (float) WALK_SPEED;
     }
     if (inputHandler.getActiveInputs().contains(InputActions.STRAFE_LEFT)) {
-      characterPos.z -= FastMath.sin(character.getLookAzimuth()) * tpf * walkSpeed;
-      characterPos.x -= -FastMath.cos(character.getLookAzimuth()) * tpf * walkSpeed;
+      characterPos.z -= FastMath.sin(character.getLookAzimuth()) * tpf * (float) WALK_SPEED;
+      characterPos.x -= -FastMath.cos(character.getLookAzimuth()) * tpf * (float) WALK_SPEED;
     }
     if (inputHandler.getActiveInputs().contains(InputActions.STRAFE_RIGHT)) {
-      characterPos.z += FastMath.sin(character.getLookAzimuth()) * tpf * walkSpeed;
-      characterPos.x += -FastMath.cos(character.getLookAzimuth()) * tpf * walkSpeed;
+      characterPos.z += FastMath.sin(character.getLookAzimuth()) * tpf * (float) WALK_SPEED;
+      characterPos.x += -FastMath.cos(character.getLookAzimuth()) * tpf * (float) WALK_SPEED;
     }
-    characterPos = checkWallHit(characterPos);
-    character.setPosition(characterPos);
-
-    // set camera position and rotation
-    Quaternion quat = character.getLookQuaternion();
-    cam.setRotation(quat);
-
-    Vector3f camPos = character.getPosition().clone();
-    Vector3f lookDir = quat.mult(Vector3f.UNIT_Z);
-    if (viewMode == ViewMode.THIRD_PERSON) {
-      camPos.addLocal(lookDir.mult(-10));
-    }
-
-    Vector3f coll = worldManager.getTerrainCollisionPoint(character.getPosition(), camPos, 0.0f);
-    if (coll != null) {
-      camPos.set(coll);
-    }
-
-    if (viewMode == ViewMode.FIRST_PERSON) {
-      camPos = camPos.add(new Vector3f(0, 0.5f, 0));
-    }
-
-    cam.setLocation(camPos);
-
-    selectedTile = worldManager.getVoxelCollisionPoint(camPos, camPos.add(cam.getDirection().normalize().mult(SELECTOR_DISTANCE)));
-    selectedBuildTile = worldManager.getVoxelCollisionDirection(camPos, camPos.add(cam.getDirection().normalize().mult(SELECTOR_DISTANCE)));
-    rootNode.detachChild(selectedVoxelNode);
-    if (selectedTile != null) {
-      selectedVoxelNode.setLocalTranslation(selectedTile.getWorldPosition(WorldManager.SCALE, worldManager.getChunkSize()));
-      rootNode.attachChild(selectedVoxelNode);
-    }
+    return characterPos;
   }
 
   /**
