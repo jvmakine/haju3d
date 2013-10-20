@@ -4,7 +4,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.plugins.ClasspathLocator;
-import com.jme3.bounding.BoundingSphere;
+import com.jme3.bounding.BoundingBox;
 import com.jme3.bounding.BoundingVolume;
 import com.jme3.collision.CollisionResults;
 import com.jme3.font.BitmapText;
@@ -278,6 +278,9 @@ public class ChunkRenderer extends SimpleApplication {
   }
 
   private void updateCharacter(float tpf) {
+    //tpf has max value so that gc pauses etc won't cause sudden jumps
+    tpf = Math.min(tpf, 1.0f / 30);
+
     if (viewMode == ViewMode.FLYCAM) {
       return;
     }
@@ -373,7 +376,7 @@ public class ChunkRenderer extends SimpleApplication {
   }
 
   private BoundingVolume makeCharacterBoundingVolume(Vector3f characterPos) {
-    return new BoundingSphere(0.6f, characterPos.add(0, -0.3f, 0));
+    return new BoundingBox(characterPos.add(0, 0.2f, 0), 0.3f, 0.8f, 0.3f);
   }
 
   @Override
