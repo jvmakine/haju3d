@@ -66,7 +66,7 @@ public class ShaderTestingApp extends SimpleApplication {
         verts.add(new Vector3f(x, y + 1, z));
         verts.add(new Vector3f(x, y, z));
 
-        int si = r.nextInt(1);//4);
+        int si = r.nextInt(4);
         List<Vector3f> verts2 = new ArrayList<>();
         verts2.add(verts.get(si++ % 4));
         verts2.add(verts.get(si++ % 4));

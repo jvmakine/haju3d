@@ -13,6 +13,7 @@ varying vec3 texCoord;
 varying vec3 texCoord2;
 varying vec3 texCoord3;
 varying vec3 texCoord4;
+varying vec3 texCoord5;
 
 varying vec3 AmbientSum;
 varying vec4 DiffuseSum;
@@ -153,10 +154,12 @@ void main(){
         vec4 tex2 = texture2DArray(m_DiffuseMap, texCoord2);
         vec4 tex3 = texture2DArray(m_DiffuseMap, texCoord3);
         vec4 tex4 = texture2DArray(m_DiffuseMap, texCoord4);
+        vec4 tex5 = texture2DArray(m_DiffuseMap, texCoord5);
         diffuseColor.rgb = mix(diffuseColor.rgb, tex1.rgb, tex1.a);
         diffuseColor.rgb = mix(diffuseColor.rgb, tex2.rgb, tex2.a);
         diffuseColor.rgb = mix(diffuseColor.rgb, tex3.rgb, tex3.a);
         diffuseColor.rgb = mix(diffuseColor.rgb, tex4.rgb, tex4.a);
+        diffuseColor.rgb = mix(diffuseColor.rgb, tex5.rgb, tex5.a);
       
     #else
         vec4 diffuseColor = vec4(1.0);

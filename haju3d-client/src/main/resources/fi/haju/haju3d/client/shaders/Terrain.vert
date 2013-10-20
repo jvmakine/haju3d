@@ -21,6 +21,7 @@ varying vec3 texCoord;
 varying vec3 texCoord2;
 varying vec3 texCoord3;
 varying vec3 texCoord4;
+varying vec3 texCoord5;
 
 varying vec3 AmbientSum;
 varying vec4 DiffuseSum;
@@ -31,6 +32,7 @@ attribute vec3 inTexCoord;
 attribute vec3 inTexCoord2;
 attribute vec3 inTexCoord3;
 attribute vec3 inTexCoord4;
+attribute vec3 inTexCoord5;
 attribute vec3 inNormal;
 
 varying vec3 lightVec;
@@ -155,6 +157,7 @@ void main(){
    texCoord2 = inTexCoord2;
    texCoord3 = inTexCoord3;
    texCoord4 = inTexCoord4;
+   texCoord5 = inTexCoord5;
 
    vec3 wvPosition = (g_WorldViewMatrix * modelSpacePos).xyz;
    vec3 wvNormal  = normalize(g_NormalMatrix * modelSpaceNorm);
