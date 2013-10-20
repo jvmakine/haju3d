@@ -37,7 +37,7 @@ public class BenchmarkMeshGenerationApp {
       long t2 = System.currentTimeMillis();
       new ChunkSpatialBuilder.SimpleMeshBuilder(cubeMesh).build();
       long t3 = System.currentTimeMillis();
-      new ChunkSpatialBuilder.NewMeshBuilder(cubeMesh).build();
+      new ChunkSpatialBuilder.NewMeshBuilder2(cubeMesh).build();
       long t4 = System.currentTimeMillis();
 
       System.out.println("Mesh time: " + (t1 - t0));

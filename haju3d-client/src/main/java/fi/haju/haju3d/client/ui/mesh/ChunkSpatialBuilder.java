@@ -156,9 +156,6 @@ public class ChunkSpatialBuilder {
     private FloatBuffer[] allUvs;
 
     private MyMesh mesh;
-    private int i;
-    private final List<Vector2f> centerQuad;
-    private final Map<String, List<Vector2f>> uvMapping;
 
     public NewMeshBuilder2(MyMesh mesh) {
       List<MyFace> realFaces = mesh.getRealFaces();
@@ -175,21 +172,22 @@ public class ChunkSpatialBuilder {
       this.textureUvs5 = BufferUtils.createFloatBuffer(realFaces.size() * 4 * 3 * quadsPerFace);
       this.indexes = BufferUtils.createIntBuffer(realFaces.size() * 6 * quadsPerFace);
       this.allUvs = new FloatBuffer[] {textureUvs, textureUvs2, textureUvs3, textureUvs4, textureUvs5};
+    }
 
+    private static final Map<String, List<Vector2f>> UV_MAPPING = new HashMap<>();
+    static {
 
-      uvMapping = new HashMap<>();
-      //vertex/quadrant order:
+      //quad vertex order:
       //32
       //41
 
-      centerQuad = makeQuad(0, 0);
-      List<Vector2f> quad;
-
+      // UV_MAPPING is a map that tells you u,v coordinates for vertices 1,2,3,4 of the quad for each
+      // neighboring quad.
       {
-        quad = centerQuad;
-        String key = uvKey(centerQuad, quad);
+        List<Vector2f> quad = makeQuad(0, 0);
+        String key = uvKey(quad, quad);
         List<Vector2f> uvs = makeUvs(quad);
-        uvMapping.put(key, uvs);
+        UV_MAPPING.put(key, uvs);
       }
       addUvMappings(makeQuad(1, 0));
       addUvMappings(makeQuad(0, 1));
@@ -197,22 +195,22 @@ public class ChunkSpatialBuilder {
       addUvMappings(makeQuad(-1, 0));
     }
 
-    private void addUvMappings(List<Vector2f> quad) {
+    private static void addUvMappings(List<Vector2f> quad) {
       for (int e = 0; e < 2; e++) {
         for (int i = 0; i < 4; i++) {
           rotateQuad(quad);
-          String key = uvKey(centerQuad, quad);
+          String key = uvKey(makeQuad(0, 0), quad);
           List<Vector2f> uvs = makeUvs(quad);
-          if (uvMapping.containsKey(key)) {
+          if (UV_MAPPING.containsKey(key)) {
             throw new IllegalStateException("key exists: " + key);
           }
-          uvMapping.put(key, uvs);
+          UV_MAPPING.put(key, uvs);
         }
         flipQuad(quad);
       }
     }
 
-    private String uvKey(List<Vector2f> centerQuad, List<Vector2f> quad) {
+    private static String uvKey(List<Vector2f> centerQuad, List<Vector2f> quad) {
       String uvKey = "";
       for (int ci = 0; ci < centerQuad.size(); ci++) {
         boolean match = false;
@@ -230,7 +228,7 @@ public class ChunkSpatialBuilder {
       return uvKey;
     }
 
-    private List<Vector2f> makeUvs(List<Vector2f> quad) {
+    private static List<Vector2f> makeUvs(List<Vector2f> quad) {
       List<Vector2f> result = new ArrayList<>();
       for (Vector2f q : makeQuad(0, 0)) {
         result.add(makeUv(q, quad));
@@ -238,7 +236,7 @@ public class ChunkSpatialBuilder {
       return result;
     }
 
-    private Vector2f makeUv(Vector2f q, List<Vector2f> quad) {
+    private static Vector2f makeUv(Vector2f q, List<Vector2f> quad) {
       //quad[0] == 0.75 , 0.25
       //quad[2] == 0.25 , 0.75
       //quad[3] == 0.25 , 0.25
@@ -259,16 +257,16 @@ public class ChunkSpatialBuilder {
           0.25f + 0.5f * y);
     }
 
-    private void flipQuad(List<Vector2f> quad) {
+    private static void flipQuad(List<Vector2f> quad) {
       Collections.reverse(quad);
     }
 
-    private void rotateQuad(List<Vector2f> quad) {
+    private static void rotateQuad(List<Vector2f> quad) {
       quad.add(quad.get(0));
       quad.remove(0);
     }
 
-    private List<Vector2f> makeQuad(int x, int y) {
+    private static List<Vector2f> makeQuad(int x, int y) {
       List<Vector2f> result = new ArrayList<>();
       result.add(new Vector2f(x + 1, y));
       result.add(new Vector2f(x + 1, y + 1));
@@ -279,15 +277,9 @@ public class ChunkSpatialBuilder {
 
 
     private static class TexZUvs {
-      boolean base;
       MyTexture texture;
       List<Vector2f> uvs;
       int zIndex;
-
-      private TexZUvs(MyTexture texture, List<Vector2f> uvs, int zIndex, boolean base) {
-        this(texture, uvs, zIndex);
-        this.base = base;
-      }
 
       private TexZUvs(MyTexture texture, List<Vector2f> uvs, int zIndex) {
         this.texture = texture;
@@ -297,7 +289,7 @@ public class ChunkSpatialBuilder {
     }
 
     public Mesh build() {
-      i = 0;
+      int i = 0;
       for (MyFace face : realFaces) {
         face.calcCenter();
 
@@ -322,54 +314,27 @@ public class ChunkSpatialBuilder {
         putVector(vertexNormals, n4);
 
         List<TexZUvs> texZUvses = new ArrayList<>();
-        texZUvses.add(new TexZUvs(face.texture, uvMapping.get("1=1,2=2,3=3,4=4,"), face.zIndex, true));
+        texZUvses.add(new TexZUvs(face.texture, UV_MAPPING.get("1=1,2=2,3=3,4=4,"), face.zIndex));
 
-        {
-          MyFace bf = findBuddyFace(face, face.v1, face.v2);
-          if (bf != null) {
-            String key = "1=" + findFaceVertexIndex(bf, face.v1) + ",2=" + findFaceVertexIndex(bf, face.v2) + ",";
-            texZUvses.add(new TexZUvs(bf.texture, uvMapping.get(key), bf.zIndex));
-          }
-        }
-        {
-          MyFace bf = findBuddyFace(face, face.v2, face.v3);
-          if (bf != null) {
-            String key = "2=" + findFaceVertexIndex(bf, face.v2) + ",3=" + findFaceVertexIndex(bf, face.v3) + ",";
-            texZUvses.add(new TexZUvs(bf.texture, uvMapping.get(key), bf.zIndex));
-          }
-        }
-        {
-          MyFace bf = findBuddyFace(face, face.v3, face.v4);
-          if (bf != null) {
-            String key = "3=" + findFaceVertexIndex(bf, face.v3) + ",4=" + findFaceVertexIndex(bf, face.v4) + ",";
-            texZUvses.add(new TexZUvs(bf.texture, uvMapping.get(key), bf.zIndex));
-          }
-        }
-        {
-          MyFace bf = findBuddyFace(face, face.v4, face.v1);
-          if (bf != null) {
-            String key = "1=" + findFaceVertexIndex(bf, face.v1) + ",4=" + findFaceVertexIndex(bf, face.v4) + ",";
-            texZUvses.add(new TexZUvs(bf.texture, uvMapping.get(key), bf.zIndex));
-          }
-        }
+        addBuddyUvs(face, texZUvses, face.v1, face.v2, 1, 2);
+        addBuddyUvs(face, texZUvses, face.v2, face.v3, 2, 3);
+        addBuddyUvs(face, texZUvses, face.v3, face.v4, 3, 4);
+        addBuddyUvs(face, texZUvses, face.v1, face.v4, 1, 4);
+
         Collections.sort(texZUvses, new Comparator<TexZUvs>() {
           @Override
           public int compare(TexZUvs o1, TexZUvs o2) {
             return Integer.compare(o1.zIndex, o2.zIndex);
           }
         });
-        // remove all textures under base texture
-        while (!texZUvses.get(0).base) {
-          texZUvses.remove(0);
-        }
         // remove top textures if there's too many
         while (texZUvses.size() > 5) {
           texZUvses.remove(1);
         }
 
-        for (int i = 0; i < texZUvses.size(); i++) {
-          FloatBuffer textures = allUvs[i];
-          TexZUvs texZUvs = texZUvses.get(i);
+        for (int ii = 0; ii < texZUvses.size(); ii++) {
+          FloatBuffer textures = allUvs[ii];
+          TexZUvs texZUvs = texZUvses.get(ii);
           int ti = texZUvs.texture.ordinal();
           for (Vector2f uv : texZUvs.uvs) {
             textures.put(uv.x).put(uv.y).put(ti);
@@ -405,6 +370,14 @@ public class ChunkSpatialBuilder {
       return m;
     }
 
+    private void addBuddyUvs(MyFace face, List<TexZUvs> texZUvses, MyVertex a, MyVertex b, int ai, int bi) {
+      MyFace bf = findBuddyFace(face, a, b);
+      if (bf != null && bf.zIndex > face.zIndex) {
+        String key = ai + "=" + findFaceVertexIndex(bf, a) + "," + bi + "=" + findFaceVertexIndex(bf, b) + ",";
+        texZUvses.add(new TexZUvs(bf.texture, UV_MAPPING.get(key), bf.zIndex));
+      }
+    }
+
     private MyFace findBuddyFace(MyFace face, MyVertex v1, MyVertex v2) {
       Set<MyFace> potentialFaces = new HashSet<>();
       for (MyFaceAndIndex fi : mesh.vertexFaces.get(v1)) {
@@ -427,193 +400,6 @@ public class ChunkSpatialBuilder {
         }
       }
       throw new IllegalStateException();
-    }
-  }
-
-  public static class NewMeshBuilder {
-    private List<MyFace> realFaces;
-    private FloatBuffer vertexes;
-    private FloatBuffer vertexNormals;
-    private FloatBuffer textureUvs;
-    private FloatBuffer textureUvs2;
-    private FloatBuffer textureUvs3;
-    private FloatBuffer textureUvs4;
-    private IntBuffer indexes;
-    private FloatBuffer[] allUvs;
-
-    private MyMesh mesh;
-    private int i;
-
-    public NewMeshBuilder(MyMesh mesh) {
-      List<MyFace> realFaces = mesh.getRealFaces();
-      this.mesh = mesh;
-      this.realFaces = realFaces;
-
-      final int quadsPerFace = 4;
-      this.vertexes = BufferUtils.createFloatBuffer(realFaces.size() * 4 * 3 * quadsPerFace);
-      this.vertexNormals = BufferUtils.createFloatBuffer(realFaces.size() * 4 * 3 * quadsPerFace);
-      this.textureUvs = BufferUtils.createFloatBuffer(realFaces.size() * 4 * 3 * quadsPerFace);
-      this.textureUvs2 = BufferUtils.createFloatBuffer(realFaces.size() * 4 * 3 * quadsPerFace);
-      this.textureUvs3 = BufferUtils.createFloatBuffer(realFaces.size() * 4 * 3 * quadsPerFace);
-      this.textureUvs4 = BufferUtils.createFloatBuffer(realFaces.size() * 4 * 3 * quadsPerFace);
-      this.indexes = BufferUtils.createIntBuffer(realFaces.size() * 6 * quadsPerFace);
-      this.allUvs = new FloatBuffer[] {textureUvs, textureUvs2, textureUvs3, textureUvs4};
-    }
-
-    public Mesh build() {
-      i = 0;
-      for (MyFace face : realFaces) {
-        face.calcCenter();
-
-        Vector3f v1 = face.v1.v;
-        Vector3f v2 = face.v2.v;
-        Vector3f v3 = face.v3.v;
-        Vector3f v4 = face.v4.v;
-
-        Vector3f n1 = mesh.vertexToNormal.get(face.v1);
-        Vector3f n2 = mesh.vertexToNormal.get(face.v2);
-        Vector3f n3 = mesh.vertexToNormal.get(face.v3);
-        Vector3f n4 = mesh.vertexToNormal.get(face.v4);
-
-        Vector3f v12 = v1.add(v2).mult(0.5f);
-        Vector3f v23 = v2.add(v3).mult(0.5f);
-        Vector3f v34 = v3.add(v4).mult(0.5f);
-        Vector3f v41 = v4.add(v1).mult(0.5f);
-
-        Vector3f n12 = n1.add(n2).normalizeLocal();
-        Vector3f n23 = n2.add(n3).normalizeLocal();
-        Vector3f n34 = n3.add(n4).normalizeLocal();
-        Vector3f n41 = n4.add(n1).normalizeLocal();
-
-        Vector3f vc = face.center;
-        Vector3f nc = face.normal;
-
-        //vertex/quadrant order:
-        //32
-        //41
-
-        // v1 quadrant
-        makeQuadrant(face,
-            v1, v12, vc, v41,
-            n1, n12, nc, n41,
-            face.v1,
-            0.5f, 0.5f, //current face
-            0.5f, 0.0f, //below
-            0.0f, 0.0f, //below right
-            0.0f, 0.5f //right
-        );
-
-        // v2 quadrant
-        makeQuadrant(face,
-            v12, v2, v23, vc,
-            n12, n2, n23, nc,
-            face.v2,
-            0.5f, 0.75f, //above
-            0.5f, 0.25f, //current
-            0.0f, 0.25f, //right
-            0.0f, 0.75f //above right
-        );
-
-        // v3 quadrant
-        makeQuadrant(face,
-            vc, v23, v3, v34,
-            nc, n23, n3, n34,
-            face.v3,
-            0.75f, 0.75f, //above left
-            0.75f, 0.25f, //left
-            0.25f, 0.25f, //current
-            0.25f, 0.75f //above
-        );
-
-        // v4 quadrant
-        makeQuadrant(face,
-            v41, vc, v34, v4,
-            n41, nc, n34, n4,
-            face.v4,
-            0.75f, 0.5f, //left
-            0.75f, 0.0f, //below left
-            0.25f, 0.0f, //below
-            0.25f, 0.5f //current
-        );
-      }
-
-      Mesh m = new Mesh();
-      m.setBuffer(Type.Position, 3, vertexes);
-      m.setBuffer(Type.Normal, 3, vertexNormals);
-      m.setBuffer(Type.TexCoord, 3, textureUvs);
-      m.setBuffer(Type.TexCoord2, 3, textureUvs2);
-      m.setBuffer(Type.TexCoord3, 3, textureUvs3);
-      m.setBuffer(Type.TexCoord4, 3, textureUvs4);
-      m.setBuffer(Type.Index, 1, indexes);
-      m.updateBound();
-      return m;
-    }
-
-    private void makeQuadrant(
-        MyFace face,
-        Vector3f v1, Vector3f v2, Vector3f v3, Vector3f v4,
-        Vector3f n1, Vector3f n2, Vector3f n3, Vector3f n4,
-        MyVertex vertex,
-        float tu1, float tv1, float tu2, float tv2, float tu3, float tv3, float tu4, float tv4) {
-      putVector(vertexes, v1);
-      putVector(vertexes, v2);
-      putVector(vertexes, v3);
-      putVector(vertexes, v4);
-
-      if (face.tile == Tile.BRICK) {
-        putVector(vertexNormals, face.normal);
-        putVector(vertexNormals, face.normal);
-        putVector(vertexNormals, face.normal);
-        putVector(vertexNormals, face.normal);
-      } else {
-        putVector(vertexNormals, n1);
-        putVector(vertexNormals, n2);
-        putVector(vertexNormals, n3);
-        putVector(vertexNormals, n4);
-      }
-
-      List<MyFaceAndIndex> faces = new ArrayList<>(mesh.vertexFaces.get(vertex));
-      while (faces.size() > 4) {
-        // remove faces with lowest zindex, *except* the current face which should cover all of the poly
-        if (faces.get(0).face == face) {
-          faces.remove(1);
-        } else {
-          faces.remove(0);
-        }
-      }
-
-      for (int fi = 0; fi < faces.size(); fi++) {
-        MyFaceAndIndex fi1 = faces.get(fi);
-        FloatBuffer uvs = allUvs[fi];
-        int ti = fi1.face.texture.ordinal();
-        if (fi1.index == 1) {
-          putUvs(uvs, tu1, tv1, ti);
-        } else if (fi1.index == 2) {
-          putUvs(uvs, tu2, tv2, ti);
-        } else if (fi1.index == 3) {
-          putUvs(uvs, tu3, tv3, ti);
-        } else if (fi1.index == 4) {
-          putUvs(uvs, tu4, tv4, ti);
-        }
-      }
-      // for unused textures, put all vertexes at 0.0f
-      for (int fi = faces.size(); fi < 4; fi++) {
-        FloatBuffer uvs = allUvs[fi];
-        for (int e = 0; e < 4; e++) {
-          uvs.put(0.0f).put(0.0f).put(0);
-        }
-      }
-
-      indexes.put(i + 0).put(i + 1).put(i + 3);
-      indexes.put(i + 1).put(i + 2).put(i + 3);
-      i += 4;
-    }
-
-    private static void putUvs(FloatBuffer textureUvs, float u, float v, int ti) {
-      textureUvs.put(u + 0.25f).put(v + 0.25f).put(ti);
-      textureUvs.put(u + 0.25f).put(v + 0.0f).put(ti);
-      textureUvs.put(u + 0.0f).put(v + 0.0f).put(ti);
-      textureUvs.put(u + 0.0f).put(v + 0.25f).put(ti);
     }
   }
 
