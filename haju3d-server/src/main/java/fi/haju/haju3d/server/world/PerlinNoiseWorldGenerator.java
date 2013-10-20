@@ -12,7 +12,6 @@ import java.util.*;
 
 public class PerlinNoiseWorldGenerator implements WorldGenerator {
   private int seed;
-  private boolean fastMode;
 
   private Map<Vector3i, PerlinNoiseScales> perlinNoises = Maps.newHashMap();
 
@@ -23,15 +22,9 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
       return new Chunk(width, height, depth, realseed, position, Tile.GROUND);
     } else if (position.y > 0) {
       return new Chunk(width, height, depth, realseed, position, Tile.AIR);
-    } else if (fastMode && !position.equals(new Vector3i())) {
-      return new Chunk(width, height, depth, realseed, position, Tile.AIR);
     }
     Chunk chunk = new Chunk(width, height, depth, realseed, position);
     return makeChunk(chunk, realseed, position);
-  }
-
-  public void setFastMode(boolean fastMode) {
-    this.fastMode = fastMode;
   }
 
   @Override
@@ -234,12 +227,7 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
 
     // add trees
     generateTrees(chunk, r);
-
-    if (fastMode) {
-      return chunk;
-    } else {
-      return filterFloaters(chunk);
-    }
+    return filterFloaters(chunk);
   }
 
   private void generateTrees(Chunk chunk, Random r) {
