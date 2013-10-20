@@ -1,4 +1,4 @@
-package fi.haju.haju3d.server.world;
+package fi.haju.haju3d.server.world.utils;
 
 import java.util.List;
 import java.util.Random;
