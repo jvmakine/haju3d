@@ -12,7 +12,6 @@ public final class TileRenderPropertyProvider {
   private static final Map<Tile, TileProperties> properties = ImmutableMap.<Tile, TileProperties>builder()
       .put(Tile.BRICK, new TileProperties(
           0,
-          Lists.newArrayList(MyTexture.BRICK),
           Lists.newArrayList(MyTexture.BRICK)))
       .put(Tile.GROUND, new TileProperties(
           3,
@@ -20,16 +19,13 @@ public final class TileRenderPropertyProvider {
           Lists.newArrayList(MyTexture.DIRT)))
       .put(Tile.ROCK, new TileProperties(
           3,
-          Lists.newArrayList(MyTexture.ROCK, MyTexture.ROCK2),
           Lists.newArrayList(MyTexture.ROCK, MyTexture.ROCK2)))
       .put(Tile.WOOD, new TileProperties(
           2,
-          Lists.newArrayList(MyTexture.WOOD1, MyTexture.WOOD2),
           Lists.newArrayList(MyTexture.WOOD1, MyTexture.WOOD2)))
       .put(Tile.COBBLESTONE, new TileProperties(
           1,
-          Lists.newArrayList(MyTexture.COBBLESTONE1),
-          Lists.newArrayList(MyTexture.COBBLESTONE1)))
+          Lists.newArrayList(MyTexture.COBBLESTONE1, MyTexture.COBBLESTONE2)))
       .build();
 
   public static TileProperties getProperties(Tile tile) {
@@ -45,6 +41,12 @@ public final class TileRenderPropertyProvider {
       this.maxSmooths = maxSmooths;
       this.topTextures = topTextures;
       this.sideTextures = sideTextures;
+    }
+    
+    public TileProperties(int maxSmooths, List<MyTexture> textures) {
+      this.maxSmooths = maxSmooths;
+      this.topTextures = textures;
+      this.sideTextures = textures;
     }
 
     public int getMaxSmooths() {
