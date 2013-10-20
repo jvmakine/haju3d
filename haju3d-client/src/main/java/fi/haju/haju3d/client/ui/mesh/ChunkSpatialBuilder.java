@@ -13,6 +13,7 @@ import com.jme3.scene.Mesh;
 import com.jme3.scene.Spatial;
 import com.jme3.scene.VertexBuffer.Type;
 import com.jme3.texture.Image;
+import com.jme3.texture.Texture;
 import com.jme3.texture.Texture.MinFilter;
 import com.jme3.texture.Texture.WrapMode;
 import com.jme3.texture.TextureArray;
@@ -42,7 +43,10 @@ public class ChunkSpatialBuilder {
   private ChunkRenderer chunkRenderer;
 
   public void init() {
-    AssetManager assetManager = chunkRenderer.getAssetManager();
+    init(chunkRenderer.getAssetManager());
+  }
+
+  public void init(AssetManager assetManager) {
     Map<MyTexture, String> textureToFilename = new HashMap<>();
     textureToFilename.put(MyTexture.DIRT, "new-dirt.png");
     textureToFilename.put(MyTexture.GRASS, "new-grass.png");
@@ -93,7 +97,7 @@ public class ChunkSpatialBuilder {
     LOGGER.info("Done");
   }
 
-  public void prepareMesh(MyMesh myMesh) {
+  public static void prepareMesh(MyMesh myMesh) {
     smoothMesh(myMesh);
     for (MyFace face : myMesh.faces) {
       face.normal = face.v2.v.subtract(face.v1.v).cross(face.v4.v.subtract(face.v1.v)).normalize();
