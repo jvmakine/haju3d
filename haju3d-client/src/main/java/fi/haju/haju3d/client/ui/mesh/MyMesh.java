@@ -1,7 +1,5 @@
 package fi.haju.haju3d.client.ui.mesh;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.jme3.math.Vector3f;
 import fi.haju.haju3d.protocol.world.Tile;
 
@@ -10,20 +8,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class MyMesh {
+public final class MyMesh {
   private Map<Vector3f, MyVertex> vectorToVertex = new HashMap<>();
   public Map<MyVertex, List<MyFaceAndIndex>> vertexFaces = new HashMap<>();
   public List<MyFace> faces = new ArrayList<>();
   public Map<MyVertex, Vector3f> vertexToNormal = new HashMap<>();
-
-  public MyMesh() {
-  }
-
-  private MyMesh(Map<Vector3f, MyVertex> vectorToVertex, Map<MyVertex, List<MyFaceAndIndex>> vertexFaces, List<MyFace> faces) {
-    this.vectorToVertex = vectorToVertex;
-    this.vertexFaces = vertexFaces;
-    this.faces = faces;
-  }
 
   public static class MyFaceAndIndex {
     public MyFace face;

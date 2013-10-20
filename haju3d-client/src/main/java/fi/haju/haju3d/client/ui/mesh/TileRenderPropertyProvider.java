@@ -7,7 +7,7 @@ import fi.haju.haju3d.protocol.world.Tile;
 import java.util.List;
 import java.util.Map;
 
-public class TileRenderPropertyProvider {
+public final class TileRenderPropertyProvider {
 
   private static final Map<Tile, TileProperties> properties = ImmutableMap.<Tile, TileProperties>builder()
       .put(Tile.BRICK, new TileProperties(

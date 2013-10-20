@@ -489,9 +489,19 @@ public class ChunkSpatialBuilder {
     }
   }
 
+  private static class PositionChange {
+    Vector3f oldPos;
+    Vector3f newPos;
+
+    private PositionChange(Vector3f oldPos, Vector3f newPos) {
+      this.oldPos = oldPos;
+      this.newPos = newPos;
+    }
+  }
+
   private static void smoothMesh(MyMesh myMesh) {
     for (int i = 0; i < SMOOTH_BUFFER; i++) {
-      Map<MyVertex, Vector3f> newPos = new HashMap<>(myMesh.vertexFaces.size());
+      List<PositionChange> newPos = new ArrayList<>(myMesh.vertexFaces.size());
       for (MyFace f : myMesh.faces) {
         f.calcCenter();
       }
@@ -501,17 +511,17 @@ public class ChunkSpatialBuilder {
         List<MyFaceAndIndex> faces = e.getValue();
         int maxSmooths = SMOOTH_BUFFER;
         for (MyFaceAndIndex f : faces) {
-          sum.addLocal(f.face.getCenter());
+          sum.addLocal(f.face.center);
           maxSmooths = Math.min(TileRenderPropertyProvider.getProperties(f.face.tile).getMaxSmooths(), maxSmooths);
         }
         sum.divideLocal(faces.size());
         if (vertex.smooths < maxSmooths) {
           vertex.smooths++;
-          newPos.put(vertex, sum);
+          newPos.add(new PositionChange(vertex.v, sum));
         }
       }
-      for (Map.Entry<MyVertex, Vector3f> e : newPos.entrySet()) {
-        e.getKey().v.set(e.getValue());
+      for (PositionChange positionChange : newPos) {
+        positionChange.oldPos.set(positionChange.newPos);
       }
     }
   }

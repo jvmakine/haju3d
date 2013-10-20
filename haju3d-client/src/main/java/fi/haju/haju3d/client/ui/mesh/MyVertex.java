@@ -2,7 +2,7 @@ package fi.haju.haju3d.client.ui.mesh;
 
 import com.jme3.math.Vector3f;
 
-public class MyVertex {
+public final class MyVertex {
   public Vector3f v;
   public int smooths = 0;
 
