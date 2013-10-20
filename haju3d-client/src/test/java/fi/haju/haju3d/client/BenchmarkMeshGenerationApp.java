@@ -12,8 +12,6 @@ import java.util.Random;
 
 public class BenchmarkMeshGenerationApp {
   public static void main(String[] args) {
-    ChunkSpatialBuilder builder = new ChunkSpatialBuilder();
-
     World world = new World();
 
     for (int x = 0; x < 3; x++) {
@@ -32,9 +30,10 @@ public class BenchmarkMeshGenerationApp {
       System.gc();
 
       long t0 = System.currentTimeMillis();
-      MyMesh cubeMesh = builder.makeCubeMesh(world, new Vector3i(1, 1, 1));
+      MyMesh cubeMesh = ChunkSpatialBuilder.makeCubeMesh(world, new Vector3i(1, 1, 1));
       long t1 = System.currentTimeMillis();
-      builder.prepareMesh(cubeMesh);
+      ChunkSpatialBuilder.smoothMesh(cubeMesh);
+      ChunkSpatialBuilder.prepareMesh(cubeMesh);
       long t2 = System.currentTimeMillis();
       new ChunkSpatialBuilder.SimpleMeshBuilder(cubeMesh).build();
       long t3 = System.currentTimeMillis();

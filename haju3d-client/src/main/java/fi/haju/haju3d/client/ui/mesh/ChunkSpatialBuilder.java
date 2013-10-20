@@ -90,6 +90,7 @@ public class ChunkSpatialBuilder {
     chunkSpatial.cubes = makeCubeSpatial(myMesh);
 
     // common processing for non-cube meshes
+    smoothMesh(myMesh);
     prepareMesh(myMesh);
 
     chunkSpatial.lowDetail = makeSpatial(true, myMesh);
@@ -98,7 +99,6 @@ public class ChunkSpatialBuilder {
   }
 
   public static void prepareMesh(MyMesh myMesh) {
-    smoothMesh(myMesh);
     for (MyFace face : myMesh.faces) {
       face.normal = face.v2.v.subtract(face.v1.v).cross(face.v4.v.subtract(face.v1.v)).normalize();
     }
@@ -503,7 +503,7 @@ public class ChunkSpatialBuilder {
     }
   }
 
-  private static void smoothMesh(MyMesh myMesh) {
+  public static void smoothMesh(MyMesh myMesh) {
     for (int i = 0; i < SMOOTH_BUFFER; i++) {
       List<PositionChange> newPos = new ArrayList<>(myMesh.vertexFaces.size());
       for (MyFace f : myMesh.faces) {
