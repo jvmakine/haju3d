@@ -47,21 +47,9 @@ public class ChunkSpatialBuilder {
   }
 
   public void init(AssetManager assetManager) {
-    Map<MyTexture, String> textureToFilename = new HashMap<>();
-    textureToFilename.put(MyTexture.DIRT, "new-dirt.png");
-    textureToFilename.put(MyTexture.GRASS, "new-grass.png");
-    textureToFilename.put(MyTexture.GRASS2, "new-grass2.png");
-    textureToFilename.put(MyTexture.ROCK, "new-rock.png");
-    textureToFilename.put(MyTexture.ROCK2, "new-rock2.png");
-    textureToFilename.put(MyTexture.BRICK, "new-brick.png");
-    textureToFilename.put(MyTexture.WOOD1, "wood1.png");
-    textureToFilename.put(MyTexture.WOOD2, "wood2.png");
-    textureToFilename.put(MyTexture.COBBLESTONE1, "cobblestone1.png");
-    textureToFilename.put(MyTexture.COBBLESTONE2, "cobblestone2.png");
-
     List<Image> images = new ArrayList<Image>();
     for (MyTexture tex : MyTexture.values()) {
-      String textureResource = "fi/haju/haju3d/client/textures/" + textureToFilename.get(tex);
+      String textureResource = "fi/haju/haju3d/client/textures/" + tex.getTexturefileName();
       TextureKey key = new TextureKey(textureResource);
       key.setGenerateMips(true);
       images.add(assetManager.loadTexture(key).getImage());
