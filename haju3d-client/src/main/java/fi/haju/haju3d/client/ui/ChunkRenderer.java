@@ -46,11 +46,12 @@ import fi.haju.haju3d.protocol.world.TilePosition;
 @Singleton
 public class ChunkRenderer extends SimpleApplication {
 
+  private static final float WALL_CLIMB_ACCURACY = 0.01f;
+  private static final int WALL_CLIMB_LOOPS = 40;
   private static final float SELECTOR_DISTANCE = 10.0f;
-
   private static final float MOVE_SPEED = 40;
-
   private static final int CHUNK_CUT_OFF = 3;
+  
   private static final Vector3f lightDir = new Vector3f(-0.9140114f, 0.29160172f, -0.2820493f).negate();
 
   @Inject
@@ -306,7 +307,6 @@ public class ChunkRenderer extends SimpleApplication {
     }
 
     // move character based on used input
-    Vector3f oldPos = characterPos.clone();
     final float walkSpeed = 10;
     if (inputHandler.getActiveInputs().contains(InputActions.WALK_FORWARD)) {
       characterPos.z += FastMath.cos(character.getLookAzimuth()) * tpf * walkSpeed;
@@ -324,25 +324,7 @@ public class ChunkRenderer extends SimpleApplication {
       characterPos.z += FastMath.sin(character.getLookAzimuth()) * tpf * walkSpeed;
       characterPos.x += -FastMath.cos(character.getLookAzimuth()) * tpf * walkSpeed;
     }
-
-    // check if character hits wall. either climb it or return to old position
-    Vector3f newPos = characterPos;
-    int i = 0;
-    final int loops = 40;
-    for (i = 0; i < loops; i++) {
-      newPos = newPos.add(0, 0.01f, 0);
-      CollisionResults res = new CollisionResults();
-      int collideWith = terrainNode.collideWith(makeCharacterBoundingVolume(newPos), res);
-      if (collideWith == 0) {
-        break;
-      }
-    }
-    if (i == loops) {
-      characterPos = oldPos;
-    } else {
-      characterPos = newPos;
-    }
-
+    characterPos = checkWallHit(characterPos);
     character.setPosition(characterPos);
 
     // set camera position and rotation
@@ -373,6 +355,29 @@ public class ChunkRenderer extends SimpleApplication {
       selectedVoxelNode.setLocalTranslation(selectedTile.getWorldPosition(WorldManager.SCALE, worldManager.getChunkSize()));
       rootNode.attachChild(selectedVoxelNode);
     }
+  }
+
+  /**
+   * check if character hits wall. either climb it or return to old position
+   */
+  private Vector3f checkWallHit(Vector3f characterPos) {
+    Vector3f oldPos = characterPos.clone();
+    Vector3f newPos = characterPos.clone();
+    int i = 0;
+    for (i = 0; i < WALL_CLIMB_LOOPS; i++) {
+      newPos = newPos.add(0, WALL_CLIMB_ACCURACY, 0);
+      CollisionResults res = new CollisionResults();
+      int collideWith = terrainNode.collideWith(makeCharacterBoundingVolume(newPos), res);
+      if (collideWith == 0) {
+        break;
+      }
+    }
+    if (i == WALL_CLIMB_LOOPS) {
+      characterPos = oldPos;
+    } else {
+      characterPos = newPos;
+    }
+    return characterPos;
   }
 
   private BoundingVolume makeCharacterBoundingVolume(Vector3f characterPos) {
