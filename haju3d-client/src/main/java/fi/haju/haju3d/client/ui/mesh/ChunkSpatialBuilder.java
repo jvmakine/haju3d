@@ -49,19 +49,28 @@ public class ChunkSpatialBuilder {
   public void init(AssetManager assetManager) {
     List<Image> images = new ArrayList<Image>();
     for (MyTexture tex : MyTexture.values()) {
-      String textureResource = "fi/haju/haju3d/client/textures/" + tex.getTexturefileName();
-      TextureKey key = new TextureKey(textureResource);
-      key.setGenerateMips(true);
-      images.add(assetManager.loadTexture(key).getImage());
+      images.add(loadImage(assetManager, tex.getTexturefileName()));
     }
+    TextureArray textures = makeTextures(images);
+    this.lowMaterial = makeMaterial(assetManager, textures, "fi/haju/haju3d/client/shaders/Lighting.j3md");
+    this.highMaterial = makeMaterial(assetManager, textures, "fi/haju/haju3d/client/shaders/Terrain.j3md");
+  }
+
+  private TextureArray makeTextures(List<Image> images) {
     TextureArray textures = new TextureArray(images);
     textures.setWrap(WrapMode.Clamp);
     //TODO setting MinFilter to use MipMap causes GLError GL_INVALID_ENUM! But not idea where exactly..
     textures.setMinFilter(MinFilter.BilinearNearestMipMap);
     textures.setAnisotropicFilter(4);
+    return textures;
+  }
 
-    this.lowMaterial = makeMaterial(assetManager, textures, "fi/haju/haju3d/client/shaders/Lighting.j3md");
-    this.highMaterial = makeMaterial(assetManager, textures, "fi/haju/haju3d/client/shaders/Terrain.j3md");
+  private Image loadImage(AssetManager assetManager, String tex) {
+    String textureResource = "fi/haju/haju3d/client/textures/" + tex;
+    TextureKey key = new TextureKey(textureResource);
+    key.setGenerateMips(true);
+    Image image = assetManager.loadTexture(key).getImage();
+    return image;
   }
 
   private Material makeMaterial(AssetManager assetManager, TextureArray textures, String materialFile) {
