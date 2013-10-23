@@ -48,12 +48,15 @@ public class ChunkSpatialBuilder {
 
   public void init(AssetManager assetManager) {
     List<Image> images = new ArrayList<Image>();
+    List<Image> normalImages = new ArrayList<Image>();
     for (MyTexture tex : MyTexture.values()) {
       images.add(loadImage(assetManager, tex.getTexturefileName()));
+      normalImages.add(loadImage(assetManager, "brick_normal.png"));
     }
     TextureArray textures = makeTextures(images);
-    this.lowMaterial = makeMaterial(assetManager, textures, "fi/haju/haju3d/client/shaders/Lighting.j3md");
-    this.highMaterial = makeMaterial(assetManager, textures, "fi/haju/haju3d/client/shaders/Terrain.j3md");
+    TextureArray normals = makeTextures(normalImages);
+    this.lowMaterial = makeMaterial(assetManager, textures, normals, "fi/haju/haju3d/client/shaders/Lighting.j3md");
+    this.highMaterial = makeMaterial(assetManager, textures, normals, "fi/haju/haju3d/client/shaders/Terrain.j3md");
   }
 
   private TextureArray makeTextures(List<Image> images) {
@@ -73,10 +76,11 @@ public class ChunkSpatialBuilder {
     return image;
   }
 
-  private Material makeMaterial(AssetManager assetManager, TextureArray textures, String materialFile) {
+  private Material makeMaterial(AssetManager assetManager, TextureArray textures, TextureArray normals, String materialFile) {
     Material mat = new Material(assetManager, materialFile);
     mat.setBoolean("UseMaterialColors", true);
     mat.setTexture("DiffuseMap", textures);
+    mat.setTexture("NormalMap", normals);
     mat.setColor("Ambient", ColorRGBA.White);
     mat.setColor("Diffuse", ColorRGBA.White);
     return mat;
