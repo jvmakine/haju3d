@@ -80,7 +80,7 @@ public class ChunkSpatialBuilder {
     Material mat = new Material(assetManager, materialFile);
     mat.setBoolean("UseMaterialColors", true);
     mat.setTexture("DiffuseMap", textures);
-    mat.setTexture("NormalMap", normals);
+    //mat.setTexture("NormalMap", normals);
     mat.setColor("Ambient", ColorRGBA.White);
     mat.setColor("Diffuse", ColorRGBA.White);
     return mat;
