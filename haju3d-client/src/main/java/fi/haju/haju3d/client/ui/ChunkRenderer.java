@@ -183,7 +183,7 @@ public class ChunkRenderer extends SimpleApplication {
     for (Vector3i pos : chunkIndex.getSurroundingPositions(CHUNK_CUT_OFF, CHUNK_CUT_OFF, CHUNK_CUT_OFF)) {
       ChunkSpatial cs = worldManager.getChunkSpatial(pos);
       if (cs != null) {
-        terrainNode.attachChild(pos.equals(chunkIndex) ? cs.highDetail : cs.lowDetail);
+        terrainNode.attachChild(pos.distanceTo(chunkIndex) <= 1 ? cs.highDetail : cs.lowDetail);
       }
     }
   }
