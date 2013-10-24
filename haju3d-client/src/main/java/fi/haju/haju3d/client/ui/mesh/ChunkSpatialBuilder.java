@@ -81,7 +81,7 @@ public class ChunkSpatialBuilder {
     mat.setBoolean("UseMaterialColors", true);
     mat.setTexture("DiffuseMap", textures);
     //mat.setTexture("NormalMap", normals);
-    mat.setColor("Ambient", ColorRGBA.White);
+    mat.setColor("Ambient", ColorRGBA.White.mult(0.5f));
     mat.setColor("Diffuse", ColorRGBA.White);
     return mat;
   }
@@ -300,20 +300,22 @@ public class ChunkSpatialBuilder {
         Vector3f v3 = face.v3.v;
         Vector3f v4 = face.v4.v;
 
-        Vector3f n1 = mesh.vertexToNormal.get(face.v1);
-        Vector3f n2 = mesh.vertexToNormal.get(face.v2);
-        Vector3f n3 = mesh.vertexToNormal.get(face.v3);
-        Vector3f n4 = mesh.vertexToNormal.get(face.v4);
-
         putVector(vertexes, v1);
         putVector(vertexes, v2);
         putVector(vertexes, v3);
         putVector(vertexes, v4);
 
-        putVector(vertexNormals, n1);
-        putVector(vertexNormals, n2);
-        putVector(vertexNormals, n3);
-        putVector(vertexNormals, n4);
+        if (TileRenderPropertyProvider.getProperties(face.tile).getMaxSmooths() == 0) {
+          putVector(vertexNormals, face.normal);
+          putVector(vertexNormals, face.normal);
+          putVector(vertexNormals, face.normal);
+          putVector(vertexNormals, face.normal);
+        } else {
+          putVector(vertexNormals, mesh.vertexToNormal.get(face.v1));
+          putVector(vertexNormals, mesh.vertexToNormal.get(face.v2));
+          putVector(vertexNormals, mesh.vertexToNormal.get(face.v3));
+          putVector(vertexNormals, mesh.vertexToNormal.get(face.v4));
+        }
 
         List<TexZUvs> texZUvses = new ArrayList<>();
         texZUvses.add(new TexZUvs(face.texture, UV_MAPPING.get("1=1,2=2,3=3,4=4,"), face.zIndex));
@@ -427,7 +429,7 @@ public class ChunkSpatialBuilder {
         putVector(vertexes, face.v3.v);
         putVector(vertexes, face.v4.v);
 
-        if (face.tile == Tile.BRICK) {
+        if (TileRenderPropertyProvider.getProperties(face.tile).getMaxSmooths() == 0) {
           putVector(vertexNormals, face.normal);
           putVector(vertexNormals, face.normal);
           putVector(vertexNormals, face.normal);
