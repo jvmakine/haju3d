@@ -28,6 +28,8 @@ public class ServerRunner {
       Server stub = (Server) UnicastRemoteObject.exportObject(server, PORT);
       registry.rebind(SERVER_NAME, stub);
       LOGGER.info("Started Haju3D server at " + PORT);
+      ServerSettings settings = injector.getInstance(ServerSettings.class);
+      settings.init();
       while (true) {
         Thread.sleep(100);
       }
