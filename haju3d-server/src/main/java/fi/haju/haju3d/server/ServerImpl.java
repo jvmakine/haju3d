@@ -1,25 +1,21 @@
 package fi.haju.haju3d.server;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+
 import fi.haju.haju3d.protocol.Client;
 import fi.haju.haju3d.protocol.Server;
 import fi.haju.haju3d.protocol.Vector3i;
 import fi.haju.haju3d.protocol.interaction.WorldEdit;
 import fi.haju.haju3d.protocol.world.Chunk;
-import fi.haju.haju3d.protocol.world.Tile;
 import fi.haju.haju3d.protocol.world.World;
 import fi.haju.haju3d.server.world.WorldGenerator;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.SerializationException;
-import org.apache.commons.lang3.SerializationUtils;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.util.*;
 
@@ -29,80 +25,18 @@ public class ServerImpl implements Server {
 
   @Inject
   private WorldGenerator generator;
-
+  
+  @Inject
+  private WorldSaver saver;
+  
   private List<Client> loggedInClients = Collections.synchronizedList(new ArrayList<Client>());
   private World world = new World();
-  private boolean fileMode;
-  private File hajuDir = getHajuDir();
 
   private interface AsynchClientCall {
     void run() throws RemoteException;
   }
 
   public ServerImpl() {
-  }
-
-  public void setFileMode(boolean fileMode) {
-    this.fileMode = fileMode;
-  }
-
-  private void createAndSaveWorld() {
-    LOGGER.info("createAndSaveWorld");
-
-    int sz = world.getChunkSize();
-    int chunks = 10;
-    Chunk worldChunk = generator.generateChunk(new Vector3i(), sz * chunks, sz, sz * chunks);
-
-    HashSet<Vector3i> validChunks = new HashSet<>();
-    for (int x = 0; x < chunks; x++) {
-      for (int z = 0; z < chunks; z++) {
-        Vector3i position = new Vector3i(x - chunks / 2, 0, z - chunks / 2);
-        Chunk chunk = new Chunk(sz, sz, sz, x + z * 100, position);
-        for (int xx = 0; xx < sz; xx++) {
-          for (int yy = 0; yy < sz; yy++) {
-            for (int zz = 0; zz < sz; zz++) {
-              chunk.set(xx, yy, zz, worldChunk.get(xx + x * sz, yy, zz + z * sz));
-              chunk.setColor(xx, yy, zz, worldChunk.getColor(xx + x * sz, yy, zz + z * sz));
-            }
-          }
-        }
-        validChunks.add(position);
-        writeObjectToFile(chunkFile(position), chunk);
-      }
-    }
-
-    writeObjectToFile(validChunksFile(), validChunks);
-  }
-
-  private static void writeObjectToFile(File file, Serializable object) {
-    try {
-      FileUtils.writeByteArrayToFile(file, SerializationUtils.serialize(object));
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  @SuppressWarnings("unchecked")
-  private static <T> T readObjectFromFile(File file) throws IOException {
-    try {
-      return (T) SerializationUtils.deserialize(FileUtils.readFileToByteArray(file));
-    } catch (SerializationException e) {
-      throw new IOException(e);
-    }
-  }
-
-  private File chunkFile(Vector3i position) {
-    return new File(hajuDir, "ch#" + position.x + "#" + position.z);
-  }
-
-  private File validChunksFile() {
-    return new File(hajuDir, "chunks");
-  }
-
-  private File getHajuDir() {
-    File hajuDir = new File(new File(System.getProperty("user.home")), ".haju3d");
-    hajuDir.mkdirs();
-    return hajuDir;
   }
 
   public void setGenerator(WorldGenerator generator) {
@@ -127,38 +61,15 @@ public class ServerImpl implements Server {
 
   private synchronized Chunk getOrGenerateChunk(Vector3i position) {
     LOGGER.info("getOrGenerateChunk: " + position);
-
-    if (fileMode) {
-      int sz = world.getChunkSize();
-      if (position.y < 0) {
-        return new Chunk(sz, sz, sz, 0, position, Tile.GROUND);
-      } else if (position.y > 0) {
-        return new Chunk(sz, sz, sz, 0, position, Tile.AIR);
-      }
-      HashSet<Vector3i> validChunks;
-      try {
-        validChunks = readObjectFromFile(validChunksFile());
-      } catch (IOException | SerializationException e) {
-        createAndSaveWorld();
-        return getOrGenerateChunk(position);
-      }
-      if (!validChunks.contains(position)) {
-        return new Chunk(sz, sz, sz, 0, position, Tile.AIR);
-      }
-      try {
-        return readObjectFromFile(chunkFile(position));
-      } catch (IOException | SerializationException e) {
-        createAndSaveWorld();
-        return getOrGenerateChunk(position);
-      }
-    }
-
     if (world.hasChunk(position)) {
       return world.getChunk(position);
     } else {
+      Optional<Chunk> opt = saver.loadChunkIfOnDisk(position);
+      if(opt.isPresent()) return opt.get();
       int sz = world.getChunkSize();
       Chunk newChunk = generator.generateChunk(position, sz, sz, sz);
       world.setChunk(position, newChunk);
+      saver.saveChunkIfNecessary(newChunk);
       return newChunk;
     }
   }
@@ -178,6 +89,7 @@ public class ServerImpl implements Server {
       Chunk chunk = getOrGenerateChunk(edit.getPosition().getChunkPosition());
       Vector3i p = edit.getPosition().getTileWithinChunk();
       chunk.set(p.x, p.y, p.z, edit.getNewTile());
+      saver.saveChunkIfNecessary(chunk);
     }
     for (final Client client : loggedInClients) {
       asyncCall(client, new AsynchClientCall() {
