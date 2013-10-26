@@ -21,8 +21,10 @@ import com.jme3.post.filters.CartoonEdgeFilter;
 import com.jme3.post.filters.FogFilter;
 import com.jme3.renderer.queue.RenderQueue.ShadowMode;
 import com.jme3.scene.Geometry;
+import com.jme3.scene.Mesh;
 import com.jme3.scene.Node;
 import com.jme3.scene.shape.Box;
+import com.jme3.scene.shape.Sphere;
 import com.jme3.shadow.DirectionalLightShadowRenderer;
 import com.jme3.shadow.EdgeFilteringMode;
 import com.jme3.system.AppSettings;
@@ -73,6 +75,9 @@ public class ChunkRenderer extends SimpleApplication {
   private boolean isFullScreen = false;
   private Node terrainNode = new Node("terrain");
   private Character character;
+  private Node characterNode;
+  private Node characterFoot1;
+  private Node characterFoot2;
   private TilePosition selectedTile;
   private TilePosition selectedBuildTile;
   private Node selectedVoxelNode;
@@ -140,23 +145,42 @@ public class ChunkRenderer extends SimpleApplication {
   }
 
   private void setupCharacter() {
-    character = new Character(new Node("character"));
-    character.getNode().setLocalTranslation(worldManager.getGlobalPosition(new Vector3i().add(20, 32, 25)));
+    character = new Character();
+    character.setPosition(worldManager.getGlobalPosition(new Vector3i().add(20, 32, 25)));
 
-    Box characterMesh = new Box(0.3f, 0.8f, 0.2f);
-    Geometry characterModel = new Geometry("CharacterModel", characterMesh);
+    Geometry characterBody = makeSimpleMesh(
+        new Box(0.3f, 0.6f, 0.2f),
+        new ColorRGBA(1.0f, 0.5f, 0.3f, 1.0f));
+    characterBody.setLocalTranslation(0, 0.3f, 0);
+
+    Geometry characterHead = makeSimpleMesh(
+        new Sphere(6, 6, 0.3f),
+        new ColorRGBA(0.4f, 0.7f, 0.3f, 1.0f));
+    characterHead.setLocalTranslation(0, 1, 0);
+
+    characterNode = new Node("character");
+    characterNode.attachChild(characterBody);
+    characterNode.attachChild(characterHead);
+
+    rootNode.attachChild(characterNode);
+
+    characterFoot1 = new Node("character foot 1");
+    characterFoot2 = new Node("character foot 2");
+    characterFoot1.attachChild(makeSimpleMesh(new Sphere(6, 6, 0.2f), new ColorRGBA(0.4f, 0.2f, 0.8f, 1.0f)));
+    characterFoot2.attachChild(makeSimpleMesh(new Sphere(6, 6, 0.2f), new ColorRGBA(0.4f, 0.2f, 0.8f, 1.0f)));
+    rootNode.attachChild(characterFoot1);
+    rootNode.attachChild(characterFoot2);
+  }
+
+  private Geometry makeSimpleMesh(Mesh mesh, ColorRGBA color) {
+    Geometry characterModel = new Geometry("SimpleMesh", mesh);
     characterModel.setShadowMode(ShadowMode.CastAndReceive);
-
-    ColorRGBA color = ColorRGBA.Red;
     Material mat = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
     mat.setBoolean("UseMaterialColors", true);
     mat.setColor("Ambient", color);
     mat.setColor("Diffuse", color);
     characterModel.setMaterial(mat);
-
-    character.getNode().attachChild(characterModel);
-
-    rootNode.attachChild(character.getNode());
+    return characterModel;
   }
 
   private void setupCamera() {
@@ -324,6 +348,55 @@ public class ChunkRenderer extends SimpleApplication {
 
     updateCharacterFacingDirection();
 
+    if (!inputHandler.getActiveInputs().isEmpty()) {
+      if (Float.isNaN(character.getFeetCycle())) {
+        character.setFeetCycle(0);
+      } else {
+        character.setFeetCycle(character.getFeetCycle() + tpf * 20f);
+      }
+    } else {
+      character.setFeetCycle(Float.NaN);
+    }
+
+    // update character node locations
+    float feetLen = 0.4f;
+    float feetDist = 0.4f;
+    float fc = character.getFeetCycle();
+
+    if (!Float.isNaN(fc)) {
+      characterNode.setLocalTranslation(character.getPosition().add(0, 0.1f * FastMath.sin(fc), 0));
+    } else {
+      characterNode.setLocalTranslation(character.getPosition());
+    }
+    characterNode.setLocalRotation(character.getFacingQuaternion());
+
+    Vector3f charPos = character.getPosition().add(0, -0.6f, 0);
+    Vector3f legPos1 = charPos.add(turnLeftLocal(character.getFaceVector()).multLocal(feetDist));
+
+    if (!Float.isNaN(fc)) {
+      legPos1.addLocal(character.getFaceVector().multLocal(FastMath.sin(fc)).multLocal(feetLen));
+      legPos1.addLocal(Vector3f.UNIT_Y.mult(FastMath.cos(fc)).multLocal(feetLen));
+    }
+
+    Vector3f legPos1p = worldManager.getTerrainCollisionPoint(legPos1, legPos1.add(Vector3f.UNIT_Y.mult(0.6f)), 0);
+    if (legPos1p != null) {
+      legPos1 = legPos1p;
+    }
+    characterFoot1.setLocalTranslation(legPos1);
+
+    Vector3f legPos2 = charPos.add(turnRightLocal(character.getFaceVector()).multLocal(feetDist));
+
+    if (!Float.isNaN(fc)) {
+      legPos2.addLocal(character.getFaceVector().multLocal(FastMath.sin(fc + HALF_CIRCLE)).multLocal(feetLen));
+      legPos2.addLocal(Vector3f.UNIT_Y.mult(FastMath.cos(fc + HALF_CIRCLE)).multLocal(feetLen));
+    }
+
+    Vector3f legPos2p = worldManager.getTerrainCollisionPoint(legPos2, legPos2.add(Vector3f.UNIT_Y.mult(0.6f)), 0);
+    if (legPos2p != null) {
+      legPos2 = legPos2p;
+    }
+    characterFoot2.setLocalTranslation(legPos2);
+
     Vector3f camPos = getCameraPositionFromCharacter();
     cam.setLocation(camPos);
     updateSelectedTile(camPos);
@@ -436,23 +509,34 @@ public class ChunkRenderer extends SimpleApplication {
   private Vector3f getCharacterPositionAfterUserInput(float tpf, Vector3f oldPos) {
     Vector3f characterPos = oldPos.clone();
     Set<String> activeInputs = inputHandler.getActiveInputs();
+    float add = tpf * (float) WALK_SPEED;
     if (activeInputs.contains(InputActions.WALK_FORWARD)) {
-      characterPos.z += FastMath.cos(character.getLookAzimuth()) * tpf * (float) WALK_SPEED;
-      characterPos.x += FastMath.sin(character.getLookAzimuth()) * tpf * (float) WALK_SPEED;
+      characterPos.addLocal(character.getLookVector().multLocal(add));
     }
     if (activeInputs.contains(InputActions.WALK_BACKWARD)) {
-      characterPos.z -= FastMath.cos(character.getLookAzimuth()) * tpf * (float) WALK_SPEED;
-      characterPos.x -= FastMath.sin(character.getLookAzimuth()) * tpf * (float) WALK_SPEED;
+      characterPos.subtractLocal(character.getLookVector().multLocal(add));
     }
     if (activeInputs.contains(InputActions.STRAFE_LEFT)) {
-      characterPos.z -= FastMath.sin(character.getLookAzimuth()) * tpf * (float) WALK_SPEED;
-      characterPos.x -= -FastMath.cos(character.getLookAzimuth()) * tpf * (float) WALK_SPEED;
+      characterPos.addLocal(turnLeftLocal(character.getLookVector().multLocal(add)));
     }
     if (activeInputs.contains(InputActions.STRAFE_RIGHT)) {
-      characterPos.z += FastMath.sin(character.getLookAzimuth()) * tpf * (float) WALK_SPEED;
-      characterPos.x += -FastMath.cos(character.getLookAzimuth()) * tpf * (float) WALK_SPEED;
+      characterPos.addLocal(turnRightLocal(character.getLookVector().multLocal(add)));
     }
     return characterPos;
+  }
+
+  public static Vector3f turnRightLocal(Vector3f v) {
+    float x = v.x;
+    v.x = -v.z;
+    v.z = x;
+    return v;
+  }
+
+  public static Vector3f turnLeftLocal(Vector3f v) {
+    float x = v.x;
+    v.x = v.z;
+    v.z = -x;
+    return v;
   }
 
   /**
@@ -505,19 +589,19 @@ public class ChunkRenderer extends SimpleApplication {
     if (mode == ViewMode.FLYCAM) {
       flyCam.setEnabled(true);
       inputManager.setCursorVisible(false);
-      rootNode.detachChild(character.getNode());
+      rootNode.detachChild(characterNode);
       guiNode.detachChild(crossHair);
       hideSelectedMaterial();
     } else if (mode == ViewMode.FIRST_PERSON) {
       flyCam.setEnabled(false);
       inputManager.setCursorVisible(false);
-      rootNode.detachChild(character.getNode());
+      rootNode.detachChild(characterNode);
       guiNode.attachChild(crossHair);
       showSelectedMaterial();
     } else if (mode == ViewMode.THIRD_PERSON) {
       flyCam.setEnabled(false);
       inputManager.setCursorVisible(false);
-      rootNode.attachChild(character.getNode());
+      rootNode.attachChild(characterNode);
       guiNode.detachChild(crossHair);
       hideSelectedMaterial();
     }

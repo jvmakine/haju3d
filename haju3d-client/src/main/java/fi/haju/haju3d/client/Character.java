@@ -1,19 +1,16 @@
 package fi.haju.haju3d.client;
 
+import com.jme3.math.FastMath;
 import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
-import com.jme3.scene.Node;
 
 public class Character {
+  private Vector3f position = new Vector3f();
   private Vector3f velocity = new Vector3f();
   private float faceAzimuth;
   private float lookAzimuth;
+  private float feetCycle;
   private float lookElevation = (float) (Math.PI / 4);
-  private final Node node;
-
-  public Character(Node node) {
-    this.node = node;
-  }
 
   public Vector3f getVelocity() {
     return velocity;
@@ -29,10 +26,6 @@ public class Character {
 
   public float getLookElevation() {
     return lookElevation;
-  }
-
-  public Node getNode() {
-    return node;
   }
 
   public void setVelocity(Vector3f velocity) {
@@ -52,15 +45,14 @@ public class Character {
   }
 
   public Vector3f getPosition() {
-    return node.getLocalTranslation();
+    return position;
   }
 
   public void setPosition(Vector3f position) {
-    node.setLocalTranslation(position);
-    node.setLocalRotation(getFacingQuaternion());
+    this.position = position;
   }
 
-  private Quaternion getFacingQuaternion() {
+  public Quaternion getFacingQuaternion() {
     Quaternion quat = new Quaternion();
     quat.fromAngles(0, getFaceAzimuth(), 0.0f);
     return quat;
@@ -72,4 +64,19 @@ public class Character {
     return quat;
   }
 
+  public Vector3f getLookVector() {
+    return new Vector3f(FastMath.sin(getLookAzimuth()), 0, FastMath.cos(getLookAzimuth()));
+  }
+
+  public Vector3f getFaceVector() {
+    return new Vector3f(FastMath.sin(getFaceAzimuth()), 0, FastMath.cos(getFaceAzimuth()));
+  }
+
+  public float getFeetCycle() {
+    return feetCycle;
+  }
+
+  public void setFeetCycle(float feetCycle) {
+    this.feetCycle = feetCycle;
+  }
 }

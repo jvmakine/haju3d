@@ -8,7 +8,6 @@ import com.jme3.input.KeyInput;
 import com.jme3.input.MouseInput;
 import com.jme3.input.controls.*;
 import com.jme3.math.Vector3f;
-import com.jme3.scene.Node;
 import fi.haju.haju3d.client.Character;
 import fi.haju.haju3d.client.connection.ServerConnector;
 import fi.haju.haju3d.client.ui.ChunkRenderer;
@@ -80,7 +79,7 @@ public class CharacterInputHandler {
     inputManager.addListener(new ActionListener() {
       @Override
       public void onAction(String name, boolean isPressed, float tpf) {
-        if (isPressed && canJump(character.getNode())) {
+        if (isPressed && canJump(character)) {
           character.setVelocity(character.getVelocity().add(new Vector3f(0.0f, 0.5f, 0.0f)));
         }
       }
@@ -170,8 +169,8 @@ public class CharacterInputHandler {
   }
 
 
-  private boolean canJump(Node characterNode) {
-    Vector3f pos = characterNode.getLocalTranslation();
+  private boolean canJump(Character character) {
+    Vector3f pos = character.getPosition();
     return worldManager.getTerrainCollisionPoint(pos, pos.add(new Vector3f(0, -2.0f, 0)), 0.0f) != null;
   }
 
