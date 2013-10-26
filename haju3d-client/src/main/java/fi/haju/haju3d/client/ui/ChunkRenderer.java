@@ -40,6 +40,8 @@ import fi.haju.haju3d.protocol.Vector3i;
 import fi.haju.haju3d.protocol.world.Tile;
 import fi.haju.haju3d.protocol.world.TilePosition;
 
+import java.util.Set;
+
 /**
  * Renderer application for rendering chunks from the server
  */
@@ -53,7 +55,7 @@ public class ChunkRenderer extends SimpleApplication {
   private static final float SELECTOR_DISTANCE = 10.0f;
   private static final float MOVE_SPEED = 40;
   private static final int CHUNK_CUT_OFF = 3;
-  
+
   private static final Vector3f lightDir = new Vector3f(-0.9140114f, 0.29160172f, -0.2820493f).negate();
 
   @Inject
@@ -295,8 +297,9 @@ public class ChunkRenderer extends SimpleApplication {
     characterPos = characterPos.add(character.getVelocity());
 
     characterPos = updateCharacterOnFloorHit(characterPos);
+    Vector3f oldPos = characterPos;
     characterPos = getCharacterPositionAfterUserInput(tpf, characterPos);
-    characterPos = checkWallHit(characterPos);
+    characterPos = checkWallHit(characterPos, oldPos);
     character.setPosition(characterPos);
 
     Vector3f camPos = getCameraPositionFromCharacter();
@@ -355,20 +358,21 @@ public class ChunkRenderer extends SimpleApplication {
    * move character based on used input
    */
   private Vector3f getCharacterPositionAfterUserInput(float tpf, Vector3f oldPos) {
-    Vector3f characterPos = oldPos.clone(); 
-    if (inputHandler.getActiveInputs().contains(InputActions.WALK_FORWARD)) {
+    Vector3f characterPos = oldPos.clone();
+    Set<String> activeInputs = inputHandler.getActiveInputs();
+    if (activeInputs.contains(InputActions.WALK_FORWARD)) {
       characterPos.z += FastMath.cos(character.getLookAzimuth()) * tpf * (float) WALK_SPEED;
       characterPos.x += FastMath.sin(character.getLookAzimuth()) * tpf * (float) WALK_SPEED;
     }
-    if (inputHandler.getActiveInputs().contains(InputActions.WALK_BACKWARD)) {
+    if (activeInputs.contains(InputActions.WALK_BACKWARD)) {
       characterPos.z -= FastMath.cos(character.getLookAzimuth()) * tpf * (float) WALK_SPEED;
       characterPos.x -= FastMath.sin(character.getLookAzimuth()) * tpf * (float) WALK_SPEED;
     }
-    if (inputHandler.getActiveInputs().contains(InputActions.STRAFE_LEFT)) {
+    if (activeInputs.contains(InputActions.STRAFE_LEFT)) {
       characterPos.z -= FastMath.sin(character.getLookAzimuth()) * tpf * (float) WALK_SPEED;
       characterPos.x -= -FastMath.cos(character.getLookAzimuth()) * tpf * (float) WALK_SPEED;
     }
-    if (inputHandler.getActiveInputs().contains(InputActions.STRAFE_RIGHT)) {
+    if (activeInputs.contains(InputActions.STRAFE_RIGHT)) {
       characterPos.z += FastMath.sin(character.getLookAzimuth()) * tpf * (float) WALK_SPEED;
       characterPos.x += -FastMath.cos(character.getLookAzimuth()) * tpf * (float) WALK_SPEED;
     }
@@ -378,8 +382,7 @@ public class ChunkRenderer extends SimpleApplication {
   /**
    * check if character hits wall. either climb it or return to old position
    */
-  private Vector3f checkWallHit(Vector3f characterPos) {
-    Vector3f oldPos = characterPos.clone();
+  private Vector3f checkWallHit(Vector3f characterPos, Vector3f oldPos) {
     Vector3f newPos = characterPos.clone();
     int i = 0;
     for (i = 0; i < WALL_CLIMB_LOOPS; i++) {
@@ -391,11 +394,10 @@ public class ChunkRenderer extends SimpleApplication {
       }
     }
     if (i == WALL_CLIMB_LOOPS) {
-      characterPos = oldPos;
+      return oldPos;
     } else {
-      characterPos = newPos;
+      return newPos;
     }
-    return characterPos;
   }
 
   private BoundingVolume makeCharacterBoundingVolume(Vector3f characterPos) {
