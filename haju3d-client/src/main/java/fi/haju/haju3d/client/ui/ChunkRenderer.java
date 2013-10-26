@@ -11,10 +11,7 @@ import com.jme3.font.BitmapText;
 import com.jme3.light.AmbientLight;
 import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
-import com.jme3.math.ColorRGBA;
-import com.jme3.math.FastMath;
-import com.jme3.math.Quaternion;
-import com.jme3.math.Vector3f;
+import com.jme3.math.*;
 import com.jme3.post.FilterPostProcessor;
 import com.jme3.post.filters.BloomFilter;
 import com.jme3.post.filters.CartoonEdgeFilter;
@@ -23,6 +20,7 @@ import com.jme3.renderer.queue.RenderQueue.ShadowMode;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Mesh;
 import com.jme3.scene.Node;
+import com.jme3.scene.Spatial;
 import com.jme3.scene.shape.Box;
 import com.jme3.scene.shape.Sphere;
 import com.jme3.shadow.DirectionalLightShadowRenderer;
@@ -76,8 +74,8 @@ public class ChunkRenderer extends SimpleApplication {
   private Node terrainNode = new Node("terrain");
   private Character character;
   private Node characterNode;
-  private Node characterFoot1;
-  private Node characterFoot2;
+  private Leg characterLegLeft;
+  private Leg characterLegRight;
   private TilePosition selectedTile;
   private TilePosition selectedBuildTile;
   private Node selectedVoxelNode;
@@ -85,6 +83,12 @@ public class ChunkRenderer extends SimpleApplication {
   private BitmapText selectedMaterialGui;
   private ViewMode viewMode = ViewMode.FLYCAM;
   private Tile selectedBuildMaterial = Tile.BRICK;
+
+  private static final class Leg {
+    private Spatial characterFoot;
+    private Spatial characterLegTop;
+    private Spatial characterLegBot;
+  }
 
   @Inject
   public ChunkRenderer(ClientSettings clientSettings) {
@@ -149,9 +153,9 @@ public class ChunkRenderer extends SimpleApplication {
     character.setPosition(worldManager.getGlobalPosition(new Vector3i().add(20, 32, 25)));
 
     Geometry characterBody = makeSimpleMesh(
-        new Box(0.3f, 0.6f, 0.2f),
+        new Box(0.3f, 0.4f, 0.2f),
         new ColorRGBA(1.0f, 0.5f, 0.3f, 1.0f));
-    characterBody.setLocalTranslation(0, 0.3f, 0);
+    characterBody.setLocalTranslation(0, 0.5f, 0);
 
     Geometry characterHead = makeSimpleMesh(
         new Sphere(6, 6, 0.3f),
@@ -164,12 +168,24 @@ public class ChunkRenderer extends SimpleApplication {
 
     rootNode.attachChild(characterNode);
 
-    characterFoot1 = new Node("character foot 1");
-    characterFoot2 = new Node("character foot 2");
-    characterFoot1.attachChild(makeSimpleMesh(new Sphere(6, 6, 0.2f), new ColorRGBA(0.4f, 0.2f, 0.8f, 1.0f)));
-    characterFoot2.attachChild(makeSimpleMesh(new Sphere(6, 6, 0.2f), new ColorRGBA(0.4f, 0.2f, 0.8f, 1.0f)));
-    rootNode.attachChild(characterFoot1);
-    rootNode.attachChild(characterFoot2);
+    characterLegLeft = makeLeg();
+    characterLegRight = makeLeg();
+    attachLeg(characterLegLeft);
+    attachLeg(characterLegRight);
+  }
+
+  private void attachLeg(Leg leg) {
+    rootNode.attachChild(leg.characterFoot);
+    rootNode.attachChild(leg.characterLegBot);
+    rootNode.attachChild(leg.characterLegTop);
+  }
+
+  private Leg makeLeg() {
+    Leg leg = new Leg();
+    leg.characterFoot = makeSimpleMesh(new Sphere(6, 6, 0.2f), new ColorRGBA(0.4f, 0.2f, 0.8f, 1.0f));
+    leg.characterLegBot = makeSimpleMesh(new Box(0.1f, 0.1f, 0.5f), ColorRGBA.Orange);
+    leg.characterLegTop = makeSimpleMesh(new Box(0.1f, 0.1f, 0.5f), ColorRGBA.Orange);
+    return leg;
   }
 
   private Geometry makeSimpleMesh(Mesh mesh, ColorRGBA color) {
@@ -359,8 +375,6 @@ public class ChunkRenderer extends SimpleApplication {
     }
 
     // update character node locations
-    float feetLen = 0.4f;
-    float feetDist = 0.4f;
     float fc = character.getFeetCycle();
 
     if (!Float.isNaN(fc)) {
@@ -370,36 +384,47 @@ public class ChunkRenderer extends SimpleApplication {
     }
     characterNode.setLocalRotation(character.getFacingQuaternion());
 
-    Vector3f charPos = character.getPosition().add(0, -0.6f, 0);
-    Vector3f legPos1 = charPos.add(turnLeftLocal(character.getFaceVector()).multLocal(feetDist));
-
-    if (!Float.isNaN(fc)) {
-      legPos1.addLocal(character.getFaceVector().multLocal(FastMath.sin(fc)).multLocal(feetLen));
-      legPos1.addLocal(Vector3f.UNIT_Y.mult(FastMath.cos(fc)).multLocal(feetLen));
-    }
-
-    Vector3f legPos1p = worldManager.getTerrainCollisionPoint(legPos1, legPos1.add(Vector3f.UNIT_Y.mult(0.6f)), 0);
-    if (legPos1p != null) {
-      legPos1 = legPos1p;
-    }
-    characterFoot1.setLocalTranslation(legPos1);
-
-    Vector3f legPos2 = charPos.add(turnRightLocal(character.getFaceVector()).multLocal(feetDist));
-
-    if (!Float.isNaN(fc)) {
-      legPos2.addLocal(character.getFaceVector().multLocal(FastMath.sin(fc + HALF_CIRCLE)).multLocal(feetLen));
-      legPos2.addLocal(Vector3f.UNIT_Y.mult(FastMath.cos(fc + HALF_CIRCLE)).multLocal(feetLen));
-    }
-
-    Vector3f legPos2p = worldManager.getTerrainCollisionPoint(legPos2, legPos2.add(Vector3f.UNIT_Y.mult(0.6f)), 0);
-    if (legPos2p != null) {
-      legPos2 = legPos2p;
-    }
-    characterFoot2.setLocalTranslation(legPos2);
+    updateLegPosition(fc, characterLegLeft, 1);
+    updateLegPosition(fc + HALF_CIRCLE, characterLegRight, -1);
 
     Vector3f camPos = getCameraPositionFromCharacter();
     cam.setLocation(camPos);
     updateSelectedTile(camPos);
+  }
+
+  private void updateLegPosition(float fc, Leg leg, float dir) {
+    float feetLen = 0.4f;
+    float feetDist = 0.25f;
+
+    Vector3f charPos = character.getPosition().add(0, -0.6f, 0);
+    Vector3f legPos = charPos.add(turnLeftLocal(character.getFaceVector()).multLocal(dir * feetDist));
+
+    if (!Float.isNaN(fc)) {
+      legPos.addLocal(character.getFaceVector().multLocal(FastMath.sin(fc)).multLocal(feetLen));
+      legPos.addLocal(Vector3f.UNIT_Y.mult(FastMath.cos(fc)).multLocal(feetLen));
+    }
+
+    Vector3f legPosp = worldManager.getTerrainCollisionPoint(legPos, legPos.add(Vector3f.UNIT_Y.mult(0.6f)), 0);
+    if (legPosp != null) {
+      legPos = legPosp;
+    }
+    leg.characterFoot.setLocalTranslation(legPos);
+
+    Vector3f ankle = legPos.subtract(character.getFaceVector().multLocal(0.2f));
+    Vector3f hip = characterNode.getLocalTranslation().add(turnLeftLocal(character.getFaceVector()).multLocal(dir * feetDist)).add(0, 0.3f, 0);
+    Vector3f knee = ankle.add(hip).mult(0.5f).add(character.getFaceVector().multLocal(0.2f));
+    leg.characterLegBot.setLocalTransform(transformBetween(ankle, knee, character.getFaceVector()));
+    leg.characterLegTop.setLocalTransform(transformBetween(knee, hip, character.getFaceVector()));
+  }
+
+  private Transform transformBetween(Vector3f start, Vector3f end, Vector3f front) {
+    Vector3f dir = start.subtract(end);
+    Vector3f left = dir.normalize().cross(front.normalize());
+    Vector3f ahead = dir.normalize().cross(left.normalize());
+
+    Quaternion q = new Quaternion();
+    q.fromAxes(left.normalize(), ahead.normalize(), dir.normalize());
+    return new Transform(start.add(end).multLocal(0.5f), q, new Vector3f(1, 1, dir.length()));
   }
 
   private void updateCharacterFacingDirection() {
