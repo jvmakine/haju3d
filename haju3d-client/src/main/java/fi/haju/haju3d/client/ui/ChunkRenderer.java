@@ -56,7 +56,7 @@ public class ChunkRenderer extends SimpleApplication {
   private static final float MOVE_SPEED = 40;
   private static final int CHUNK_CUT_OFF = 3;
 
-  private static final Vector3f lightDir = new Vector3f(-0.9140114f, 0.29160172f, -0.2820493f).negate();
+  private static final Vector3f LIGHT_DIR = new Vector3f(-0.9140114f, 0.29160172f, -0.2820493f).negate();
 
   @Inject
   private ChunkSpatialBuilder builder;
@@ -185,14 +185,14 @@ public class ChunkRenderer extends SimpleApplication {
     for (Vector3i pos : chunkIndex.getSurroundingPositions(CHUNK_CUT_OFF, CHUNK_CUT_OFF, CHUNK_CUT_OFF)) {
       ChunkSpatial cs = worldManager.getChunkSpatial(pos);
       if (cs != null) {
-        terrainNode.attachChild(pos.distanceTo(chunkIndex) <= 1 ? cs.highDetail : cs.lowDetail);
+        terrainNode.attachChild(pos.distanceTo(chunkIndex) <= 2 ? cs.highDetail : cs.lowDetail);
       }
     }
   }
 
   private void setupLighting() {
     light = new DirectionalLight();
-    light.setDirection(lightDir.normalizeLocal());
+    light.setDirection(LIGHT_DIR.normalizeLocal());
     light.setColor(new ColorRGBA(1f, 1f, 1f, 1f).mult(1.0f));
     rootNode.addLight(light);
 
@@ -248,7 +248,7 @@ public class ChunkRenderer extends SimpleApplication {
     bloom.setBloomIntensity(0.8f);
     fpp.addFilter(bloom);
 
-    WaterFilter water = new WaterFilter(rootNode, lightDir);
+    WaterFilter water = new WaterFilter(rootNode, LIGHT_DIR);
     water.setCenter(new Vector3f(319.6663f, -18.367947f, -236.67674f));
     water.setRadius(26000);
     water.setWaterHeight(14);

@@ -24,5 +24,4 @@ public class WorldEdit implements Serializable {
   public Tile getNewTile() {
     return newTile;
   }
-
 }

@@ -18,7 +18,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.rmi.RemoteException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
 
 @Singleton
 public class ServerImpl implements Server {
@@ -26,7 +30,7 @@ public class ServerImpl implements Server {
 
   @Inject
   private WorldGenerator generator;
-  
+
   @Inject
   private WorldSaver saver;
   
@@ -36,15 +40,8 @@ public class ServerImpl implements Server {
   private List<Client> loggedInClients = Collections.synchronizedList(new ArrayList<Client>());
   private World world = new World();
 
-  private interface AsynchClientCall {
+  private interface AsyncClientCall {
     void run() throws RemoteException;
-  }
-
-  public ServerImpl() {
-  }
-
-  public void setGenerator(WorldGenerator generator) {
-    this.generator = generator;
   }
   
   public void init() {
@@ -81,7 +78,7 @@ public class ServerImpl implements Server {
       return world.getChunk(position);
     } else {
       Optional<Chunk> opt = saver.loadChunkIfOnDisk(position);
-      if(opt.isPresent()) return opt.get();
+      if (opt.isPresent()) return opt.get();
       int sz = world.getChunkSize();
       Chunk newChunk = generator.generateChunk(position, sz, sz, sz);
       world.setChunk(position, newChunk);
@@ -108,7 +105,7 @@ public class ServerImpl implements Server {
       saver.saveChunkIfNecessary(chunk);
     }
     for (final Client client : loggedInClients) {
-      asyncCall(client, new AsynchClientCall() {
+      asyncCall(client, new AsyncClientCall() {
         public void run() throws RemoteException {
           client.registerWorldEdits(edits);
         }
@@ -116,7 +113,7 @@ public class ServerImpl implements Server {
     }
   }
 
-  private void asyncCall(final Client client, final AsynchClientCall call) {
+  private void asyncCall(final Client client, final AsyncClientCall call) {
     new Thread(new Runnable() {
       @Override
       public void run() {

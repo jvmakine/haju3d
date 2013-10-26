@@ -36,7 +36,6 @@ import java.util.*;
 public class ChunkSpatialBuilder {
   public static final int SMOOTH_BUFFER = 2;
   private static final Logger LOGGER = LoggerFactory.getLogger(ChunkSpatialBuilder.class);
-  private static final ColorRGBA CHUNK_COLOR = new ColorRGBA(1, 1, 0.7f, 1);
   private Material lowMaterial;
   private Material highMaterial;
 
@@ -48,8 +47,8 @@ public class ChunkSpatialBuilder {
   }
 
   public void init(AssetManager assetManager) {
-    List<Image> images = new ArrayList<Image>();
-    List<Image> normalImages = new ArrayList<Image>();
+    List<Image> images = new ArrayList<>();
+    List<Image> normalImages = new ArrayList<>();
     for (MyTexture tex : MyTexture.values()) {
       images.add(loadImage(assetManager, tex.getTexturefileName()));
       normalImages.add(loadImage(assetManager, "brick_normal.png"));
@@ -116,6 +115,7 @@ public class ChunkSpatialBuilder {
       });
     }
     myMesh.calcVertexNormals();
+    myMesh.calcVertexLights();
   }
 
   private Spatial makeCubeSpatial(MyMesh myMesh) {
@@ -125,9 +125,11 @@ public class ChunkSpatialBuilder {
     }
     for (MyVertex v : myMesh.vertexFaces.keySet()) {
       myMesh.vertexToNormal.put(v, Vector3f.UNIT_Z);
+      myMesh.vertexToLight.put(v, Vector3f.UNIT_Z);
     }
     Geometry geom = new Geometry("ColoredMesh", new SimpleMeshBuilder(myMesh).build());
     myMesh.vertexToNormal.clear();
+    myMesh.vertexToLight.clear();
     return geom;
   }
 
@@ -143,7 +145,7 @@ public class ChunkSpatialBuilder {
     Mesh m = useSimpleMesh ? new SimpleMeshBuilder(myMesh).build() : new NewMeshBuilder2(myMesh).build();
     final Geometry groundObject = new Geometry("ColoredMesh", m);
     groundObject.setMaterial(useSimpleMesh ? lowMaterial : highMaterial);
-    groundObject.setShadowMode(ShadowMode.CastAndReceive);
+    groundObject.setShadowMode(ShadowMode.Receive);
     return groundObject;
   }
 
@@ -306,10 +308,10 @@ public class ChunkSpatialBuilder {
         Vector3f v3 = face.v3.v;
         Vector3f v4 = face.v4.v;
 
-        putColor(colors, CHUNK_COLOR);
-        putColor(colors, CHUNK_COLOR);
-        putColor(colors, CHUNK_COLOR);
-        putColor(colors, CHUNK_COLOR);
+        putColor(colors, mesh.vertexToLight.get(face.v1));
+        putColor(colors, mesh.vertexToLight.get(face.v2));
+        putColor(colors, mesh.vertexToLight.get(face.v3));
+        putColor(colors, mesh.vertexToLight.get(face.v4));
 
         putVector(vertexes, v1);
         putVector(vertexes, v2);
@@ -420,14 +422,14 @@ public class ChunkSpatialBuilder {
   }
 
   public static class SimpleMeshBuilder {
-    private MyMesh myMesh;
+    private MyMesh mesh;
 
     public SimpleMeshBuilder(MyMesh myMesh) {
-      this.myMesh = myMesh;
+      this.mesh = myMesh;
     }
 
     public Mesh build() {
-      List<MyFace> realFaces = myMesh.getRealFaces();
+      List<MyFace> realFaces = mesh.getRealFaces();
 
       FloatBuffer vertexes = BufferUtils.createFloatBuffer(realFaces.size() * 4 * 3);
       FloatBuffer colors = BufferUtils.createFloatBuffer(realFaces.size() * 4 * 4);
@@ -437,10 +439,10 @@ public class ChunkSpatialBuilder {
 
       int i = 0;
       for (MyFace face : realFaces) {
-        putColor(colors, CHUNK_COLOR);
-        putColor(colors, CHUNK_COLOR);
-        putColor(colors, CHUNK_COLOR);
-        putColor(colors, CHUNK_COLOR);
+        putColor(colors, mesh.vertexToLight.get(face.v1));
+        putColor(colors, mesh.vertexToLight.get(face.v2));
+        putColor(colors, mesh.vertexToLight.get(face.v3));
+        putColor(colors, mesh.vertexToLight.get(face.v4));
 
         putVector(vertexes, face.v1.v);
         putVector(vertexes, face.v2.v);
@@ -453,10 +455,10 @@ public class ChunkSpatialBuilder {
           putVector(vertexNormals, face.normal);
           putVector(vertexNormals, face.normal);
         } else {
-          putVector(vertexNormals, myMesh.vertexToNormal.get(face.v1));
-          putVector(vertexNormals, myMesh.vertexToNormal.get(face.v2));
-          putVector(vertexNormals, myMesh.vertexToNormal.get(face.v3));
-          putVector(vertexNormals, myMesh.vertexToNormal.get(face.v4));
+          putVector(vertexNormals, mesh.vertexToNormal.get(face.v1));
+          putVector(vertexNormals, mesh.vertexToNormal.get(face.v2));
+          putVector(vertexNormals, mesh.vertexToNormal.get(face.v3));
+          putVector(vertexNormals, mesh.vertexToNormal.get(face.v4));
         }
 
         int ti = face.texture.ordinal();
@@ -489,10 +491,6 @@ public class ChunkSpatialBuilder {
 
   private static void putColor(FloatBuffer colors, Vector3f v) {
     colors.put(v.x).put(v.y).put(v.z).put(1.0f);
-  }
-
-  private static void putColor(FloatBuffer colors, ColorRGBA color) {
-    colors.put(color.r).put(color.g).put(color.b).put(1.0f);
   }
 
   private static int getZIndex(int x, int y, int z, int edge) {
@@ -529,7 +527,8 @@ public class ChunkSpatialBuilder {
                     new Vector3f(x, y, z + 1),
                     properties.getSideTexture(seed), color,
                     realTile,
-                    seed, tile);
+                    seed, tile,
+                    world.getLight(x, y - 1, z));
               }
               if (world.get(x, y + 1, z) == Tile.AIR) {
                 int seed = getZIndex(x, y, z, 1);
@@ -540,7 +539,8 @@ public class ChunkSpatialBuilder {
                     new Vector3f(x, y + 1, z),
                     properties.getTopTexture(seed), color,
                     realTile,
-                    seed, tile);
+                    seed, tile,
+                    world.getLight(x, y + 1, z));
               }
               if (world.get(x - 1, y, z) == Tile.AIR) {
                 int seed = getZIndex(x, y, z, 2);
@@ -551,7 +551,8 @@ public class ChunkSpatialBuilder {
                     new Vector3f(x, y, z),
                     properties.getSideTexture(seed), color,
                     realTile,
-                    seed, tile);
+                    seed, tile,
+                    world.getLight(x - 1, y, z));
               }
               if (world.get(x + 1, y, z) == Tile.AIR) {
                 int seed = getZIndex(x, y, z, 3);
@@ -562,7 +563,8 @@ public class ChunkSpatialBuilder {
                     new Vector3f(x + 1, y, z + 1),
                     properties.getSideTexture(seed), color,
                     realTile,
-                    seed, tile);
+                    seed, tile,
+                    world.getLight(x + 1, y, z));
               }
               if (world.get(x, y, z - 1) == Tile.AIR) {
                 int seed = getZIndex(x, y, z, 4);
@@ -573,7 +575,8 @@ public class ChunkSpatialBuilder {
                     new Vector3f(x + 1, y, z),
                     properties.getSideTexture(seed), color,
                     realTile,
-                    seed, tile);
+                    seed, tile,
+                    world.getLight(x, y, z - 1));
               }
               if (world.get(x, y, z + 1) == Tile.AIR) {
                 int seed = getZIndex(x, y, z, 5);
@@ -584,7 +587,8 @@ public class ChunkSpatialBuilder {
                     new Vector3f(x, y, z + 1),
                     properties.getSideTexture(seed), color,
                     realTile,
-                    seed, tile);
+                    seed, tile,
+                    world.getLight(x, y, z + 1));
               }
             }
           }
