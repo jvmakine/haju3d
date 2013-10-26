@@ -8,7 +8,6 @@ import fi.haju.haju3d.protocol.Client;
 import fi.haju.haju3d.server.ServerImpl;
 import fi.haju.haju3d.server.ServerModule;
 import fi.haju.haju3d.server.ServerSettings;
-import fi.haju.haju3d.server.WorldSaver;
 
 import java.rmi.RemoteException;
 
@@ -23,22 +22,12 @@ public class LocalClientRunner {
     ServerSettings settings = serverInjector.getInstance(ServerSettings.class);
     settings.init();
 
-    final WorldSaver saver = serverInjector.getInstance(WorldSaver.class);
-    saver.start();
 
     server.init();
 
     ChunkRenderer app = clientInjector.getInstance(ChunkRenderer.class);
     Client client = new ClientImpl(app);
     server.login(client);
-
-    app.setCloseEventHandler(new CloseEventHandler() {
-      @Override
-      public void onClose() {
-        saver.stop();
-      }
-    });
-
     app.start();
   }
 }

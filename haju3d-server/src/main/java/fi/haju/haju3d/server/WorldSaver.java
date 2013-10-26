@@ -1,7 +1,6 @@
 package fi.haju.haju3d.server;
 
 import com.google.common.base.Optional;
-import com.google.common.collect.Maps;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
@@ -23,9 +22,11 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
-import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.Collections;
+import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Singleton
 public class WorldSaver {
@@ -33,62 +34,26 @@ public class WorldSaver {
   private static final LZ4Compressor LZ_4_COMPRESSOR = LZ_4_FACTORY.fastCompressor();
   private static final LZ4FastDecompressor LZ_4_DECOMPRESSOR = LZ_4_FACTORY.fastDecompressor();
 
-  private static final long MIN_SAVE_INTERVAL = 60000;
+  private static final long MIN_SAVE_INTERVAL = 30000;
   private static final Logger LOGGER = LoggerFactory.getLogger(WorldSaver.class);
 
-  private Queue<Chunk> chunksToSave = new ConcurrentLinkedQueue<Chunk>();
-  private Map<Chunk, Long> lastSaveTimes = Maps.newHashMap();
-
-  private volatile boolean running = false;
-
-  private void saveLoop() {
-    while (running) {
-      try {
-        Thread.sleep(100);
-        while (!chunksToSave.isEmpty()) {
-          Chunk toSave;
-          synchronized (chunksToSave) {
-            toSave = chunksToSave.poll();
-          }
-          if (toSave != null) {
-            LOGGER.info("Saving chunk : " + toSave.getPosition());
-            writeObjectToFile(chunkFile(toSave.getPosition()), toSave);
-          }
-        }
-      } catch (InterruptedException e) {
-        throw new RuntimeException(e);
-      }
-    }
-  }
+  private Set<Vector3i> chunksToSave = Collections.newSetFromMap(new ConcurrentHashMap<Vector3i,Boolean>());
+  private Timer timer = new Timer();
 
   @Inject
   private ServerSettings settings;
 
-  public void start() {
-    if (running) {
-      return;
-    }
-    running = true;
-    Thread saverThread = new Thread(new Runnable() {
-      @Override
-      public void run() {
-        saveLoop();
-      }
-    }, "WorldSaver");
-    saverThread.start();
-  }
-
-  public void stop() {
-    running = false;
-  }
-
-  public void saveChunkIfNecessary(Chunk chunk) {
-    synchronized (chunksToSave) {
-      if ((!lastSaveTimes.containsKey(chunk) || lastSaveTimes.get(chunk) < System.currentTimeMillis() - MIN_SAVE_INTERVAL)
-          && !chunksToSave.contains(chunk)) {
-        lastSaveTimes.put(chunk, System.currentTimeMillis());
-        chunksToSave.add(chunk);
-      }
+  public void saveChunk(final Chunk chunk) {
+    if (!chunksToSave.contains(chunk.getPosition())) {
+      chunksToSave.add(chunk.getPosition());
+      timer.schedule(new TimerTask() {
+        @Override
+        public void run() {
+          LOGGER.info("Saving chunk : " + chunk.getPosition());
+          writeObjectToFile(chunkFile(chunk.getPosition()), chunk);
+          chunksToSave.remove(chunk.getPosition());
+        }
+      }, MIN_SAVE_INTERVAL);
     }
   }
   

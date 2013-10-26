@@ -30,7 +30,6 @@ public class ServerRunner {
 
       injector.getInstance(ServerSettings.class).init();
       server.init();
-      injector.getInstance(WorldSaver.class).start();
       
       startServer(server);
 

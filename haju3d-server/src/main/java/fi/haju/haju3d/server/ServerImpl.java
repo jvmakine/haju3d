@@ -78,11 +78,14 @@ public class ServerImpl implements Server {
       return world.getChunk(position);
     } else {
       Optional<Chunk> opt = saver.loadChunkIfOnDisk(position);
-      if (opt.isPresent()) return opt.get();
+      if (opt.isPresent()) {
+        world.setChunk(position, opt.get());
+        return opt.get();
+      }
       int sz = world.getChunkSize();
       Chunk newChunk = generator.generateChunk(position, sz, sz, sz);
       world.setChunk(position, newChunk);
-      saver.saveChunkIfNecessary(newChunk);
+      saver.saveChunk(newChunk);
       return newChunk;
     }
   }
@@ -102,7 +105,7 @@ public class ServerImpl implements Server {
       Chunk chunk = getOrGenerateChunk(edit.getPosition().getChunkPosition());
       Vector3i p = edit.getPosition().getTileWithinChunk();
       chunk.set(p.x, p.y, p.z, edit.getNewTile());
-      saver.saveChunkIfNecessary(chunk);
+      saver.saveChunk(chunk);
     }
     for (final Client client : loggedInClients) {
       asyncCall(client, new AsyncClientCall() {
