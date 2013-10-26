@@ -17,7 +17,6 @@ import fi.haju.haju3d.protocol.world.World;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 @Singleton
 public class WorldManager {
@@ -35,14 +34,15 @@ public class WorldManager {
 
   private World world = new World();
   private Map<Vector3i, ChunkSpatial> chunkSpatials = new ConcurrentHashMap<>();
-  private AtomicBoolean running = new AtomicBoolean(false);
   private Object lock = new Object();
-  private transient Vector3i position;
+
+  private volatile boolean running;
+  private volatile Vector3i position;
 
   private Runnable runnable = new Runnable() {
     @Override
     public void run() {
-      while (running.get()) {
+      while (running) {
         try {
           Thread.sleep(10L);
         } catch (InterruptedException e) {
@@ -164,16 +164,17 @@ public class WorldManager {
   }
 
   public void start() {
-    if (!running.get()) {
-      running.set(true);
-      Thread thread = new Thread(runnable, "WorldManager");
-      thread.setPriority(3);
-      thread.start();
+    if (running) {
+      return;
     }
+    running = true;
+    Thread thread = new Thread(runnable, "WorldManager");
+    thread.setPriority(3);
+    thread.start();
   }
 
   public void stop() {
-    running.set(false);
+    running = false;
     synchronized (lock) {
       lock.notify();
     }

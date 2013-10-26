@@ -33,7 +33,7 @@ public class ServerRunner {
       settings.init();
 
       WorldSaver saver = injector.getInstance(WorldSaver.class);
-      saver.init();
+      saver.start();
 
       while (true) {
         Thread.sleep(100);

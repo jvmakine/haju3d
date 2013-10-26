@@ -6,21 +6,29 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import fi.haju.haju3d.protocol.Vector3i;
 import fi.haju.haju3d.protocol.world.Chunk;
+import net.jpountz.lz4.LZ4Compressor;
+import net.jpountz.lz4.LZ4Factory;
+import net.jpountz.lz4.LZ4FastDecompressor;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.SerializationException;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.SerializationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
+import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 @Singleton
 public class WorldSaver {
+  private static final LZ4Factory LZ_4_FACTORY = LZ4Factory.fastestInstance();
+  private static final LZ4Compressor LZ_4_COMPRESSOR = LZ_4_FACTORY.fastCompressor();
+  private static final LZ4FastDecompressor LZ_4_DECOMPRESSOR = LZ_4_FACTORY.fastDecompressor();
 
   private static final long MIN_SAVE_INTERVAL = 60000;
   private static final Logger LOGGER = LoggerFactory.getLogger(WorldSaver.class);
@@ -28,14 +36,16 @@ public class WorldSaver {
   private Queue<Chunk> chunksToSave = new ConcurrentLinkedQueue<Chunk>();
   private Map<Chunk, Long> lastSaveTimes = Maps.newHashMap();
 
+  private volatile boolean running = false;
+
   private final Thread saverThread = new Thread(new Runnable() {
     @Override
     public void run() {
-      while (true) {
+      while (running) {
         try {
           Thread.sleep(100);
           while (!chunksToSave.isEmpty()) {
-            Chunk toSave = null;
+            Chunk toSave;
             synchronized (chunksToSave) {
               toSave = chunksToSave.poll();
             }
@@ -54,8 +64,16 @@ public class WorldSaver {
   @Inject
   private ServerSettings settings;
 
-  public void init() {
-    saverThread.run();
+  public void start() {
+    if (running) {
+      return;
+    }
+    running = true;
+    saverThread.start();
+  }
+
+  public void stop() {
+    running = false;
   }
 
   public void saveChunkIfNecessary(Chunk chunk) {
@@ -72,12 +90,16 @@ public class WorldSaver {
     File file = chunkFile(pos);
     if (!file.exists()) return Optional.absent();
     LOGGER.info("loading from disk : " + pos);
-    return Optional.of((Chunk) readObjectFromFile(file));
+    try {
+      return Optional.of((Chunk) readObjectFromFile(file));
+    } catch (RuntimeException e) {
+      return Optional.absent();
+    }
   }
 
   private static void writeObjectToFile(File file, Serializable object) {
     try {
-      FileUtils.writeByteArrayToFile(file, SerializationUtils.serialize(object));
+      FileUtils.writeByteArrayToFile(file, compress(SerializationUtils.serialize(object)));
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -86,24 +108,27 @@ public class WorldSaver {
   @SuppressWarnings("unchecked")
   private static <T> T readObjectFromFile(File file) {
     try {
-      return (T) SerializationUtils.deserialize(FileUtils.readFileToByteArray(file));
-    } catch (SerializationException e) {
-      throw new RuntimeException(e);
+      return (T) SerializationUtils.deserialize(decompress(FileUtils.readFileToByteArray(file)));
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
   }
 
-  private static File getDirAt(String path) {
-    File dir = new File(path);
-    if (!dir.exists()) {
-      dir.mkdirs();
-    }
-    return dir;
+  private static byte[] compress(byte[] bytes) throws IOException {
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    IOUtils.write(ByteBuffer.allocate(4).putInt(bytes.length).array(), baos);
+    IOUtils.write(LZ_4_COMPRESSOR.compress(bytes), baos);
+    return baos.toByteArray();
+  }
+
+  private static byte[] decompress(byte[] bytes) throws IOException {
+    int length = ByteBuffer.wrap(bytes).getInt();
+    return LZ_4_DECOMPRESSOR.decompress(bytes, 4, length);
   }
 
   private File chunkFile(Vector3i position) {
-    return new File(getDirAt(settings.getSavePath() + "/" + settings.getWorldName()), "ch#" + position.x + "#" + position.y + "#" + position.z);
+    File chunkDir = new File(settings.getSavePath(), settings.getWorldName());
+    chunkDir.mkdirs();
+    return new File(chunkDir, "ch#" + position.x + "#" + position.y + "#" + position.z);
   }
-
 }
