@@ -13,6 +13,7 @@ public final class MyMesh {
   public Map<MyVertex, List<MyFaceAndIndex>> vertexFaces = new HashMap<>();
   public List<MyFace> faces = new ArrayList<>();
   public Map<MyVertex, Vector3f> vertexToNormal = new HashMap<>();
+  public Map<MyVertex, Vector3f> vertexToLight = new HashMap<>();
 
   public static class MyFaceAndIndex {
     public MyFace face;
@@ -22,8 +23,8 @@ public final class MyMesh {
   public void addFace(
       Vector3f v1, Vector3f v2, Vector3f v3, Vector3f v4,
       MyTexture texture, float color, boolean realTile, int zIndex,
-      Tile tile) {
-    MyFace face = new MyFace(getVertex(v1), getVertex(v2), getVertex(v3), getVertex(v4), texture, color, realTile, zIndex, tile);
+      Tile tile, int light) {
+    MyFace face = new MyFace(getVertex(v1), getVertex(v2), getVertex(v3), getVertex(v4), texture, color, realTile, zIndex, tile, light);
 
     addVertexFace(face, face.v1, 1);
     addVertexFace(face, face.v2, 2);
@@ -53,6 +54,27 @@ public final class MyMesh {
     faces.add(fi);
   }
 
+  public void calcVertexLights() {
+    for (MyFace face : faces) {
+      calcVertexLight(face.v1);
+      calcVertexLight(face.v2);
+      calcVertexLight(face.v3);
+      calcVertexLight(face.v4);
+    }
+  }
+
+  private void calcVertexLight(MyVertex v) {
+    if (vertexToLight.containsKey(v)) {
+      return;
+    }
+    int sum = 0;
+    for (MyFaceAndIndex f : vertexFaces.get(v)) {
+      sum += f.face.light;
+    }
+    sum /= vertexFaces.get(v).size();
+    vertexToLight.put(v, new Vector3f(1.0f, 1.0f, 1.0f).multLocal(sum / 100.0f));
+  }
+
   public void calcVertexNormals() {
     for (MyFace face : faces) {
       calcVertexNormal(face.v1);
@@ -60,6 +82,20 @@ public final class MyMesh {
       calcVertexNormal(face.v3);
       calcVertexNormal(face.v4);
     }
+  }
+
+  private void calcVertexNormal(MyVertex v) {
+    if (vertexToNormal.containsKey(v)) {
+      return;
+    }
+
+    Vector3f sum = Vector3f.ZERO.clone();
+    for (MyFaceAndIndex f : vertexFaces.get(v)) {
+      sum.addLocal(f.face.normal);
+    }
+    sum.normalizeLocal();
+
+    vertexToNormal.put(v, sum);
   }
 
   public List<MyFace> getRealFaces() {
@@ -72,18 +108,4 @@ public final class MyMesh {
     return realFaces;
   }
 
-  private void calcVertexNormal(MyVertex v1) {
-
-    if (vertexToNormal.containsKey(v1)) {
-      return;
-    }
-
-    Vector3f sum = Vector3f.ZERO.clone();
-    for (MyFaceAndIndex f : vertexFaces.get(v1)) {
-      sum.addLocal(f.face.normal);
-    }
-    sum.normalizeLocal();
-
-    vertexToNormal.put(v1, sum);
-  }
 }

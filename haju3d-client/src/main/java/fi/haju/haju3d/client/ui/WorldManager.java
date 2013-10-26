@@ -11,7 +11,9 @@ import fi.haju.haju3d.client.ClientSettings;
 import fi.haju.haju3d.client.chunk.ChunkProvider;
 import fi.haju.haju3d.client.ui.mesh.ChunkSpatialBuilder;
 import fi.haju.haju3d.protocol.Vector3i;
+import fi.haju.haju3d.protocol.interaction.WorldEdit;
 import fi.haju.haju3d.protocol.world.Chunk;
+import fi.haju.haju3d.protocol.world.Tile;
 import fi.haju.haju3d.protocol.world.TilePosition;
 import fi.haju.haju3d.protocol.world.World;
 
@@ -150,6 +152,7 @@ public class WorldManager {
     // need 3x3 chunks around meshing area so that mesh borders can be handled correctly
     List<Chunk> chunks = chunkProvider.getChunks(chunkIndex.getSurroundingPositions());
     for (Chunk c : chunks) {
+      calculateChunkLighting(c);
       world.setChunk(c.getPosition(), c);
     }
     ChunkSpatial spatial = builder.makeChunkSpatial(world, chunkIndex);
@@ -186,6 +189,78 @@ public class WorldManager {
 
   public int getChunkSize() {
     return world.getChunkSize();
+  }
+
+
+  public void registerWorldEdits(List<WorldEdit> edits) {
+    Set<Vector3i> spatialsToUpdate = new HashSet<>();
+    for (WorldEdit edit : edits) {
+      TilePosition tile = edit.getPosition();
+
+      Chunk chunk = world.getChunk(tile.getChunkPosition());
+      int x = tile.getTileWithinChunk().x;
+      int y = tile.getTileWithinChunk().y;
+      int z = tile.getTileWithinChunk().z;
+      chunk.set(x, y, z, edit.getNewTile());
+
+      if (y < chunk.getHeight() - 1 && chunk.getLight(x, y + 1, z) == 100) {
+        if (edit.getNewTile() == Tile.AIR) {
+          // fill darkness with light
+          int light = 100;
+          for (int yy = y; yy >= 0 && chunk.get(x, yy, z) == Tile.AIR; yy--) {
+            chunk.setLight(x, yy, z, light);
+          }
+        } else if (edit.getNewTile() != Tile.AIR) {
+          // fill light with darkness
+          int light = 20;
+          for (int yy = y; yy >= 0 && chunk.getLight(x, yy, z) == 100; yy--) {
+            chunk.setLight(x, yy, z, light);
+          }
+        }
+      }
+
+      spatialsToUpdate.add(tile.getChunkPosition());
+
+      // Update also the bordering chunks if necessary
+      if (x < ChunkSpatialBuilder.SMOOTH_BUFFER) {
+        spatialsToUpdate.add(tile.getChunkPosition().add(-1, 0, 0));
+      }
+      if (x >= world.getChunkSize() - ChunkSpatialBuilder.SMOOTH_BUFFER) {
+        spatialsToUpdate.add(tile.getChunkPosition().add(1, 0, 0));
+      }
+      if (y < ChunkSpatialBuilder.SMOOTH_BUFFER) {
+        spatialsToUpdate.add(tile.getChunkPosition().add(0, -1, 0));
+      }
+      if (y >= world.getChunkSize() - ChunkSpatialBuilder.SMOOTH_BUFFER) {
+        spatialsToUpdate.add(tile.getChunkPosition().add(0, 1, 0));
+      }
+      if (z < ChunkSpatialBuilder.SMOOTH_BUFFER) {
+        spatialsToUpdate.add(tile.getChunkPosition().add(0, 0, -1));
+      }
+      if (z >= world.getChunkSize() - ChunkSpatialBuilder.SMOOTH_BUFFER) {
+        spatialsToUpdate.add(tile.getChunkPosition().add(0, 0, 1));
+      }
+    }
+
+    for (Vector3i s : spatialsToUpdate) {
+      rebuildChunkSpatial(getChunkSpatial(s));
+    }
+  }
+
+  private void calculateChunkLighting(Chunk chunk) {
+    if (chunk.hasLight()) {
+      for (int x = 0; x < chunk.getWidth(); x++) {
+        for (int z = 0; z < chunk.getDepth(); z++) {
+          int light = 100;
+          for (int y = chunk.getHeight() - 1; y >= 0; y--) {
+            if (chunk.get(x, y, z) != Tile.AIR) {
+              light = 20;
+            }
+            chunk.setLight(x, y, z, light);
+          }
+        }
+      }
+    }
   }
 
 

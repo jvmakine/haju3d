@@ -4,7 +4,6 @@ import com.jme3.app.SimpleApplication;
 import com.jme3.light.DirectionalLight;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector3f;
-import com.jme3.scene.Mesh;
 import com.jme3.scene.Spatial;
 import com.jme3.system.AppSettings;
 import fi.haju.haju3d.client.ui.mesh.ChunkSpatialBuilder;
@@ -81,7 +80,8 @@ public class ShaderTestingApp extends SimpleApplication {
             texture,
             1.0f, true,
             zindex,
-            Tile.ROCK);
+            Tile.ROCK,
+            100);
       }
     }
 
