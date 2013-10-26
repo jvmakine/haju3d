@@ -4,11 +4,14 @@ import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+
 import fi.haju.haju3d.protocol.Vector3i;
 import fi.haju.haju3d.protocol.world.Chunk;
+import fi.haju.haju3d.server.world.WorldInfo;
 import net.jpountz.lz4.LZ4Compressor;
 import net.jpountz.lz4.LZ4Factory;
 import net.jpountz.lz4.LZ4FastDecompressor;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.SerializationUtils;
@@ -88,6 +91,10 @@ public class WorldSaver {
       }
     }
   }
+  
+  public void saveWorldInfo(WorldInfo info) {
+    writeObjectToFile(infoFile(), info);
+  }
 
   public Optional<Chunk> loadChunkIfOnDisk(Vector3i pos) {
     File file = chunkFile(pos);
@@ -95,6 +102,16 @@ public class WorldSaver {
     LOGGER.info("loading from disk : " + pos);
     try {
       return Optional.of((Chunk) readObjectFromFile(file));
+    } catch (RuntimeException e) {
+      return Optional.absent();
+    }
+  }
+  
+  public Optional<WorldInfo> loadInfoIfOnDisk() {
+    File file = infoFile();
+    if (!file.exists()) return Optional.absent();
+    try {
+      return Optional.of((WorldInfo)readObjectFromFile(file));
     } catch (RuntimeException e) {
       return Optional.absent();
     }
@@ -129,6 +146,12 @@ public class WorldSaver {
     return LZ_4_DECOMPRESSOR.decompress(bytes, 4, length);
   }
 
+  private File infoFile() {
+    File chunkDir = new File(settings.getSavePath(), settings.getWorldName());
+    chunkDir.mkdirs();
+    return new File(chunkDir, "info");
+  }
+  
   private File chunkFile(Vector3i position) {
     File chunkDir = new File(settings.getSavePath(), settings.getWorldName());
     chunkDir.mkdirs();

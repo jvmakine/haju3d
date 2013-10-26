@@ -5,6 +5,5 @@ import fi.haju.haju3d.protocol.world.Chunk;
 
 public interface WorldGenerator {
   void setSeed(int seed);
-
   Chunk generateChunk(Vector3i position, int width, int height, int depth);
 }

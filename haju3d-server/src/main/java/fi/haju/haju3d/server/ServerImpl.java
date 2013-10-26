@@ -12,6 +12,7 @@ import fi.haju.haju3d.protocol.interaction.WorldEdit;
 import fi.haju.haju3d.protocol.world.Chunk;
 import fi.haju.haju3d.protocol.world.World;
 import fi.haju.haju3d.server.world.WorldGenerator;
+import fi.haju.haju3d.server.world.WorldInfo;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +30,9 @@ public class ServerImpl implements Server {
   @Inject
   private WorldSaver saver;
   
+  @Inject
+  private ServerSettings settings;
+  
   private List<Client> loggedInClients = Collections.synchronizedList(new ArrayList<Client>());
   private World world = new World();
 
@@ -41,6 +45,18 @@ public class ServerImpl implements Server {
 
   public void setGenerator(WorldGenerator generator) {
     this.generator = generator;
+  }
+  
+  public void init() {
+    Optional<WorldInfo> opt = saver.loadInfoIfOnDisk();
+    if(!opt.isPresent()) {
+      int seed = new Random().nextInt();
+      String name = settings.getWorldName();
+      WorldInfo info = new WorldInfo(name, seed);
+      opt = Optional.of(info);
+      saver.saveWorldInfo(info);
+    }
+    generator.setSeed(opt.get().getSeed());
   }
 
   @Override
