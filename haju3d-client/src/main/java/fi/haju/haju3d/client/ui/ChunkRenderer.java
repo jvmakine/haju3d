@@ -166,12 +166,12 @@ public class ChunkRenderer extends SimpleApplication {
     characterNode.attachChild(characterBody);
     characterNode.attachChild(characterHead);
 
-    rootNode.attachChild(characterNode);
-
     characterLegLeft = makeLeg();
     characterLegRight = makeLeg();
     attachLeg(characterLegLeft);
     attachLeg(characterLegRight);
+    
+    showCharacter();
   }
 
   private void attachLeg(Leg leg) {
@@ -505,7 +505,7 @@ public class ChunkRenderer extends SimpleApplication {
       camPos.set(coll);
     }
     if (viewMode == ViewMode.FIRST_PERSON) {
-      camPos = camPos.add(new Vector3f(0, 0.5f, 0));
+      camPos = camPos.add(new Vector3f(0, 0.8f, 0));
     }
     return camPos;
   }
@@ -614,23 +614,31 @@ public class ChunkRenderer extends SimpleApplication {
     if (mode == ViewMode.FLYCAM) {
       flyCam.setEnabled(true);
       inputManager.setCursorVisible(false);
-      rootNode.detachChild(characterNode);
+      showCharacter();
       guiNode.detachChild(crossHair);
       hideSelectedMaterial();
     } else if (mode == ViewMode.FIRST_PERSON) {
       flyCam.setEnabled(false);
       inputManager.setCursorVisible(false);
-      rootNode.detachChild(characterNode);
+      hideCharacter();
       guiNode.attachChild(crossHair);
       showSelectedMaterial();
     } else if (mode == ViewMode.THIRD_PERSON) {
       flyCam.setEnabled(false);
       inputManager.setCursorVisible(false);
-      rootNode.attachChild(characterNode);
+      showCharacter();
       guiNode.detachChild(crossHair);
       hideSelectedMaterial();
     }
     viewMode = mode;
+  }
+
+  private void showCharacter() {
+    rootNode.attachChild(characterNode);
+  }
+
+  private void hideCharacter() {
+    rootNode.detachChild(characterNode);
   }
 
   public WorldManager getWorldManager() {
