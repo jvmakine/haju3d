@@ -36,6 +36,7 @@ import java.util.*;
 public class ChunkSpatialBuilder {
   public static final int SMOOTH_BUFFER = 2;
   private static final Logger LOGGER = LoggerFactory.getLogger(ChunkSpatialBuilder.class);
+  private static final ColorRGBA CHUNK_COLOR = new ColorRGBA(1, 1, 0.7f, 1);
   private Material lowMaterial;
   private Material highMaterial;
 
@@ -83,6 +84,8 @@ public class ChunkSpatialBuilder {
     //mat.setTexture("NormalMap", normals);
     mat.setColor("Ambient", ColorRGBA.White.mult(0.5f));
     mat.setColor("Diffuse", ColorRGBA.White);
+
+    mat.setBoolean("UseVertexColor", true);
     return mat;
   }
 
@@ -147,6 +150,7 @@ public class ChunkSpatialBuilder {
 
   public static class NewMeshBuilder2 {
     private List<MyFace> realFaces;
+    private FloatBuffer colors;
     private FloatBuffer vertexes;
     private FloatBuffer vertexNormals;
     private FloatBuffer textureUvs;
@@ -165,6 +169,7 @@ public class ChunkSpatialBuilder {
       this.realFaces = realFaces;
 
       final int quadsPerFace = 1;
+      this.colors = BufferUtils.createFloatBuffer(realFaces.size() * 4 * 4 * quadsPerFace);
       this.vertexes = BufferUtils.createFloatBuffer(realFaces.size() * 4 * 3 * quadsPerFace);
       this.vertexNormals = BufferUtils.createFloatBuffer(realFaces.size() * 4 * 3 * quadsPerFace);
       this.textureUvs = BufferUtils.createFloatBuffer(realFaces.size() * 4 * 3 * quadsPerFace);
@@ -177,6 +182,7 @@ public class ChunkSpatialBuilder {
     }
 
     private static final Map<String, List<Vector2f>> UV_MAPPING = new HashMap<>();
+
     static {
 
       //quad vertex order:
@@ -300,6 +306,11 @@ public class ChunkSpatialBuilder {
         Vector3f v3 = face.v3.v;
         Vector3f v4 = face.v4.v;
 
+        putColor(colors, CHUNK_COLOR);
+        putColor(colors, CHUNK_COLOR);
+        putColor(colors, CHUNK_COLOR);
+        putColor(colors, CHUNK_COLOR);
+
         putVector(vertexes, v1);
         putVector(vertexes, v2);
         putVector(vertexes, v3);
@@ -370,6 +381,7 @@ public class ChunkSpatialBuilder {
       m.setBuffer(Type.TexCoord4, 3, textureUvs4);
       m.setBuffer(Type.TexCoord5, 3, textureUvs5);
       m.setBuffer(Type.Index, 1, indexes);
+      m.setBuffer(Type.Color, 4, colors);
       m.updateBound();
       return m;
     }
@@ -418,12 +430,18 @@ public class ChunkSpatialBuilder {
       List<MyFace> realFaces = myMesh.getRealFaces();
 
       FloatBuffer vertexes = BufferUtils.createFloatBuffer(realFaces.size() * 4 * 3);
+      FloatBuffer colors = BufferUtils.createFloatBuffer(realFaces.size() * 4 * 4);
       FloatBuffer vertexNormals = BufferUtils.createFloatBuffer(realFaces.size() * 4 * 3);
       FloatBuffer textures = BufferUtils.createFloatBuffer(realFaces.size() * 4 * 3);
       IntBuffer indexes = BufferUtils.createIntBuffer(realFaces.size() * 6);
 
       int i = 0;
       for (MyFace face : realFaces) {
+        putColor(colors, CHUNK_COLOR);
+        putColor(colors, CHUNK_COLOR);
+        putColor(colors, CHUNK_COLOR);
+        putColor(colors, CHUNK_COLOR);
+
         putVector(vertexes, face.v1.v);
         putVector(vertexes, face.v2.v);
         putVector(vertexes, face.v3.v);
@@ -458,13 +476,23 @@ public class ChunkSpatialBuilder {
       m.setBuffer(Type.Normal, 3, vertexNormals);
       m.setBuffer(Type.TexCoord, 3, textures);
       m.setBuffer(Type.Index, 1, indexes);
+      m.setBuffer(Type.Color, 4, colors);
       m.updateBound();
       return m;
     }
+
   }
 
   private static void putVector(FloatBuffer vertexes, Vector3f v) {
     vertexes.put(v.x).put(v.y).put(v.z);
+  }
+
+  private static void putColor(FloatBuffer colors, Vector3f v) {
+    colors.put(v.x).put(v.y).put(v.z).put(1.0f);
+  }
+
+  private static void putColor(FloatBuffer colors, ColorRGBA color) {
+    colors.put(color.r).put(color.g).put(color.b).put(1.0f);
   }
 
   private static int getZIndex(int x, int y, int z, int edge) {
