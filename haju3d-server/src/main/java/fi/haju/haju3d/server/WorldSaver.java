@@ -38,28 +38,25 @@ public class WorldSaver {
 
   private volatile boolean running = false;
 
-  private final Thread saverThread = new Thread(new Runnable() {
-    @Override
-    public void run() {
-      while (running) {
-        try {
-          Thread.sleep(100);
-          while (!chunksToSave.isEmpty()) {
-            Chunk toSave;
-            synchronized (chunksToSave) {
-              toSave = chunksToSave.poll();
-            }
-            if (toSave != null) {
-              LOGGER.info("Saving chunk : " + toSave.getPosition());
-              writeObjectToFile(chunkFile(toSave.getPosition()), toSave);
-            }
+  private void saveLoop() {
+    while (running) {
+      try {
+        Thread.sleep(100);
+        while (!chunksToSave.isEmpty()) {
+          Chunk toSave;
+          synchronized (chunksToSave) {
+            toSave = chunksToSave.poll();
           }
-        } catch (InterruptedException e) {
-          throw new RuntimeException(e);
+          if (toSave != null) {
+            LOGGER.info("Saving chunk : " + toSave.getPosition());
+            writeObjectToFile(chunkFile(toSave.getPosition()), toSave);
+          }
         }
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
       }
     }
-  });
+  }
 
   @Inject
   private ServerSettings settings;
@@ -69,6 +66,12 @@ public class WorldSaver {
       return;
     }
     running = true;
+    Thread saverThread = new Thread(new Runnable() {
+      @Override
+      public void run() {
+        saveLoop();
+      }
+    }, "WorldSaver");
     saverThread.start();
   }
 
