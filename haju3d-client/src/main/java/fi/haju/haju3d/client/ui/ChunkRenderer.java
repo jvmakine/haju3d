@@ -41,6 +41,7 @@ import fi.haju.haju3d.protocol.world.Tile;
 import fi.haju.haju3d.protocol.world.TilePosition;
 
 import java.util.Set;
+import java.util.concurrent.Callable;
 
 /**
  * Renderer application for rendering chunks from the server
@@ -117,13 +118,32 @@ public class ChunkRenderer extends SimpleApplication {
     this.inputHandler.register(inputManager);
 
     rootNode.attachChild(terrainNode);
+
+    // Really hacky way of setting THIRD_PERSON mode at start-up.
+    // Without this "sleep+set", the mouse focus will be lost for some reason (issue in jMonkeyEngine?).
+    new Thread(new Runnable() {
+      @Override
+      public void run() {
+        try {
+          Thread.sleep(10L);
+        } catch (InterruptedException e) {
+        }
+        enqueue(new Callable<Object>() {
+          @Override
+          public Object call() throws Exception {
+            setViewMode(ViewMode.THIRD_PERSON);
+            return null;
+          }
+        });
+      }
+    }).start();
   }
 
   private void setupCharacter() {
     character = new Character(new Node("character"));
-    character.getNode().setLocalTranslation(worldManager.getGlobalPosition(new Vector3i().add(32, 62, 32)));
+    character.getNode().setLocalTranslation(worldManager.getGlobalPosition(new Vector3i().add(20, 32, 25)));
 
-    Box characterMesh = new Box(0.3f, 0.8f, 0.3f);
+    Box characterMesh = new Box(0.3f, 0.8f, 0.2f);
     Geometry characterModel = new Geometry("CharacterModel", characterMesh);
     characterModel.setShadowMode(ShadowMode.CastAndReceive);
 
@@ -302,9 +322,65 @@ public class ChunkRenderer extends SimpleApplication {
     characterPos = checkWallHit(characterPos, oldPos);
     character.setPosition(characterPos);
 
+    updateCharacterFacingDirection();
+
     Vector3f camPos = getCameraPositionFromCharacter();
     cam.setLocation(camPos);
     updateSelectedTile(camPos);
+  }
+
+  private void updateCharacterFacingDirection() {
+    Set<String> activeInputs = inputHandler.getActiveInputs();
+    if (activeInputs.contains(InputActions.WALK_FORWARD)) {
+      updateCharacterFacingDirection(character.getLookAzimuth());
+    }
+    if (activeInputs.contains(InputActions.WALK_BACKWARD)) {
+      updateCharacterFacingDirection((float) (character.getLookAzimuth() + Math.PI));
+    }
+    if (activeInputs.contains(InputActions.STRAFE_LEFT)) {
+      updateCharacterFacingDirection((float) (character.getLookAzimuth() + Math.PI / 2));
+    }
+    if (activeInputs.contains(InputActions.STRAFE_RIGHT)) {
+      updateCharacterFacingDirection((float) (character.getLookAzimuth() - Math.PI / 2));
+    }
+
+  }
+
+  private static final float FULL_CIRCLE = (float) (Math.PI * 2);
+  private static final float HALF_CIRCLE = (float) (Math.PI);
+
+  private void updateCharacterFacingDirection(float desiredFacingAzimuth) {
+    character.setFaceAzimuth(
+        interpolateAngle(character.getFaceAzimuth(), desiredFacingAzimuth, 0.2f));
+  }
+
+  private static float interpolateAngle(float old, float target, float step) {
+    float add = fixAngle(target - old);
+    if (add >= 0 && add <= HALF_CIRCLE) {
+      if (add < step) {
+        old += add;
+      } else {
+        old += step;
+      }
+    } else {
+      add = FULL_CIRCLE - add;
+      if (add < step) {
+        old -= add;
+      } else {
+        old -= step;
+      }
+    }
+    return fixAngle(old);
+  }
+
+  private static float fixAngle(float angle) {
+    while (angle >= FULL_CIRCLE) {
+      angle -= FULL_CIRCLE;
+    }
+    while (angle < 0) {
+      angle += FULL_CIRCLE;
+    }
+    return angle;
   }
 
   private void updateSelectedTile(Vector3f camPos) {
