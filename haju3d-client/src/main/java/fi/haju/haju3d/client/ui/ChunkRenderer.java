@@ -175,7 +175,7 @@ public class ChunkRenderer extends SimpleApplication {
   }
 
   private void attachLeg(Leg leg) {
-    rootNode.attachChild(leg.characterFoot);
+    characterNode.attachChild(leg.characterFoot);
     rootNode.attachChild(leg.characterLegBot);
     rootNode.attachChild(leg.characterLegTop);
   }
@@ -635,10 +635,22 @@ public class ChunkRenderer extends SimpleApplication {
 
   private void showCharacter() {
     rootNode.attachChild(characterNode);
+    rootNode.attachChild(characterLegRight.characterFoot);
+    rootNode.attachChild(characterLegRight.characterLegBot);
+    rootNode.attachChild(characterLegRight.characterLegTop);
+    rootNode.attachChild(characterLegLeft.characterFoot);
+    rootNode.attachChild(characterLegLeft.characterLegBot);
+    rootNode.attachChild(characterLegLeft.characterLegTop);
   }
 
   private void hideCharacter() {
     rootNode.detachChild(characterNode);
+    rootNode.detachChild(characterLegRight.characterFoot);
+    rootNode.detachChild(characterLegRight.characterLegBot);
+    rootNode.detachChild(characterLegRight.characterLegTop);
+    rootNode.detachChild(characterLegLeft.characterFoot);
+    rootNode.detachChild(characterLegLeft.characterLegBot);
+    rootNode.detachChild(characterLegLeft.characterLegTop);
   }
 
   public WorldManager getWorldManager() {
