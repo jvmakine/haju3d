@@ -5,19 +5,20 @@ import com.google.inject.Injector;
 import fi.haju.haju3d.client.connection.ServerConnector;
 import fi.haju.haju3d.client.ui.ChunkRenderer;
 import fi.haju.haju3d.protocol.Client;
-import fi.haju.haju3d.server.ServerImpl;
-import fi.haju.haju3d.server.world.PerlinNoiseWorldGenerator;
+import fi.haju.haju3d.protocol.Server;
+import fi.haju.haju3d.server.ServerModule;
 
 import java.rmi.RemoteException;
 
 public class LocalClientRunner {
   public static void main(String[] args) throws RemoteException {
-    Injector injector = Guice.createInjector(new ClientModule());
-    ServerImpl server = new ServerImpl();
-    injector.getInstance(ServerConnector.class).setRemoteServer(server);
-    PerlinNoiseWorldGenerator wg = new PerlinNoiseWorldGenerator();
-    server.setGenerator(wg);
-    ChunkRenderer app = injector.getInstance(ChunkRenderer.class);
+    Injector clientInjector = Guice.createInjector(new ClientModule());
+    Injector serverInjector = Guice.createInjector(new ServerModule());
+
+    Server server = serverInjector.getInstance(Server.class);
+    clientInjector.getInstance(ServerConnector.class).setRemoteServer(server);
+
+    ChunkRenderer app = clientInjector.getInstance(ChunkRenderer.class);
     Client client = new ClientImpl(app);
     server.login(client);
     app.start();

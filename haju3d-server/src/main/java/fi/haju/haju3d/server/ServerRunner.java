@@ -23,18 +23,18 @@ public class ServerRunner {
     try {
       Injector injector = Guice.createInjector(new ServerModule());
       injector.getInstance(WorldGenerator.class).setSeed(new Random().nextInt());
-      ServerImpl server = injector.getInstance(ServerImpl.class);
+      Server server = injector.getInstance(Server.class);
       Registry registry = LocateRegistry.createRegistry(PORT);
       Server stub = (Server) UnicastRemoteObject.exportObject(server, PORT);
       registry.rebind(SERVER_NAME, stub);
       LOGGER.info("Started Haju3D server at " + PORT);
-      
+
       ServerSettings settings = injector.getInstance(ServerSettings.class);
       settings.init();
-      
+
       WorldSaver saver = injector.getInstance(WorldSaver.class);
       saver.init();
-      
+
       while (true) {
         Thread.sleep(100);
       }
