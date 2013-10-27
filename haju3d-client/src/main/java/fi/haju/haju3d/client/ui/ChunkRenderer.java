@@ -170,14 +170,20 @@ public class ChunkRenderer extends SimpleApplication {
     characterLegRight = makeLeg();
     attachLeg(characterLegLeft);
     attachLeg(characterLegRight);
-    
+
     showCharacter();
   }
 
   private void attachLeg(Leg leg) {
-    characterNode.attachChild(leg.characterFoot);
+    rootNode.attachChild(leg.characterFoot);
     rootNode.attachChild(leg.characterLegBot);
     rootNode.attachChild(leg.characterLegTop);
+  }
+
+  private void detachLeg(Leg leg) {
+    rootNode.detachChild(leg.characterFoot);
+    rootNode.detachChild(leg.characterLegBot);
+    rootNode.detachChild(leg.characterLegTop);
   }
 
   private Leg makeLeg() {
@@ -635,22 +641,14 @@ public class ChunkRenderer extends SimpleApplication {
 
   private void showCharacter() {
     rootNode.attachChild(characterNode);
-    rootNode.attachChild(characterLegRight.characterFoot);
-    rootNode.attachChild(characterLegRight.characterLegBot);
-    rootNode.attachChild(characterLegRight.characterLegTop);
-    rootNode.attachChild(characterLegLeft.characterFoot);
-    rootNode.attachChild(characterLegLeft.characterLegBot);
-    rootNode.attachChild(characterLegLeft.characterLegTop);
+    attachLeg(characterLegRight);
+    attachLeg(characterLegLeft);
   }
 
   private void hideCharacter() {
     rootNode.detachChild(characterNode);
-    rootNode.detachChild(characterLegRight.characterFoot);
-    rootNode.detachChild(characterLegRight.characterLegBot);
-    rootNode.detachChild(characterLegRight.characterLegTop);
-    rootNode.detachChild(characterLegLeft.characterFoot);
-    rootNode.detachChild(characterLegLeft.characterLegBot);
-    rootNode.detachChild(characterLegLeft.characterLegTop);
+    detachLeg(characterLegRight);
+    detachLeg(characterLegLeft);
   }
 
   public WorldManager getWorldManager() {
