@@ -2,14 +2,11 @@ package fi.haju.haju3d.server;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-
 import fi.haju.haju3d.protocol.Server;
 import fi.haju.haju3d.server.world.WorldGenerator;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.rmi.AccessException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -27,10 +24,8 @@ public class ServerRunner {
       Injector injector = Guice.createInjector(new ServerModule());
       injector.getInstance(WorldGenerator.class).setSeed(new Random().nextInt());
       ServerImpl server = injector.getInstance(ServerImpl.class);
+      server.start();
 
-      injector.getInstance(ServerSettings.class).init();
-      server.init();
-      
       startServer(server);
 
       while (true) {
@@ -41,7 +36,7 @@ public class ServerRunner {
     }
   }
 
-  private static void startServer(ServerImpl server) throws RemoteException, AccessException {
+  private static void startServer(ServerImpl server) throws RemoteException {
     Registry registry = LocateRegistry.createRegistry(PORT);
     Server stub = (Server) UnicastRemoteObject.exportObject(server, PORT);
     registry.rebind(SERVER_NAME, stub);

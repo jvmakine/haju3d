@@ -4,7 +4,6 @@ import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-
 import fi.haju.haju3d.protocol.Client;
 import fi.haju.haju3d.protocol.Server;
 import fi.haju.haju3d.protocol.Vector3i;
@@ -13,16 +12,11 @@ import fi.haju.haju3d.protocol.world.Chunk;
 import fi.haju.haju3d.protocol.world.World;
 import fi.haju.haju3d.server.world.WorldGenerator;
 import fi.haju.haju3d.server.world.WorldInfo;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.rmi.RemoteException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 @Singleton
 public class ServerImpl implements Server {
@@ -33,20 +27,22 @@ public class ServerImpl implements Server {
 
   @Inject
   private WorldSaver saver;
-  
+
   @Inject
   private ServerSettings settings;
-  
+
   private List<Client> loggedInClients = Collections.synchronizedList(new ArrayList<Client>());
   private World world = new World();
 
   private interface AsyncClientCall {
     void run() throws RemoteException;
   }
-  
-  public void init() {
+
+  public void start() {
+    settings.init();
+
     Optional<WorldInfo> opt = saver.loadInfoIfOnDisk();
-    if(!opt.isPresent()) {
+    if (!opt.isPresent()) {
       int seed = new Random().nextInt();
       String name = settings.getWorldName();
       WorldInfo info = new WorldInfo(name, seed);
@@ -54,6 +50,10 @@ public class ServerImpl implements Server {
       saver.saveWorldInfo(info);
     }
     generator.setSeed(opt.get().getSeed());
+  }
+
+  public void shutdown() {
+    saver.shutdown();
   }
 
   @Override

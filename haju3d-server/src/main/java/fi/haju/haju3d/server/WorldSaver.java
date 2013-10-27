@@ -3,14 +3,12 @@ package fi.haju.haju3d.server;
 import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-
 import fi.haju.haju3d.protocol.Vector3i;
 import fi.haju.haju3d.protocol.world.Chunk;
 import fi.haju.haju3d.server.world.WorldInfo;
 import net.jpountz.lz4.LZ4Compressor;
 import net.jpountz.lz4.LZ4Factory;
 import net.jpountz.lz4.LZ4FastDecompressor;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.SerializationUtils;
@@ -37,7 +35,7 @@ public class WorldSaver {
   private static final long MIN_SAVE_INTERVAL = 30000;
   private static final Logger LOGGER = LoggerFactory.getLogger(WorldSaver.class);
 
-  private Set<Vector3i> chunksToSave = Collections.newSetFromMap(new ConcurrentHashMap<Vector3i,Boolean>());
+  private Set<Vector3i> chunksToSave = Collections.newSetFromMap(new ConcurrentHashMap<Vector3i, Boolean>());
   private Timer timer = new Timer();
 
   @Inject
@@ -56,7 +54,11 @@ public class WorldSaver {
       }, MIN_SAVE_INTERVAL);
     }
   }
-  
+
+  public void shutdown() {
+    timer.cancel();
+  }
+
   public void saveWorldInfo(WorldInfo info) {
     writeObjectToFile(infoFile(), info);
   }
@@ -71,12 +73,12 @@ public class WorldSaver {
       return Optional.absent();
     }
   }
-  
+
   public Optional<WorldInfo> loadInfoIfOnDisk() {
     File file = infoFile();
     if (!file.exists()) return Optional.absent();
     try {
-      return Optional.of((WorldInfo)readObjectFromFile(file));
+      return Optional.of((WorldInfo) readObjectFromFile(file));
     } catch (RuntimeException e) {
       return Optional.absent();
     }
@@ -116,7 +118,7 @@ public class WorldSaver {
     chunkDir.mkdirs();
     return new File(chunkDir, "info");
   }
-  
+
   private File chunkFile(Vector3i position) {
     File chunkDir = new File(settings.getSavePath(), settings.getWorldName());
     chunkDir.mkdirs();
