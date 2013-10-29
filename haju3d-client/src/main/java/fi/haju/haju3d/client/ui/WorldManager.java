@@ -127,12 +127,19 @@ public class WorldManager {
     List<Vector3i> indexes = new ArrayList<>();
     indexes.add(centerChunkIndex);
     indexes.addAll(centerChunkIndex.getPositionsAtMaxDistance(settings.getChunkRenderDistance()));
+    final Vector3i pos = new Vector3i(position.x, position.y, position.z);
     Collections.sort(indexes, new Comparator<Vector3i>() {
       @Override
       public int compare(Vector3i o1, Vector3i o2) {
-        if (o1.distanceTo(position) < o2.distanceTo(position)) return -1;
-        if (o1.distanceTo(position) > o2.distanceTo(position)) return 1;
-        return 0;
+        int d1 = o1.distanceTo(pos);
+        int d2 = o2.distanceTo(pos);
+        if (d1 < d2) {
+          return -1;
+        } else if (d1 > d2) {
+          return 1;
+        } else {
+          return 0;
+        }
       }
     });
     for (Vector3i i : indexes) {
