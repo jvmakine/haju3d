@@ -5,7 +5,6 @@ import com.jme3.light.DirectionalLight;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Spatial;
-import com.jme3.system.AppSettings;
 import fi.haju.haju3d.client.ui.mesh.ChunkSpatialBuilder;
 import fi.haju.haju3d.client.ui.mesh.MyMesh;
 import fi.haju.haju3d.client.ui.mesh.MyTexture;
@@ -19,13 +18,7 @@ import java.util.Random;
 public class ShaderTestingApp extends SimpleApplication {
   public static void main(String[] args) {
     ShaderTestingApp app = new ShaderTestingApp();
-    AppSettings settings = new AppSettings(true);
-    settings.setResolution(1024, 768);
-    settings.setVSync(true);
-    settings.setAudioRenderer(null);
-    settings.setFullscreen(false);
-    app.setSettings(settings);
-    app.setShowSettings(false);
+    SimpleApplicationUtils.configureSimpleApplication(app);
     app.start();
   }
 

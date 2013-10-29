@@ -90,7 +90,7 @@ public final class Chunk implements Serializable {
   }
 
   public boolean isInside(int x, int y, int z) {
-    return tiles.isInside(x, y, z);
+    return x >= 0 && x < width && y >= 0 && y < height && z >= 0 && z < depth;
   }
 
   public Tile get(int x, int y, int z) {

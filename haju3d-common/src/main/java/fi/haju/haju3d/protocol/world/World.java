@@ -11,11 +11,22 @@ import java.util.Map;
 public class World implements Serializable {
   private static final long serialVersionUID = 1L;
 
-  public static final int CHUNK_SIZE = 64;
-  private static final int CHUNK_OFFSET_INDEX = Integer.MAX_VALUE / 2 / CHUNK_SIZE;
-  private static final int CHUNK_OFFSET_WORLD = CHUNK_OFFSET_INDEX * CHUNK_SIZE;
+  private final int chunkSize;
+  private final int chunkOffsetIndex;
+  private final int chunkOffsetWorld;
 
   private Map<ChunkPosition, Chunk> chunks = new HashMap<>();
+  public World() {
+    this(64);
+  }
+
+  public World(int chunkSize) {
+    this.chunkSize = chunkSize;
+    this.chunkOffsetIndex = Integer.MAX_VALUE / 2 / this.chunkSize;
+    this.chunkOffsetWorld = chunkOffsetIndex * this.chunkSize;
+  }
+
+  private Map<Vector3i, Chunk> chunks = new HashMap<>();
 
   public Tile get(int x, int y, int z) {
     ChunkPosition c = new ChunkPosition(getChunkIndex(x), getChunkIndex(y), getChunkIndex(z));
@@ -55,15 +66,15 @@ public class World implements Serializable {
     return new GlobalTilePosition(getWorldPosition(chunkIndex.x), getWorldPosition(chunkIndex.y), getWorldPosition(chunkIndex.z));
   }
 
-  private static int getChunkIndex(int worldPosition) {
-    return (worldPosition + CHUNK_OFFSET_WORLD) / CHUNK_SIZE - CHUNK_OFFSET_INDEX;
+  private int getChunkIndex(int worldPosition) {
+    return (worldPosition + chunkOffsetWorld) / chunkSize - chunkOffsetIndex;
   }
 
-  private static int getWorldPosition(int chunkIndex) {
-    return chunkIndex * CHUNK_SIZE;
+  private int getWorldPosition(int chunkIndex) {
+    return chunkIndex * chunkSize;
   }
 
   public int getChunkSize() {
-    return CHUNK_SIZE;
+    return chunkSize;
   }
 }
