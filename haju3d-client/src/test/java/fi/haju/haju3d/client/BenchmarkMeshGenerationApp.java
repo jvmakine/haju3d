@@ -1,6 +1,6 @@
 package fi.haju.haju3d.client;
 
-import com.jme3.scene.Mesh;
+import fi.haju.haju3d.client.chunk.ChunkLightingManager;
 import fi.haju.haju3d.client.ui.mesh.ChunkSpatialBuilder;
 import fi.haju.haju3d.client.ui.mesh.MyMesh;
 import fi.haju.haju3d.protocol.Vector3i;
@@ -30,7 +30,7 @@ public class BenchmarkMeshGenerationApp {
       System.gc();
 
       long t0 = System.currentTimeMillis();
-      MyMesh cubeMesh = ChunkSpatialBuilder.makeCubeMesh(world, new Vector3i(1, 1, 1));
+      MyMesh cubeMesh = ChunkSpatialBuilder.makeCubeMesh(world, new Vector3i(1, 1, 1), new ChunkLightingManager());
       long t1 = System.currentTimeMillis();
       ChunkSpatialBuilder.smoothMesh(cubeMesh);
       ChunkSpatialBuilder.prepareMesh(cubeMesh);

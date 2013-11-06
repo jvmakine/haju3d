@@ -27,6 +27,12 @@ public class World implements Serializable {
     return chunks.get(c).getColor(x - wp.x, y - wp.y, z - wp.z);
   }
 
+  public static Vector3i getPositionWithinChunk(Vector3i position) {
+    Vector3i c = getChunkIndex(position);
+    Vector3i wp = getWorldPosition(c);
+    return new Vector3i(position.x - wp.x, position.y - wp.y, position.z - wp.z);
+  }
+  
   public synchronized void setChunk(Vector3i position, Chunk chunk) {
     chunks.put(position, chunk);
   }
@@ -39,11 +45,11 @@ public class World implements Serializable {
     return chunks.get(position) != null;
   }
 
-  public Vector3i getChunkIndex(Vector3i worldPosition) {
+  public static Vector3i getChunkIndex(Vector3i worldPosition) {
     return new Vector3i(getChunkIndex(worldPosition.x), getChunkIndex(worldPosition.y), getChunkIndex(worldPosition.z));
   }
 
-  public Vector3i getWorldPosition(Vector3i chunkIndex) {
+  public static Vector3i getWorldPosition(Vector3i chunkIndex) {
     return new Vector3i(getWorldPosition(chunkIndex.x), getWorldPosition(chunkIndex.y), getWorldPosition(chunkIndex.z));
   }
 

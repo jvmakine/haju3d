@@ -12,7 +12,6 @@ public final class Chunk implements Serializable {
 
   private ByteArray3d tiles;
   private ByteArray3d colors;
-  private ByteArray3d light;
   private final int seed;
   private final Vector3i position;
   private Tile tile;
@@ -39,7 +38,6 @@ public final class Chunk implements Serializable {
     this.position = position;
     this.tiles = new ByteArray3d(width, height, depth);
     this.colors = new ByteArray3d(width, height, depth);
-    this.light = new ByteArray3d(width, height, depth);
     this.tile = null;
     this.width = width;
     this.height = height;
@@ -54,7 +52,6 @@ public final class Chunk implements Serializable {
     this.position = position;
     this.tiles = null;
     this.colors = null;
-    this.light = null;
     this.tile = tile;
     this.width = width;
     this.height = height;
@@ -78,7 +75,6 @@ public final class Chunk implements Serializable {
     if (tiles == null) { //Changing a constant chunk -> convert
       this.tiles = new ByteArray3d(getWidth(), getHeight(), getDepth());
       this.colors = new ByteArray3d(getWidth(), getHeight(), getDepth());
-      this.light = new ByteArray3d(getWidth(), getHeight(), getDepth());
       tiles.fill(tileToByte.get(tile));
       tile = null;
     }
@@ -87,10 +83,6 @@ public final class Chunk implements Serializable {
 
   public void setColor(int x, int y, int z, float color) {
     colors.set(x, y, z, (byte) (color * 127f));
-  }
-
-  public void setLight(int x, int y, int z, int lightValue) {
-    light.set(x, y, z, (byte) lightValue);
   }
 
   public boolean isInside(int x, int y, int z) {
@@ -111,10 +103,6 @@ public final class Chunk implements Serializable {
 
   public boolean hasLight() {
     return tile == null;
-  }
-
-  public int getLight(int x, int y, int z) {
-    return tile != null ? 0 : light.get(x, y, z);
   }
 
   public int getWidth() {

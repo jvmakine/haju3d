@@ -7,7 +7,9 @@ import com.jme3.collision.CollisionResults;
 import com.jme3.math.Ray;
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Spatial;
+
 import fi.haju.haju3d.client.ClientSettings;
+import fi.haju.haju3d.client.chunk.ChunkLightingManager;
 import fi.haju.haju3d.client.chunk.ChunkProvider;
 import fi.haju.haju3d.client.ui.mesh.ChunkSpatialBuilder;
 import fi.haju.haju3d.protocol.Vector3i;
@@ -33,6 +35,8 @@ public class WorldManager {
   private ChunkSpatialBuilder builder;
   @Inject
   private ClientSettings settings;
+  @Inject
+  private ChunkLightingManager lightingManager;
 
   private World world = new World();
   private Map<Vector3i, ChunkSpatial> chunkSpatials = new ConcurrentHashMap<>();
@@ -62,7 +66,7 @@ public class WorldManager {
   }
 
   public Vector3i getChunkIndexForLocation(Vector3f location) {
-    return world.getChunkIndex(getWorldPosition(location));
+    return World.getChunkIndex(getWorldPosition(location));
   }
 
   public Vector3f getGlobalPosition(Vector3i worldPosition) {
@@ -198,30 +202,29 @@ public class WorldManager {
     return world.getChunkSize();
   }
 
-
   public void registerWorldEdits(List<WorldEdit> edits) {
     Set<Vector3i> spatialsToUpdate = new HashSet<>();
     for (WorldEdit edit : edits) {
       TilePosition tile = edit.getPosition();
-
-      Chunk chunk = world.getChunk(tile.getChunkPosition());
+      Vector3i chunkPos = tile.getChunkPosition();
+      Chunk chunk = world.getChunk(chunkPos);
       int x = tile.getTileWithinChunk().x;
       int y = tile.getTileWithinChunk().y;
       int z = tile.getTileWithinChunk().z;
       chunk.set(x, y, z, edit.getNewTile());
 
-      if (y < chunk.getHeight() - 1 && chunk.getLight(x, y + 1, z) == 100) {
+      if (y < chunk.getHeight() - 1 && lightingManager.getLight(chunkPos, new Vector3i(x, y + 1, z)) == 100) {
         if (edit.getNewTile() == Tile.AIR) {
           // fill darkness with light
           int light = 100;
           for (int yy = y; yy >= 0 && chunk.get(x, yy, z) == Tile.AIR; yy--) {
-            chunk.setLight(x, yy, z, light);
+            lightingManager.setLight(chunkPos, new Vector3i(x, yy, z), light);
           }
         } else if (edit.getNewTile() != Tile.AIR) {
           // fill light with darkness
           int light = 20;
-          for (int yy = y; yy >= 0 && chunk.getLight(x, yy, z) == 100; yy--) {
-            chunk.setLight(x, yy, z, light);
+          for (int yy = y; yy >= 0 && lightingManager.getLight(chunkPos, new Vector3i(x, yy, z)) == 100; yy--) {
+            lightingManager.setLight(chunkPos, new Vector3i(x, yy, z), light);
           }
         }
       }
@@ -263,7 +266,7 @@ public class WorldManager {
             if (chunk.get(x, y, z) != Tile.AIR) {
               light = 20;
             }
-            chunk.setLight(x, y, z, light);
+            lightingManager.setLight(chunk.getPosition(), new Vector3i(x, y, z), light);
           }
         }
       }

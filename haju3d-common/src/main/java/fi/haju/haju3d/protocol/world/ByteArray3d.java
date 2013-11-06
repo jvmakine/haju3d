@@ -3,6 +3,8 @@ package fi.haju.haju3d.protocol.world;
 import java.io.Serializable;
 import java.util.Arrays;
 
+import fi.haju.haju3d.protocol.Vector3i;
+
 public final class ByteArray3d implements Serializable {
   private static final long serialVersionUID = 1L;
 
@@ -25,6 +27,10 @@ public final class ByteArray3d implements Serializable {
   public void set(int x, int y, int z, byte value) {
     data[getIndex(x, y, z)] = value;
   }
+  
+  public void set(Vector3i pos, byte value) {
+    data[getIndex(pos.x, pos.y, pos.z)] = value;
+  }
 
   private int getIndex(int x, int y, int z) {
     return x + y * width + z * width * height;
@@ -33,9 +39,17 @@ public final class ByteArray3d implements Serializable {
   public boolean isInside(int x, int y, int z) {
     return x >= 0 && x < width && y >= 0 && y < height && z >= 0 && z < depth;
   }
+  
+  public boolean isInside(Vector3i pos) {
+    return pos.x >= 0 && pos.x < width && pos.y >= 0 && pos.y < height && pos.z >= 0 && pos.z < depth;
+  }
 
   public byte get(int x, int y, int z) {
     return data[getIndex(x, y, z)];
+  }
+  
+  public byte get(Vector3i pos) {
+    return data[getIndex(pos.x, pos.y, pos.z)];
   }
 
   public int getWidth() {

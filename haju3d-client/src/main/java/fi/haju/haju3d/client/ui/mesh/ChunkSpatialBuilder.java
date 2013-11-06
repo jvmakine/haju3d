@@ -18,6 +18,8 @@ import com.jme3.texture.Texture.MinFilter;
 import com.jme3.texture.Texture.WrapMode;
 import com.jme3.texture.TextureArray;
 import com.jme3.util.BufferUtils;
+
+import fi.haju.haju3d.client.chunk.ChunkLightingManager;
 import fi.haju.haju3d.client.ui.ChunkRenderer;
 import fi.haju.haju3d.client.ui.ChunkSpatial;
 import fi.haju.haju3d.client.ui.mesh.MyMesh.MyFaceAndIndex;
@@ -25,6 +27,7 @@ import fi.haju.haju3d.client.ui.mesh.TileRenderPropertyProvider.TileProperties;
 import fi.haju.haju3d.protocol.Vector3i;
 import fi.haju.haju3d.protocol.world.Tile;
 import fi.haju.haju3d.protocol.world.World;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,6 +44,8 @@ public class ChunkSpatialBuilder {
 
   @Inject
   private ChunkRenderer chunkRenderer;
+  @Inject
+  private ChunkLightingManager lightingManager;
 
   public void init() {
     init(chunkRenderer.getAssetManager());
@@ -90,7 +95,7 @@ public class ChunkSpatialBuilder {
 
   public void rebuildChunkSpatial(World world, ChunkSpatial chunkSpatial) {
     LOGGER.info("Updating chunk spatial at " + chunkSpatial.chunk.getPosition());
-    MyMesh myMesh = makeCubeMesh(world, chunkSpatial.chunk.getPosition());
+    MyMesh myMesh = makeCubeMesh(world, chunkSpatial.chunk.getPosition(), lightingManager);
     chunkSpatial.cubes = makeCubeSpatial(myMesh);
 
     // common processing for non-cube meshes
@@ -496,19 +501,13 @@ public class ChunkSpatialBuilder {
   private static int getZIndex(int x, int y, int z, int edge) {
     return new Random(x + y * 133 + z * 23525 + edge * 1248234).nextInt();
   }
-
-  public static int getLight(World world, Vector3i pos) {
-    Vector3i chunkIndex = world.getChunkIndex(pos);
-    Vector3i wp = world.getWorldPosition(chunkIndex);
-    return world.getChunk(chunkIndex).getLight(pos.x - wp.x, pos.y - wp.y, pos.z - wp.z);
-  }
   
-  public static MyMesh makeCubeMesh(World world, Vector3i chunkIndex) {
+  public static MyMesh makeCubeMesh(World world, Vector3i chunkIndex, ChunkLightingManager lightingManager) {
     synchronized (world) {
       MyMesh myMesh = new MyMesh();
 
-      Vector3i w1o = world.getWorldPosition(chunkIndex);
-      Vector3i w2o = world.getWorldPosition(chunkIndex.add(1, 1, 1));
+      Vector3i w1o = World.getWorldPosition(chunkIndex);
+      Vector3i w2o = World.getWorldPosition(chunkIndex.add(1, 1, 1));
 
       Vector3i w1 = w1o.add(-SMOOTH_BUFFER, -SMOOTH_BUFFER, -SMOOTH_BUFFER);
       Vector3i w2 = w2o.add(SMOOTH_BUFFER, SMOOTH_BUFFER, SMOOTH_BUFFER);
@@ -534,7 +533,7 @@ public class ChunkSpatialBuilder {
                     properties.getSideTexture(seed), color,
                     realTile,
                     seed, tile,
-                    getLight(world, new Vector3i(x, y - 1, z)));
+                    lightingManager.getLightAtWorldPos(new Vector3i(x, y - 1, z)));
               }
               if (world.get(x, y + 1, z) == Tile.AIR) {
                 int seed = getZIndex(x, y, z, 1);
@@ -546,7 +545,7 @@ public class ChunkSpatialBuilder {
                     properties.getTopTexture(seed), color,
                     realTile,
                     seed, tile,
-                    getLight(world, new Vector3i(x, y + 1, z)));
+                    lightingManager.getLightAtWorldPos(new Vector3i(x, y + 1, z)));
               }
               if (world.get(x - 1, y, z) == Tile.AIR) {
                 int seed = getZIndex(x, y, z, 2);
@@ -558,7 +557,7 @@ public class ChunkSpatialBuilder {
                     properties.getSideTexture(seed), color,
                     realTile,
                     seed, tile,
-                    getLight(world, new Vector3i(x - 1, y, z)));
+                    lightingManager.getLightAtWorldPos(new Vector3i(x - 1, y, z)));
               }
               if (world.get(x + 1, y, z) == Tile.AIR) {
                 int seed = getZIndex(x, y, z, 3);
@@ -570,7 +569,7 @@ public class ChunkSpatialBuilder {
                     properties.getSideTexture(seed), color,
                     realTile,
                     seed, tile,
-                    getLight(world, new Vector3i(x + 1, y, z)));
+                    lightingManager.getLightAtWorldPos(new Vector3i(x + 1, y, z)));
               }
               if (world.get(x, y, z - 1) == Tile.AIR) {
                 int seed = getZIndex(x, y, z, 4);
@@ -582,7 +581,7 @@ public class ChunkSpatialBuilder {
                     properties.getSideTexture(seed), color,
                     realTile,
                     seed, tile,
-                    getLight(world, new Vector3i(x, y, z - 1)));
+                    lightingManager.getLightAtWorldPos(new Vector3i(x, y, z - 1)));
               }
               if (world.get(x, y, z + 1) == Tile.AIR) {
                 int seed = getZIndex(x, y, z, 5);
@@ -594,7 +593,7 @@ public class ChunkSpatialBuilder {
                     properties.getSideTexture(seed), color,
                     realTile,
                     seed, tile,
-                    getLight(world, new Vector3i(x, y, z + 1)));
+                    lightingManager.getLightAtWorldPos(new Vector3i(x, y, z + 1)));
               }
             }
           }
