@@ -1,5 +1,6 @@
 package fi.haju.haju3d.protocol.world;
 
+import fi.haju.haju3d.protocol.PositionWithinChunk;
 import fi.haju.haju3d.protocol.Vector3i;
 
 import java.io.Serializable;
@@ -93,7 +94,7 @@ public final class Chunk implements Serializable {
     return tile != null ? tile : byteToTile.get(tiles.get(x, y, z));
   }
 
-  public Tile get(Vector3i pos) {
+  public Tile get(PositionWithinChunk pos) {
     return tile != null ? tile : byteToTile.get(tiles.get(pos.x, pos.y, pos.z));
   }
 
@@ -125,7 +126,7 @@ public final class Chunk implements Serializable {
     return position;
   }
 
-  public boolean isWithin(Vector3i pos) {
+  public boolean isWithin(PositionWithinChunk pos) {
     return
         pos.x > 0 && pos.x < getWidth()
             && pos.y > 0 && pos.y < getHeight()

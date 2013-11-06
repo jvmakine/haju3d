@@ -1,5 +1,6 @@
 package fi.haju.haju3d.protocol.world;
 
+import fi.haju.haju3d.protocol.PositionWithinChunk;
 import fi.haju.haju3d.protocol.Vector3i;
 
 import java.io.Serializable;
@@ -27,10 +28,10 @@ public class World implements Serializable {
     return chunks.get(c).getColor(x - wp.x, y - wp.y, z - wp.z);
   }
 
-  public static Vector3i getPositionWithinChunk(Vector3i position) {
+  public static PositionWithinChunk getPositionWithinChunk(Vector3i position) {
     Vector3i c = getChunkIndex(position);
     Vector3i wp = getWorldPosition(c);
-    return new Vector3i(position.x - wp.x, position.y - wp.y, position.z - wp.z);
+    return new PositionWithinChunk(position.x - wp.x, position.y - wp.y, position.z - wp.z);
   }
   
   public synchronized void setChunk(Vector3i position, Chunk chunk) {

@@ -12,6 +12,7 @@ import fi.haju.haju3d.client.ClientSettings;
 import fi.haju.haju3d.client.chunk.ChunkLightingManager;
 import fi.haju.haju3d.client.chunk.ChunkProvider;
 import fi.haju.haju3d.client.ui.mesh.ChunkSpatialBuilder;
+import fi.haju.haju3d.protocol.PositionWithinChunk;
 import fi.haju.haju3d.protocol.Vector3i;
 import fi.haju.haju3d.protocol.interaction.WorldEdit;
 import fi.haju.haju3d.protocol.world.Chunk;
@@ -213,18 +214,18 @@ public class WorldManager {
       int z = tile.getTileWithinChunk().z;
       chunk.set(x, y, z, edit.getNewTile());
 
-      if (y < chunk.getHeight() - 1 && lightingManager.getLight(chunkPos, new Vector3i(x, y + 1, z)) == 100) {
+      if (y < chunk.getHeight() - 1 && lightingManager.getLight(chunkPos, new PositionWithinChunk(x, y + 1, z)) == 100) {
         if (edit.getNewTile() == Tile.AIR) {
           // fill darkness with light
           int light = 100;
           for (int yy = y; yy >= 0 && chunk.get(x, yy, z) == Tile.AIR; yy--) {
-            lightingManager.setLight(chunkPos, new Vector3i(x, yy, z), light);
+            lightingManager.setLight(chunkPos, new PositionWithinChunk(x, yy, z), light);
           }
         } else if (edit.getNewTile() != Tile.AIR) {
           // fill light with darkness
           int light = 20;
-          for (int yy = y; yy >= 0 && lightingManager.getLight(chunkPos, new Vector3i(x, yy, z)) == 100; yy--) {
-            lightingManager.setLight(chunkPos, new Vector3i(x, yy, z), light);
+          for (int yy = y; yy >= 0 && lightingManager.getLight(chunkPos, new PositionWithinChunk(x, yy, z)) == 100; yy--) {
+            lightingManager.setLight(chunkPos, new PositionWithinChunk(x, yy, z), light);
           }
         }
       }
@@ -266,7 +267,7 @@ public class WorldManager {
             if (chunk.get(x, y, z) != Tile.AIR) {
               light = 20;
             }
-            lightingManager.setLight(chunk.getPosition(), new Vector3i(x, y, z), light);
+            lightingManager.setLight(chunk.getPosition(), new PositionWithinChunk(x, y, z), light);
           }
         }
       }

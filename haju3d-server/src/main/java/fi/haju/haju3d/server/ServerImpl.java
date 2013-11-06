@@ -4,7 +4,9 @@ import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+
 import fi.haju.haju3d.protocol.Client;
+import fi.haju.haju3d.protocol.PositionWithinChunk;
 import fi.haju.haju3d.protocol.Server;
 import fi.haju.haju3d.protocol.Vector3i;
 import fi.haju.haju3d.protocol.interaction.WorldEdit;
@@ -12,6 +14,7 @@ import fi.haju.haju3d.protocol.world.Chunk;
 import fi.haju.haju3d.protocol.world.World;
 import fi.haju.haju3d.server.world.WorldGenerator;
 import fi.haju.haju3d.server.world.WorldInfo;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -103,7 +106,7 @@ public class ServerImpl implements Server {
   public void registerWorldEdits(final List<WorldEdit> edits) {
     for (WorldEdit edit : edits) {
       Chunk chunk = getOrGenerateChunk(edit.getPosition().getChunkPosition());
-      Vector3i p = edit.getPosition().getTileWithinChunk();
+      PositionWithinChunk p = edit.getPosition().getTileWithinChunk();
       chunk.set(p.x, p.y, p.z, edit.getNewTile());
       saver.saveChunk(chunk);
     }

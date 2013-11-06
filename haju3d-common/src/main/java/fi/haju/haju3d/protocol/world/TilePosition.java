@@ -1,6 +1,8 @@
 package fi.haju.haju3d.protocol.world;
 
 import com.jme3.math.Vector3f;
+
+import fi.haju.haju3d.protocol.PositionWithinChunk;
 import fi.haju.haju3d.protocol.Vector3i;
 
 import java.io.Serializable;
@@ -9,9 +11,9 @@ public class TilePosition implements Serializable {
   private static final long serialVersionUID = 1L;
 
   private final Vector3i chunkPosition;
-  private final Vector3i tileWithinChunk;
+  private final PositionWithinChunk tileWithinChunk;
 
-  public TilePosition(Vector3i chunkPosition, Vector3i tileWithinChunk) {
+  public TilePosition(Vector3i chunkPosition, PositionWithinChunk tileWithinChunk) {
     this.chunkPosition = chunkPosition;
     this.tileWithinChunk = tileWithinChunk;
   }
@@ -20,7 +22,7 @@ public class TilePosition implements Serializable {
     return chunkPosition;
   }
 
-  public Vector3i getTileWithinChunk() {
+  public PositionWithinChunk getTileWithinChunk() {
     return tileWithinChunk;
   }
 
@@ -37,7 +39,7 @@ public class TilePosition implements Serializable {
         (int) Math.floor(position.x / chunkSize / scale),
         (int) Math.floor(position.y / chunkSize / scale),
         (int) Math.floor(position.z / chunkSize / scale));
-    Vector3i tilePos = new Vector3i(
+    PositionWithinChunk tilePos = new PositionWithinChunk (
         (int) Math.floor(position.x / scale - chunkPos.x * chunkSize),
         (int) Math.floor(position.y / scale - chunkPos.y * chunkSize),
         (int) Math.floor(position.z / scale - chunkPos.z * chunkSize)

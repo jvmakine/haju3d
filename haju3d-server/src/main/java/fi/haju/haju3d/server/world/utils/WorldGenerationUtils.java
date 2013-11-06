@@ -5,6 +5,7 @@ import java.util.Random;
 
 import com.google.common.collect.Lists;
 
+import fi.haju.haju3d.protocol.PositionWithinChunk;
 import fi.haju.haju3d.protocol.Vector3i;
 import fi.haju.haju3d.protocol.world.Chunk;
 import fi.haju.haju3d.protocol.world.Tile;
@@ -16,11 +17,11 @@ public final class WorldGenerationUtils {
   
   private static class TreeBranchState {
     public final int lengthLeft;
-    public final Vector3i place;
+    public final PositionWithinChunk place;
     public final Vector3i dir;
     public final int length;
 
-    public TreeBranchState(int lengthLeft, Vector3i place, Vector3i dir, int length) {
+    public TreeBranchState(int lengthLeft, PositionWithinChunk place, Vector3i dir, int length) {
       this.lengthLeft = lengthLeft;
       this.place = place;
       this.dir = dir;
@@ -42,18 +43,18 @@ public final class WorldGenerationUtils {
       chunk.set(x, y + k, z + 1, Tile.WOOD);
       if (k > 5) {
         if (r.nextInt(6) == 0)
-          branches.add(new TreeBranchState(r.nextInt(7) + (height-k), new Vector3i(x, y + k, z), new Vector3i(-1, 0, 0), 0));
+          branches.add(new TreeBranchState(r.nextInt(7) + (height-k), new PositionWithinChunk(x, y + k, z), new Vector3i(-1, 0, 0), 0));
         if (r.nextInt(6) == 0)
-          branches.add(new TreeBranchState(r.nextInt(7) + (height-k), new Vector3i(x + 1, y + k, z), new Vector3i(0, 0, -1), 0));
+          branches.add(new TreeBranchState(r.nextInt(7) + (height-k), new PositionWithinChunk(x + 1, y + k, z), new Vector3i(0, 0, -1), 0));
         if (r.nextInt(6) == 0)
-          branches.add(new TreeBranchState(r.nextInt(7) + (height-k), new Vector3i(x + 1, y + k, z + 1), new Vector3i(1, 0, 0), 0));
+          branches.add(new TreeBranchState(r.nextInt(7) + (height-k), new PositionWithinChunk(x + 1, y + k, z + 1), new Vector3i(1, 0, 0), 0));
         if (r.nextInt(6) == 0)
-          branches.add(new TreeBranchState(r.nextInt(7) + (height-k), new Vector3i(x, y + k, z + 1), new Vector3i(0, 0, 1), 0));
+          branches.add(new TreeBranchState(r.nextInt(7) + (height-k), new PositionWithinChunk(x, y + k, z + 1), new Vector3i(0, 0, 1), 0));
       }
     }
     while (!branches.isEmpty()) {
       TreeBranchState state = branches.remove(0);
-      Vector3i next = state.place;
+      PositionWithinChunk next = state.place;
       if (state.lengthLeft <= 0) continue;
       // go up
       if (r.nextInt(3) < 2 && state.length > 2) next = next.add(0, 1, 0);
