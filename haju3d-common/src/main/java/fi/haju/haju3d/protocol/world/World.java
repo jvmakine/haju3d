@@ -9,7 +9,7 @@ import java.util.Map;
 public class World implements Serializable {
   private static final long serialVersionUID = 1L;
 
-  private static final int CHUNK_SIZE = 64;
+  public static final int CHUNK_SIZE = 64;
   private static final int CHUNK_OFFSET_INDEX = Integer.MAX_VALUE / 2 / CHUNK_SIZE;
   private static final int CHUNK_OFFSET_WORLD = CHUNK_OFFSET_INDEX * CHUNK_SIZE;
 
