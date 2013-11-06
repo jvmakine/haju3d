@@ -27,12 +27,6 @@ public class World implements Serializable {
     return chunks.get(c).getColor(x - wp.x, y - wp.y, z - wp.z);
   }
 
-  public int getLight(int x, int y, int z) {
-    Vector3i c = new Vector3i(getChunkIndex(x), getChunkIndex(y), getChunkIndex(z));
-    Vector3i wp = getWorldPosition(c);
-    return chunks.get(c).getLight(x - wp.x, y - wp.y, z - wp.z);
-  }
-
   public synchronized void setChunk(Vector3i position, Chunk chunk) {
     chunks.put(position, chunk);
   }

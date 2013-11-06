@@ -497,6 +497,12 @@ public class ChunkSpatialBuilder {
     return new Random(x + y * 133 + z * 23525 + edge * 1248234).nextInt();
   }
 
+  public static int getLight(World world, Vector3i pos) {
+    Vector3i chunkIndex = world.getChunkIndex(pos);
+    Vector3i wp = world.getWorldPosition(chunkIndex);
+    return world.getChunk(chunkIndex).getLight(pos.x - wp.x, pos.y - wp.y, pos.z - wp.z);
+  }
+  
   public static MyMesh makeCubeMesh(World world, Vector3i chunkIndex) {
     synchronized (world) {
       MyMesh myMesh = new MyMesh();
@@ -528,7 +534,7 @@ public class ChunkSpatialBuilder {
                     properties.getSideTexture(seed), color,
                     realTile,
                     seed, tile,
-                    world.getLight(x, y - 1, z));
+                    getLight(world, new Vector3i(x, y - 1, z)));
               }
               if (world.get(x, y + 1, z) == Tile.AIR) {
                 int seed = getZIndex(x, y, z, 1);
@@ -540,7 +546,7 @@ public class ChunkSpatialBuilder {
                     properties.getTopTexture(seed), color,
                     realTile,
                     seed, tile,
-                    world.getLight(x, y + 1, z));
+                    getLight(world, new Vector3i(x, y + 1, z)));
               }
               if (world.get(x - 1, y, z) == Tile.AIR) {
                 int seed = getZIndex(x, y, z, 2);
@@ -552,7 +558,7 @@ public class ChunkSpatialBuilder {
                     properties.getSideTexture(seed), color,
                     realTile,
                     seed, tile,
-                    world.getLight(x - 1, y, z));
+                    getLight(world, new Vector3i(x - 1, y, z)));
               }
               if (world.get(x + 1, y, z) == Tile.AIR) {
                 int seed = getZIndex(x, y, z, 3);
@@ -564,7 +570,7 @@ public class ChunkSpatialBuilder {
                     properties.getSideTexture(seed), color,
                     realTile,
                     seed, tile,
-                    world.getLight(x + 1, y, z));
+                    getLight(world, new Vector3i(x + 1, y, z)));
               }
               if (world.get(x, y, z - 1) == Tile.AIR) {
                 int seed = getZIndex(x, y, z, 4);
@@ -576,7 +582,7 @@ public class ChunkSpatialBuilder {
                     properties.getSideTexture(seed), color,
                     realTile,
                     seed, tile,
-                    world.getLight(x, y, z - 1));
+                    getLight(world, new Vector3i(x, y, z - 1)));
               }
               if (world.get(x, y, z + 1) == Tile.AIR) {
                 int seed = getZIndex(x, y, z, 5);
@@ -588,7 +594,7 @@ public class ChunkSpatialBuilder {
                     properties.getSideTexture(seed), color,
                     realTile,
                     seed, tile,
-                    world.getLight(x, y, z + 1));
+                    getLight(world, new Vector3i(x, y, z + 1)));
               }
             }
           }
