@@ -3,7 +3,7 @@ package fi.haju.haju3d.protocol.world;
 import java.io.Serializable;
 import java.util.Arrays;
 
-import fi.haju.haju3d.protocol.Vector3i;
+import fi.haju.haju3d.protocol.coordinate.Vector3i;
 
 public final class ByteArray3d implements Serializable {
   private static final long serialVersionUID = 1L;

@@ -30,13 +30,15 @@ import com.jme3.texture.Texture;
 import com.jme3.texture.Texture2D;
 import com.jme3.util.SkyFactory;
 import com.jme3.water.WaterFilter;
+
 import fi.haju.haju3d.client.Character;
 import fi.haju.haju3d.client.ClientSettings;
 import fi.haju.haju3d.client.CloseEventHandler;
 import fi.haju.haju3d.client.ui.input.CharacterInputHandler;
 import fi.haju.haju3d.client.ui.input.InputActions;
 import fi.haju.haju3d.client.ui.mesh.ChunkSpatialBuilder;
-import fi.haju.haju3d.protocol.Vector3i;
+import fi.haju.haju3d.protocol.coordinate.ChunkPosition;
+import fi.haju.haju3d.protocol.coordinate.Vector3i;
 import fi.haju.haju3d.protocol.world.Tile;
 import fi.haju.haju3d.protocol.world.TilePosition;
 
@@ -241,14 +243,14 @@ public class ChunkRenderer extends SimpleApplication {
     worldManager.setPosition(getCurrentChunkIndex());
   }
 
-  private Vector3i getCurrentChunkIndex() {
+  private ChunkPosition getCurrentChunkIndex() {
     return worldManager.getChunkIndexForLocation(getCamera().getLocation());
   }
 
   private void updateChunkSpatialVisibility() {
-    Vector3i chunkIndex = getCurrentChunkIndex();
+    ChunkPosition chunkIndex = getCurrentChunkIndex();
     terrainNode.detachAllChildren();
-    for (Vector3i pos : chunkIndex.getSurroundingPositions(CHUNK_CUT_OFF, CHUNK_CUT_OFF, CHUNK_CUT_OFF)) {
+    for (ChunkPosition pos : chunkIndex.getSurroundingPositions(CHUNK_CUT_OFF, CHUNK_CUT_OFF, CHUNK_CUT_OFF)) {
       ChunkSpatial cs = worldManager.getChunkSpatial(pos);
       if (cs != null) {
         terrainNode.attachChild(pos.distanceTo(chunkIndex) <= 2 ? cs.highDetail : cs.lowDetail);

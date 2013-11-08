@@ -3,7 +3,8 @@ package fi.haju.haju3d.client;
 import fi.haju.haju3d.client.chunk.ChunkLightingManager;
 import fi.haju.haju3d.client.ui.mesh.ChunkSpatialBuilder;
 import fi.haju.haju3d.client.ui.mesh.MyMesh;
-import fi.haju.haju3d.protocol.Vector3i;
+import fi.haju.haju3d.protocol.coordinate.ChunkPosition;
+import fi.haju.haju3d.protocol.coordinate.Vector3i;
 import fi.haju.haju3d.protocol.world.Chunk;
 import fi.haju.haju3d.protocol.world.Tile;
 import fi.haju.haju3d.protocol.world.World;
@@ -17,14 +18,14 @@ public class BenchmarkMeshGenerationApp {
     for (int x = 0; x < 3; x++) {
       for (int y = 0; y < 3; y++) {
         for (int z = 0; z < 3; z++) {
-          Vector3i chunkIndex = new Vector3i(x, y, z);
+          ChunkPosition chunkIndex = new ChunkPosition(x, y, z);
           Chunk chunk = new Chunk(world.getChunkSize(), world.getChunkSize(), world.getChunkSize(), 0, chunkIndex);
           world.setChunk(chunkIndex, chunk);
         }
       }
     }
 
-    initRandomChunk(world.getChunk(new Vector3i(1, 1, 1)));
+    initRandomChunk(world.getChunk(new ChunkPosition(1, 1, 1)));
 
     for (int i = 0; i < 10; i++) {
       System.gc();

@@ -12,8 +12,9 @@ import fi.haju.haju3d.client.ClientSettings;
 import fi.haju.haju3d.client.chunk.ChunkLightingManager;
 import fi.haju.haju3d.client.chunk.ChunkProvider;
 import fi.haju.haju3d.client.ui.mesh.ChunkSpatialBuilder;
-import fi.haju.haju3d.protocol.PositionWithinChunk;
-import fi.haju.haju3d.protocol.Vector3i;
+import fi.haju.haju3d.protocol.coordinate.ChunkPosition;
+import fi.haju.haju3d.protocol.coordinate.LocalTilePosition;
+import fi.haju.haju3d.protocol.coordinate.Vector3i;
 import fi.haju.haju3d.protocol.interaction.WorldEdit;
 import fi.haju.haju3d.protocol.world.Chunk;
 import fi.haju.haju3d.protocol.world.Tile;
@@ -40,11 +41,11 @@ public class WorldManager {
   private ChunkLightingManager lightingManager;
 
   private World world = new World();
-  private Map<Vector3i, ChunkSpatial> chunkSpatials = new ConcurrentHashMap<>();
+  private Map<ChunkPosition, ChunkSpatial> chunkSpatials = new ConcurrentHashMap<>();
   private Object lock = new Object();
 
   private volatile boolean running;
-  private volatile Vector3i position;
+  private volatile ChunkPosition position;
 
   private Runnable runnable = new Runnable() {
     @Override
@@ -66,7 +67,7 @@ public class WorldManager {
     return new Vector3i((int) Math.floor(location.x / SCALE), (int) Math.floor(location.y / SCALE), (int) Math.floor(location.z / SCALE));
   }
 
-  public Vector3i getChunkIndexForLocation(Vector3f location) {
+  public ChunkPosition getChunkIndexForLocation(Vector3f location) {
     return World.getChunkIndex(getWorldPosition(location));
   }
 
@@ -97,10 +98,10 @@ public class WorldManager {
   }
 
   private Vector3f getCollisionPoint(Vector3f from, Vector3f to, float distanceFix, boolean useBoxes) {
-    Set<Vector3i> chunkPositions = Sets.newHashSet(getChunkIndexForLocation(from), getChunkIndexForLocation(to));
+    Set<ChunkPosition> chunkPositions = Sets.newHashSet(getChunkIndexForLocation(from), getChunkIndexForLocation(to));
     Ray ray = new Ray(from, to.subtract(from).normalize());
     float distance = from.distance(to);
-    for (Vector3i pos : chunkPositions) {
+    for (ChunkPosition pos : chunkPositions) {
       ChunkSpatial cs = getChunkSpatial(pos);
       CollisionResults collision = new CollisionResults();
       Spatial spatial = cs == null ? null : (useBoxes ? cs.cubes : cs.lowDetail);
@@ -117,8 +118,8 @@ public class WorldManager {
 
   private void removeFarChunks(Vector3i centerChunkIndex) {
     Set<Vector3i> remove = new HashSet<>();
-    for (Map.Entry<Vector3i, ChunkSpatial> c : chunkSpatials.entrySet()) {
-      Vector3i v = c.getKey();
+    for (Map.Entry<ChunkPosition, ChunkSpatial> c : chunkSpatials.entrySet()) {
+      ChunkPosition v = c.getKey();
       if (centerChunkIndex.distanceTo(v) > settings.getChunkRenderDistance() + 1) {
         remove.add(v);
       }
@@ -128,8 +129,8 @@ public class WorldManager {
     }
   }
 
-  private void makeChunkNearPosition(Vector3i centerChunkIndex) {
-    List<Vector3i> indexes = new ArrayList<>();
+  private void makeChunkNearPosition(ChunkPosition centerChunkIndex) {
+    List<ChunkPosition> indexes = new ArrayList<>();
     indexes.add(centerChunkIndex);
     indexes.addAll(centerChunkIndex.getPositionsAtMaxDistance(settings.getChunkRenderDistance()));
     final Vector3i pos = new Vector3i(position.x, position.y, position.z);
@@ -147,7 +148,7 @@ public class WorldManager {
         }
       }
     });
-    for (Vector3i i : indexes) {
+    for (ChunkPosition i : indexes) {
       if (chunkSpatials.containsKey(i)) {
         continue;
       }
@@ -160,7 +161,7 @@ public class WorldManager {
     builder.rebuildChunkSpatial(world, spatial);
   }
 
-  private void makeChunkAt(Vector3i chunkIndex) {
+  private void makeChunkAt(ChunkPosition chunkIndex) {
     // need 3x3 chunks around meshing area so that mesh borders can be handled correctly
     List<Chunk> chunks = chunkProvider.getChunks(chunkIndex.getSurroundingPositions());
     for (Chunk c : chunks) {
@@ -171,7 +172,7 @@ public class WorldManager {
     chunkSpatials.put(chunkIndex, spatial);
   }
 
-  public void setPosition(Vector3i position) {
+  public void setPosition(ChunkPosition position) {
     this.position = position;
     synchronized (lock) {
       lock.notify();
@@ -195,7 +196,7 @@ public class WorldManager {
     }
   }
 
-  public ChunkSpatial getChunkSpatial(Vector3i pos) {
+  public ChunkSpatial getChunkSpatial(ChunkPosition pos) {
     return chunkSpatials.get(pos);
   }
 
@@ -204,28 +205,28 @@ public class WorldManager {
   }
 
   public void registerWorldEdits(List<WorldEdit> edits) {
-    Set<Vector3i> spatialsToUpdate = new HashSet<>();
+    Set<ChunkPosition> spatialsToUpdate = new HashSet<>();
     for (WorldEdit edit : edits) {
       TilePosition tile = edit.getPosition();
-      Vector3i chunkPos = tile.getChunkPosition();
+      ChunkPosition chunkPos = tile.getChunkPosition();
       Chunk chunk = world.getChunk(chunkPos);
       int x = tile.getTileWithinChunk().x;
       int y = tile.getTileWithinChunk().y;
       int z = tile.getTileWithinChunk().z;
       chunk.set(x, y, z, edit.getNewTile());
 
-      if (y < chunk.getHeight() - 1 && lightingManager.getLight(chunkPos, new PositionWithinChunk(x, y + 1, z)) == 100) {
+      if (y < chunk.getHeight() - 1 && lightingManager.getLight(chunkPos, new LocalTilePosition(x, y + 1, z)) == 100) {
         if (edit.getNewTile() == Tile.AIR) {
           // fill darkness with light
           int light = 100;
           for (int yy = y; yy >= 0 && chunk.get(x, yy, z) == Tile.AIR; yy--) {
-            lightingManager.setLight(chunkPos, new PositionWithinChunk(x, yy, z), light);
+            lightingManager.setLight(chunkPos, new LocalTilePosition(x, yy, z), light);
           }
         } else if (edit.getNewTile() != Tile.AIR) {
           // fill light with darkness
           int light = 20;
-          for (int yy = y; yy >= 0 && lightingManager.getLight(chunkPos, new PositionWithinChunk(x, yy, z)) == 100; yy--) {
-            lightingManager.setLight(chunkPos, new PositionWithinChunk(x, yy, z), light);
+          for (int yy = y; yy >= 0 && lightingManager.getLight(chunkPos, new LocalTilePosition(x, yy, z)) == 100; yy--) {
+            lightingManager.setLight(chunkPos, new LocalTilePosition(x, yy, z), light);
           }
         }
       }
@@ -253,7 +254,7 @@ public class WorldManager {
       }
     }
 
-    for (Vector3i s : spatialsToUpdate) {
+    for (ChunkPosition s : spatialsToUpdate) {
       rebuildChunkSpatial(getChunkSpatial(s));
     }
   }
@@ -267,7 +268,7 @@ public class WorldManager {
             if (chunk.get(x, y, z) != Tile.AIR) {
               light = 20;
             }
-            lightingManager.setLight(chunk.getPosition(), new PositionWithinChunk(x, y, z), light);
+            lightingManager.setLight(chunk.getPosition(), new LocalTilePosition(x, y, z), light);
           }
         }
       }

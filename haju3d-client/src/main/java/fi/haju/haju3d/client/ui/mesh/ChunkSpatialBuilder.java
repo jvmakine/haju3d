@@ -24,7 +24,8 @@ import fi.haju.haju3d.client.ui.ChunkRenderer;
 import fi.haju.haju3d.client.ui.ChunkSpatial;
 import fi.haju.haju3d.client.ui.mesh.MyMesh.MyFaceAndIndex;
 import fi.haju.haju3d.client.ui.mesh.TileRenderPropertyProvider.TileProperties;
-import fi.haju.haju3d.protocol.Vector3i;
+import fi.haju.haju3d.protocol.coordinate.ChunkPosition;
+import fi.haju.haju3d.protocol.coordinate.Vector3i;
 import fi.haju.haju3d.protocol.world.Tile;
 import fi.haju.haju3d.protocol.world.World;
 
@@ -138,7 +139,7 @@ public class ChunkSpatialBuilder {
     return geom;
   }
 
-  public ChunkSpatial makeChunkSpatial(World world, Vector3i chunkIndex) {
+  public ChunkSpatial makeChunkSpatial(World world, ChunkPosition chunkIndex) {
     LOGGER.info("Making chunk spatial at " + chunkIndex);
     ChunkSpatial chunkSpatial = new ChunkSpatial();
     chunkSpatial.chunk = world.getChunk(chunkIndex);

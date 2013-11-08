@@ -1,5 +1,6 @@
 package fi.haju.haju3d.protocol;
 
+import fi.haju.haju3d.protocol.coordinate.ChunkPosition;
 import fi.haju.haju3d.protocol.interaction.WorldEdit;
 import fi.haju.haju3d.protocol.world.Chunk;
 
@@ -13,9 +14,9 @@ public interface Server extends Remote {
 
   void logout(Client client) throws RemoteException;
 
-  Chunk getChunk(Vector3i position) throws RemoteException;
+  Chunk getChunk(ChunkPosition position) throws RemoteException;
 
-  List<Chunk> getChunks(Collection<Vector3i> positions) throws RemoteException;
+  List<Chunk> getChunks(Collection<ChunkPosition> positions) throws RemoteException;
 
   void registerWorldEdits(List<WorldEdit> edits) throws RemoteException;
 

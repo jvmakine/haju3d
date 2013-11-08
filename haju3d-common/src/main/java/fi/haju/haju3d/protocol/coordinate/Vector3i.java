@@ -1,9 +1,6 @@
-package fi.haju.haju3d.protocol;
-
-import com.google.common.collect.Lists;
+package fi.haju.haju3d.protocol.coordinate;
 
 import java.io.Serializable;
-import java.util.List;
 
 public class Vector3i implements Serializable {
   private static final long serialVersionUID = 1L;
@@ -60,34 +57,6 @@ public class Vector3i implements Serializable {
 
   public int distanceTo(Vector3i other) {
     return Math.abs(other.x - x) + Math.abs(other.y - y) + Math.abs(other.z - z);
-  }
-
-  /**
-   * Returns 3x3x3 list of all positions around this position. (This vector is also included in the set)
-   */
-  public List<Vector3i> getSurroundingPositions() {
-    return getSurroundingPositions(1, 1, 1);
-  }
-
-  public List<Vector3i> getSurroundingPositions(int w, int h, int d) {
-    List<Vector3i> positions = Lists.newArrayList();
-    for (int x = -w; x <= w; x++) {
-      for (int y = -h; y <= h; y++) {
-        for (int z = -d; z <= d; z++) {
-          positions.add(this.add(x, y, z));
-        }
-      }
-    }
-    return positions;
-  }
-
-  public List<Vector3i> getPositionsAtMaxDistance(int distance) {
-    List<Vector3i> positions = getSurroundingPositions(distance, distance, distance);
-    List<Vector3i> result = Lists.newArrayList();
-    for (Vector3i pos : positions) {
-      if (pos.distanceTo(this) <= distance) result.add(pos);
-    }
-    return result;
   }
 
   @Override

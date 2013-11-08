@@ -2,27 +2,27 @@ package fi.haju.haju3d.protocol.world;
 
 import com.jme3.math.Vector3f;
 
-import fi.haju.haju3d.protocol.PositionWithinChunk;
-import fi.haju.haju3d.protocol.Vector3i;
+import fi.haju.haju3d.protocol.coordinate.ChunkPosition;
+import fi.haju.haju3d.protocol.coordinate.LocalTilePosition;
 
 import java.io.Serializable;
 
 public class TilePosition implements Serializable {
   private static final long serialVersionUID = 1L;
 
-  private final Vector3i chunkPosition;
-  private final PositionWithinChunk tileWithinChunk;
+  private final ChunkPosition chunkPosition;
+  private final LocalTilePosition tileWithinChunk;
 
-  public TilePosition(Vector3i chunkPosition, PositionWithinChunk tileWithinChunk) {
+  public TilePosition(ChunkPosition chunkPosition, LocalTilePosition tileWithinChunk) {
     this.chunkPosition = chunkPosition;
     this.tileWithinChunk = tileWithinChunk;
   }
 
-  public Vector3i getChunkPosition() {
+  public ChunkPosition getChunkPosition() {
     return chunkPosition;
   }
 
-  public PositionWithinChunk getTileWithinChunk() {
+  public LocalTilePosition getTileWithinChunk() {
     return tileWithinChunk;
   }
 
@@ -35,11 +35,11 @@ public class TilePosition implements Serializable {
   }
 
   public static TilePosition getTilePosition(float scale, int chunkSize, Vector3f position) {
-    Vector3i chunkPos = new Vector3i(
+    ChunkPosition chunkPos = new ChunkPosition(
         (int) Math.floor(position.x / chunkSize / scale),
         (int) Math.floor(position.y / chunkSize / scale),
         (int) Math.floor(position.z / chunkSize / scale));
-    PositionWithinChunk tilePos = new PositionWithinChunk (
+    LocalTilePosition tilePos = new LocalTilePosition (
         (int) Math.floor(position.x / scale - chunkPos.x * chunkSize),
         (int) Math.floor(position.y / scale - chunkPos.y * chunkSize),
         (int) Math.floor(position.z / scale - chunkPos.z * chunkSize)

@@ -6,9 +6,9 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
 import fi.haju.haju3d.protocol.Client;
-import fi.haju.haju3d.protocol.PositionWithinChunk;
 import fi.haju.haju3d.protocol.Server;
-import fi.haju.haju3d.protocol.Vector3i;
+import fi.haju.haju3d.protocol.coordinate.ChunkPosition;
+import fi.haju.haju3d.protocol.coordinate.LocalTilePosition;
 import fi.haju.haju3d.protocol.interaction.WorldEdit;
 import fi.haju.haju3d.protocol.world.Chunk;
 import fi.haju.haju3d.protocol.world.World;
@@ -71,11 +71,11 @@ public class ServerImpl implements Server {
   }
 
   @Override
-  public Chunk getChunk(Vector3i position) throws RemoteException {
+  public Chunk getChunk(ChunkPosition position) throws RemoteException {
     return getOrGenerateChunk(position);
   }
 
-  private synchronized Chunk getOrGenerateChunk(Vector3i position) {
+  private synchronized Chunk getOrGenerateChunk(ChunkPosition position) {
     LOGGER.info("getOrGenerateChunk: " + position);
     if (world.hasChunk(position)) {
       return world.getChunk(position);
@@ -94,9 +94,9 @@ public class ServerImpl implements Server {
   }
 
   @Override
-  public List<Chunk> getChunks(Collection<Vector3i> positions) throws RemoteException {
+  public List<Chunk> getChunks(Collection<ChunkPosition> positions) throws RemoteException {
     List<Chunk> chunks = Lists.newArrayList();
-    for (Vector3i pos : positions) {
+    for (ChunkPosition pos : positions) {
       chunks.add(getChunk(pos));
     }
     return chunks;
@@ -106,7 +106,7 @@ public class ServerImpl implements Server {
   public void registerWorldEdits(final List<WorldEdit> edits) {
     for (WorldEdit edit : edits) {
       Chunk chunk = getOrGenerateChunk(edit.getPosition().getChunkPosition());
-      PositionWithinChunk p = edit.getPosition().getTileWithinChunk();
+      LocalTilePosition p = edit.getPosition().getTileWithinChunk();
       chunk.set(p.x, p.y, p.z, edit.getNewTile());
       saver.saveChunk(chunk);
     }

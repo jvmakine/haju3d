@@ -1,7 +1,7 @@
 package fi.haju.haju3d.protocol.world;
 
-import fi.haju.haju3d.protocol.PositionWithinChunk;
-import fi.haju.haju3d.protocol.Vector3i;
+import fi.haju.haju3d.protocol.coordinate.ChunkPosition;
+import fi.haju.haju3d.protocol.coordinate.LocalTilePosition;
 
 import java.io.Serializable;
 import java.util.HashMap;
@@ -14,7 +14,7 @@ public final class Chunk implements Serializable {
   private ByteArray3d tiles;
   private ByteArray3d colors;
   private final int seed;
-  private final Vector3i position;
+  private final ChunkPosition position;
   private Tile tile;
   private final int width;
   private final int height;
@@ -34,7 +34,7 @@ public final class Chunk implements Serializable {
     Tile getValue(int x, int y, int z);
   }
 
-  public Chunk(int width, int height, int depth, int seed, Vector3i position) {
+  public Chunk(int width, int height, int depth, int seed, ChunkPosition position) {
     this.seed = seed;
     this.position = position;
     this.tiles = new ByteArray3d(width, height, depth);
@@ -48,7 +48,7 @@ public final class Chunk implements Serializable {
   /**
    * Chunk that has constant tile value (typically AIR or GROUND).
    */
-  public Chunk(int width, int height, int depth, int seed, Vector3i position, Tile tile) {
+  public Chunk(int width, int height, int depth, int seed, ChunkPosition position, Tile tile) {
     this.seed = seed;
     this.position = position;
     this.tiles = null;
@@ -94,7 +94,7 @@ public final class Chunk implements Serializable {
     return tile != null ? tile : byteToTile.get(tiles.get(x, y, z));
   }
 
-  public Tile get(PositionWithinChunk pos) {
+  public Tile get(LocalTilePosition pos) {
     return tile != null ? tile : byteToTile.get(tiles.get(pos.x, pos.y, pos.z));
   }
 
@@ -122,11 +122,11 @@ public final class Chunk implements Serializable {
     return seed;
   }
 
-  public Vector3i getPosition() {
+  public ChunkPosition getPosition() {
     return position;
   }
 
-  public boolean isWithin(PositionWithinChunk pos) {
+  public boolean isWithin(LocalTilePosition pos) {
     return
         pos.x > 0 && pos.x < getWidth()
             && pos.y > 0 && pos.y < getHeight()

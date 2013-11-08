@@ -1,9 +1,11 @@
 package fi.haju.haju3d.client.connection;
 
 import com.google.inject.Singleton;
+
 import fi.haju.haju3d.protocol.Client;
 import fi.haju.haju3d.protocol.Server;
-import fi.haju.haju3d.protocol.Vector3i;
+import fi.haju.haju3d.protocol.coordinate.ChunkPosition;
+import fi.haju.haju3d.protocol.coordinate.Vector3i;
 import fi.haju.haju3d.protocol.interaction.WorldEdit;
 import fi.haju.haju3d.protocol.world.Chunk;
 
@@ -56,7 +58,7 @@ public class ServerConnector implements Server {
   }
 
   @Override
-  public Chunk getChunk(Vector3i position) {
+  public Chunk getChunk(ChunkPosition position) {
     try {
       return remoteServer.getChunk(position);
     } catch (RemoteException e) {
@@ -65,7 +67,7 @@ public class ServerConnector implements Server {
   }
 
   @Override
-  public List<Chunk> getChunks(Collection<Vector3i> positions) {
+  public List<Chunk> getChunks(Collection<ChunkPosition> positions) {
     try {
       return remoteServer.getChunks(positions);
     } catch (RemoteException e) {

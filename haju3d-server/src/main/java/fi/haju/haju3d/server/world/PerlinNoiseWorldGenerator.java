@@ -3,7 +3,8 @@ package fi.haju.haju3d.server.world;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 
-import fi.haju.haju3d.protocol.Vector3i;
+import fi.haju.haju3d.protocol.coordinate.ChunkPosition;
+import fi.haju.haju3d.protocol.coordinate.Vector3i;
 import fi.haju.haju3d.protocol.world.Chunk;
 import fi.haju.haju3d.protocol.world.FloatArray3d;
 import fi.haju.haju3d.protocol.world.Tile;
@@ -16,10 +17,10 @@ import java.util.*;
 public class PerlinNoiseWorldGenerator implements WorldGenerator {
   private int seed;
 
-  private Map<Vector3i, PerlinNoiseScales> perlinNoises = Maps.newHashMap();
+  private Map<ChunkPosition, PerlinNoiseScales> perlinNoises = Maps.newHashMap();
 
   @Override
-  public Chunk generateChunk(Vector3i position, int width, int height, int depth) {
+  public Chunk generateChunk(ChunkPosition position, int width, int height, int depth) {
     int realseed = seed ^ (position.x + position.y * 123 + position.z * 12347);
     if (position.y < 0) {
       return new Chunk(width, height, depth, realseed, position, Tile.GROUND);
@@ -68,7 +69,7 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
     return ground;
   }
 
-  private PerlinNoiseScales getPerlinNoiseScale(Vector3i pos, Random random, int w, int h, int d) {
+  private PerlinNoiseScales getPerlinNoiseScale(ChunkPosition pos, Random random, int w, int h, int d) {
     if (perlinNoises.containsKey(pos)) {
       return perlinNoises.get(pos);
     }
@@ -77,7 +78,7 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
     return noises;
   }
 
-  private FloatArray3d make3dPerlinNoise(long seed, int w, int h, int d, Vector3i position) {
+  private FloatArray3d make3dPerlinNoise(long seed, int w, int h, int d, ChunkPosition position) {
     Random random = new Random(seed);
     FloatArray3d data = new FloatArray3d(w, h, d);
     for (int scale : PerlinNoiseScales.SCALES) {
@@ -144,7 +145,7 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
     }
   }
 
-  private Chunk makeChunk(Chunk chunk, int seed, Vector3i position) {
+  private Chunk makeChunk(Chunk chunk, int seed, ChunkPosition position) {
     int w = chunk.getWidth();
     int h = chunk.getHeight();
     int d = chunk.getDepth();

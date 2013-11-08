@@ -1,7 +1,8 @@
 package fi.haju.haju3d.protocol.world;
 
-import fi.haju.haju3d.protocol.PositionWithinChunk;
-import fi.haju.haju3d.protocol.Vector3i;
+import fi.haju.haju3d.protocol.coordinate.ChunkPosition;
+import fi.haju.haju3d.protocol.coordinate.LocalTilePosition;
+import fi.haju.haju3d.protocol.coordinate.Vector3i;
 
 import java.io.Serializable;
 import java.util.HashMap;
@@ -14,31 +15,31 @@ public class World implements Serializable {
   private static final int CHUNK_OFFSET_INDEX = Integer.MAX_VALUE / 2 / CHUNK_SIZE;
   private static final int CHUNK_OFFSET_WORLD = CHUNK_OFFSET_INDEX * CHUNK_SIZE;
 
-  private Map<Vector3i, Chunk> chunks = new HashMap<>();
+  private Map<ChunkPosition, Chunk> chunks = new HashMap<>();
 
   public Tile get(int x, int y, int z) {
-    Vector3i c = new Vector3i(getChunkIndex(x), getChunkIndex(y), getChunkIndex(z));
+    ChunkPosition c = new ChunkPosition(getChunkIndex(x), getChunkIndex(y), getChunkIndex(z));
     Vector3i wp = getWorldPosition(c);
     return chunks.get(c).get(x - wp.x, y - wp.y, z - wp.z);
   }
 
   public float getColor(int x, int y, int z) {
-    Vector3i c = new Vector3i(getChunkIndex(x), getChunkIndex(y), getChunkIndex(z));
+    ChunkPosition c = new ChunkPosition(getChunkIndex(x), getChunkIndex(y), getChunkIndex(z));
     Vector3i wp = getWorldPosition(c);
     return chunks.get(c).getColor(x - wp.x, y - wp.y, z - wp.z);
   }
 
-  public static PositionWithinChunk getPositionWithinChunk(Vector3i position) {
+  public static LocalTilePosition getPositionWithinChunk(Vector3i position) {
     Vector3i c = getChunkIndex(position);
     Vector3i wp = getWorldPosition(c);
-    return new PositionWithinChunk(position.x - wp.x, position.y - wp.y, position.z - wp.z);
+    return new LocalTilePosition(position.x - wp.x, position.y - wp.y, position.z - wp.z);
   }
   
-  public synchronized void setChunk(Vector3i position, Chunk chunk) {
+  public synchronized void setChunk(ChunkPosition position, Chunk chunk) {
     chunks.put(position, chunk);
   }
 
-  public synchronized Chunk getChunk(Vector3i position) {
+  public synchronized Chunk getChunk(ChunkPosition position) {
     return chunks.get(position);
   }
 
@@ -46,8 +47,8 @@ public class World implements Serializable {
     return chunks.get(position) != null;
   }
 
-  public static Vector3i getChunkIndex(Vector3i worldPosition) {
-    return new Vector3i(getChunkIndex(worldPosition.x), getChunkIndex(worldPosition.y), getChunkIndex(worldPosition.z));
+  public static ChunkPosition getChunkIndex(Vector3i worldPosition) {
+    return new ChunkPosition(getChunkIndex(worldPosition.x), getChunkIndex(worldPosition.y), getChunkIndex(worldPosition.z));
   }
 
   public static Vector3i getWorldPosition(Vector3i chunkIndex) {
