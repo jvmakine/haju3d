@@ -13,6 +13,7 @@ import fi.haju.haju3d.client.chunk.ChunkLightingManager;
 import fi.haju.haju3d.client.chunk.ChunkProvider;
 import fi.haju.haju3d.client.ui.mesh.ChunkSpatialBuilder;
 import fi.haju.haju3d.protocol.coordinate.ChunkPosition;
+import fi.haju.haju3d.protocol.coordinate.GlobalTilePosition;
 import fi.haju.haju3d.protocol.coordinate.LocalTilePosition;
 import fi.haju.haju3d.protocol.coordinate.Vector3i;
 import fi.haju.haju3d.protocol.interaction.WorldEdit;
@@ -63,15 +64,15 @@ public class WorldManager {
     }
   };
 
-  private Vector3i getWorldPosition(Vector3f location) {
-    return new Vector3i((int) Math.floor(location.x / SCALE), (int) Math.floor(location.y / SCALE), (int) Math.floor(location.z / SCALE));
+  private GlobalTilePosition getWorldPosition(Vector3f location) {
+    return new GlobalTilePosition((int) Math.floor(location.x / SCALE), (int) Math.floor(location.y / SCALE), (int) Math.floor(location.z / SCALE));
   }
 
   public ChunkPosition getChunkIndexForLocation(Vector3f location) {
     return World.getChunkIndex(getWorldPosition(location));
   }
 
-  public Vector3f getGlobalPosition(Vector3i worldPosition) {
+  public Vector3f getGlobalPosition(GlobalTilePosition worldPosition) {
     return new Vector3f(worldPosition.x * SCALE, worldPosition.y * SCALE, worldPosition.z * SCALE);
   }
 

@@ -38,7 +38,7 @@ import fi.haju.haju3d.client.ui.input.CharacterInputHandler;
 import fi.haju.haju3d.client.ui.input.InputActions;
 import fi.haju.haju3d.client.ui.mesh.ChunkSpatialBuilder;
 import fi.haju.haju3d.protocol.coordinate.ChunkPosition;
-import fi.haju.haju3d.protocol.coordinate.Vector3i;
+import fi.haju.haju3d.protocol.coordinate.GlobalTilePosition;
 import fi.haju.haju3d.protocol.world.Tile;
 import fi.haju.haju3d.protocol.world.TilePosition;
 
@@ -152,7 +152,7 @@ public class ChunkRenderer extends SimpleApplication {
 
   private void setupCharacter() {
     character = new Character();
-    character.setPosition(worldManager.getGlobalPosition(new Vector3i().add(20, 32, 25)));
+    character.setPosition(worldManager.getGlobalPosition(new GlobalTilePosition(20, 32, 25)));
 
     Geometry characterBody = makeSimpleMesh(
         new Box(0.3f, 0.4f, 0.2f),
@@ -210,7 +210,7 @@ public class ChunkRenderer extends SimpleApplication {
   private void setupCamera() {
     getFlyByCamera().setMoveSpeed(MOVE_SPEED);
     getFlyByCamera().setRotationSpeed(CharacterInputHandler.MOUSE_X_SPEED);
-    getCamera().setLocation(worldManager.getGlobalPosition(new Vector3i().add(32, 62, 62)));
+    getCamera().setLocation(worldManager.getGlobalPosition(new GlobalTilePosition(32, 62, 62)));
     getCamera().setFrustumPerspective(45f, (float) getCamera().getWidth() / getCamera().getHeight(), 0.1f, 200f);
 
     guiFont = assetManager.loadFont("Interface/Fonts/Default.fnt");

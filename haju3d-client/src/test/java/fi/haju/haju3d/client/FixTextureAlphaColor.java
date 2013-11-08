@@ -72,14 +72,6 @@ public class FixTextureAlphaColor {
     //ImageIO.write(image, "png", new File("output.png"));
   }
 
-  private void showAlpha() {
-    for (int x = 0; x < width; x++) {
-      for (int y = 0; y < height; y++) {
-        raster.setSample(x, y, 3, 255);
-      }
-    }
-  }
-
   private boolean fixAlphaColor() {
     for (int x = 0; x < width; x++) {
       for (int y = 0; y < height; y++) {

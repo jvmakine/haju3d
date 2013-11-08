@@ -11,7 +11,7 @@ import com.google.common.collect.Lists;
 public class ChunkPosition extends Vector3i {
 
   private static final long serialVersionUID = 1L;
-
+  
   public ChunkPosition(int x, int y, int z) {
     super(x, y, z);
   }  

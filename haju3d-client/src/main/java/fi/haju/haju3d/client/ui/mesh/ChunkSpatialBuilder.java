@@ -25,7 +25,7 @@ import fi.haju.haju3d.client.ui.ChunkSpatial;
 import fi.haju.haju3d.client.ui.mesh.MyMesh.MyFaceAndIndex;
 import fi.haju.haju3d.client.ui.mesh.TileRenderPropertyProvider.TileProperties;
 import fi.haju.haju3d.protocol.coordinate.ChunkPosition;
-import fi.haju.haju3d.protocol.coordinate.Vector3i;
+import fi.haju.haju3d.protocol.coordinate.GlobalTilePosition;
 import fi.haju.haju3d.protocol.world.Tile;
 import fi.haju.haju3d.protocol.world.World;
 
@@ -503,15 +503,15 @@ public class ChunkSpatialBuilder {
     return new Random(x + y * 133 + z * 23525 + edge * 1248234).nextInt();
   }
   
-  public static MyMesh makeCubeMesh(World world, Vector3i chunkIndex, ChunkLightingManager lightingManager) {
+  public static MyMesh makeCubeMesh(World world, ChunkPosition chunkIndex, ChunkLightingManager lightingManager) {
     synchronized (world) {
       MyMesh myMesh = new MyMesh();
 
-      Vector3i w1o = World.getWorldPosition(chunkIndex);
-      Vector3i w2o = World.getWorldPosition(chunkIndex.add(1, 1, 1));
+      GlobalTilePosition w1o = World.getWorldPosition(chunkIndex);
+      GlobalTilePosition w2o = World.getWorldPosition(chunkIndex.add(1, 1, 1));
 
-      Vector3i w1 = w1o.add(-SMOOTH_BUFFER, -SMOOTH_BUFFER, -SMOOTH_BUFFER);
-      Vector3i w2 = w2o.add(SMOOTH_BUFFER, SMOOTH_BUFFER, SMOOTH_BUFFER);
+      GlobalTilePosition w1 = w1o.add(-SMOOTH_BUFFER, -SMOOTH_BUFFER, -SMOOTH_BUFFER);
+      GlobalTilePosition w2 = w2o.add(SMOOTH_BUFFER, SMOOTH_BUFFER, SMOOTH_BUFFER);
 
       for (int z = w1.z; z < w2.z; z++) {
         for (int y = w1.y; y < w2.y; y++) {
@@ -534,7 +534,7 @@ public class ChunkSpatialBuilder {
                     properties.getSideTexture(seed), color,
                     realTile,
                     seed, tile,
-                    lightingManager.getLightAtWorldPos(new Vector3i(x, y - 1, z)));
+                    lightingManager.getLightAtWorldPos(new GlobalTilePosition(x, y - 1, z)));
               }
               if (world.get(x, y + 1, z) == Tile.AIR) {
                 int seed = getZIndex(x, y, z, 1);
@@ -546,7 +546,7 @@ public class ChunkSpatialBuilder {
                     properties.getTopTexture(seed), color,
                     realTile,
                     seed, tile,
-                    lightingManager.getLightAtWorldPos(new Vector3i(x, y + 1, z)));
+                    lightingManager.getLightAtWorldPos(new GlobalTilePosition(x, y + 1, z)));
               }
               if (world.get(x - 1, y, z) == Tile.AIR) {
                 int seed = getZIndex(x, y, z, 2);
@@ -558,7 +558,7 @@ public class ChunkSpatialBuilder {
                     properties.getSideTexture(seed), color,
                     realTile,
                     seed, tile,
-                    lightingManager.getLightAtWorldPos(new Vector3i(x - 1, y, z)));
+                    lightingManager.getLightAtWorldPos(new GlobalTilePosition(x - 1, y, z)));
               }
               if (world.get(x + 1, y, z) == Tile.AIR) {
                 int seed = getZIndex(x, y, z, 3);
@@ -570,7 +570,7 @@ public class ChunkSpatialBuilder {
                     properties.getSideTexture(seed), color,
                     realTile,
                     seed, tile,
-                    lightingManager.getLightAtWorldPos(new Vector3i(x + 1, y, z)));
+                    lightingManager.getLightAtWorldPos(new GlobalTilePosition(x + 1, y, z)));
               }
               if (world.get(x, y, z - 1) == Tile.AIR) {
                 int seed = getZIndex(x, y, z, 4);
@@ -582,7 +582,7 @@ public class ChunkSpatialBuilder {
                     properties.getSideTexture(seed), color,
                     realTile,
                     seed, tile,
-                    lightingManager.getLightAtWorldPos(new Vector3i(x, y, z - 1)));
+                    lightingManager.getLightAtWorldPos(new GlobalTilePosition(x, y, z - 1)));
               }
               if (world.get(x, y, z + 1) == Tile.AIR) {
                 int seed = getZIndex(x, y, z, 5);
@@ -594,7 +594,7 @@ public class ChunkSpatialBuilder {
                     properties.getSideTexture(seed), color,
                     realTile,
                     seed, tile,
-                    lightingManager.getLightAtWorldPos(new Vector3i(x, y, z + 1)));
+                    lightingManager.getLightAtWorldPos(new GlobalTilePosition(x, y, z + 1)));
               }
             }
           }
