@@ -6,7 +6,6 @@ import java.util.Random;
 import com.google.common.collect.Lists;
 
 import fi.haju.haju3d.protocol.coordinate.LocalTilePosition;
-import fi.haju.haju3d.protocol.coordinate.Vector3i;
 import fi.haju.haju3d.protocol.world.Chunk;
 import fi.haju.haju3d.protocol.world.Tile;
 
@@ -18,10 +17,10 @@ public final class WorldGenerationUtils {
   private static class TreeBranchState {
     public final int lengthLeft;
     public final LocalTilePosition place;
-    public final Vector3i dir;
+    public final LocalTilePosition dir;
     public final int length;
 
-    public TreeBranchState(int lengthLeft, LocalTilePosition place, Vector3i dir, int length) {
+    public TreeBranchState(int lengthLeft, LocalTilePosition place, LocalTilePosition dir, int length) {
       this.lengthLeft = lengthLeft;
       this.place = place;
       this.dir = dir;
@@ -30,7 +29,7 @@ public final class WorldGenerationUtils {
 
   }
   
-  public static void makeTreeAt(Chunk chunk, Random r, Vector3i pos) {
+  public static void makeTreeAt(Chunk chunk, Random r, LocalTilePosition pos) {
     int x = pos.x;
     int y = pos.y;
     int z = pos.z;
@@ -43,13 +42,13 @@ public final class WorldGenerationUtils {
       chunk.set(x, y + k, z + 1, Tile.WOOD);
       if (k > 5) {
         if (r.nextInt(6) == 0)
-          branches.add(new TreeBranchState(r.nextInt(7) + (height-k), new LocalTilePosition(x, y + k, z), new Vector3i(-1, 0, 0), 0));
+          branches.add(new TreeBranchState(r.nextInt(7) + (height-k), new LocalTilePosition(x, y + k, z), new LocalTilePosition(-1, 0, 0), 0));
         if (r.nextInt(6) == 0)
-          branches.add(new TreeBranchState(r.nextInt(7) + (height-k), new LocalTilePosition(x + 1, y + k, z), new Vector3i(0, 0, -1), 0));
+          branches.add(new TreeBranchState(r.nextInt(7) + (height-k), new LocalTilePosition(x + 1, y + k, z), new LocalTilePosition(0, 0, -1), 0));
         if (r.nextInt(6) == 0)
-          branches.add(new TreeBranchState(r.nextInt(7) + (height-k), new LocalTilePosition(x + 1, y + k, z + 1), new Vector3i(1, 0, 0), 0));
+          branches.add(new TreeBranchState(r.nextInt(7) + (height-k), new LocalTilePosition(x + 1, y + k, z + 1), new LocalTilePosition(1, 0, 0), 0));
         if (r.nextInt(6) == 0)
-          branches.add(new TreeBranchState(r.nextInt(7) + (height-k), new LocalTilePosition(x, y + k, z + 1), new Vector3i(0, 0, 1), 0));
+          branches.add(new TreeBranchState(r.nextInt(7) + (height-k), new LocalTilePosition(x, y + k, z + 1), new LocalTilePosition(0, 0, 1), 0));
       }
     }
     while (!branches.isEmpty()) {

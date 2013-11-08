@@ -4,7 +4,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 
 import fi.haju.haju3d.protocol.coordinate.ChunkPosition;
-import fi.haju.haju3d.protocol.coordinate.Vector3i;
+import fi.haju.haju3d.protocol.coordinate.LocalTilePosition;
 import fi.haju.haju3d.protocol.world.Chunk;
 import fi.haju.haju3d.protocol.world.FloatArray3d;
 import fi.haju.haju3d.protocol.world.Tile;
@@ -202,7 +202,7 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
       int z = r.nextInt(chunk.getDepth() - 3);
       int y = WorldGenerationUtils.findGround(chunk, chunk.getHeight(), x, z);
       if (y >= 1 && y < chunk.getHeight() - 20 && chunk.get(x, y - 1, z) == Tile.GROUND) {
-        WorldGenerationUtils.makeTreeAt(chunk, r, new Vector3i(x, z, y));
+        WorldGenerationUtils.makeTreeAt(chunk, r, new LocalTilePosition(x, z, y));
       }
     }
   }

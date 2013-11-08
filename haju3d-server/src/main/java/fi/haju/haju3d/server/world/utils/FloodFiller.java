@@ -5,13 +5,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import fi.haju.haju3d.protocol.coordinate.Vector3i;
+import fi.haju.haju3d.protocol.coordinate.LocalTilePosition;
 import fi.haju.haju3d.protocol.world.Chunk;
 import fi.haju.haju3d.protocol.world.Tile;
 
 public final class FloodFiller {
-  private List<Vector3i> front = new ArrayList<>();
-  private Set<Vector3i> visited = new HashSet<>();
+  private List<LocalTilePosition> front = new ArrayList<>();
+  private Set<LocalTilePosition> visited = new HashSet<>();
   private Chunk ground;
   private Chunk orig;
 
@@ -21,9 +21,9 @@ public final class FloodFiller {
   }
 
   public void fill() {
-    test(new Vector3i(0, 0, 0));
+    test(new LocalTilePosition(0, 0, 0));
     while (!front.isEmpty()) {
-      Vector3i v = front.remove(front.size() - 1);
+      LocalTilePosition v = front.remove(front.size() - 1);
       test(v.add(1, 0, 0));
       test(v.add(-1, 0, 0));
       test(v.add(0, 1, 0));
@@ -33,7 +33,7 @@ public final class FloodFiller {
     }
   }
 
-  private void test(Vector3i n) {
+  private void test(LocalTilePosition n) {
     if (visited.contains(n)) {
       return;
     }

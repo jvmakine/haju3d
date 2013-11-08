@@ -4,7 +4,7 @@ import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
-import fi.haju.haju3d.protocol.coordinate.Vector3i;
+import fi.haju.haju3d.protocol.coordinate.ChunkPosition;
 import fi.haju.haju3d.protocol.world.Chunk;
 import fi.haju.haju3d.server.world.WorldInfo;
 import net.jpountz.lz4.LZ4Compressor;
@@ -37,7 +37,7 @@ public class WorldSaver {
   private static final long MIN_SAVE_INTERVAL = 30000;
   private static final Logger LOGGER = LoggerFactory.getLogger(WorldSaver.class);
 
-  private Set<Vector3i> chunksToSave = Collections.newSetFromMap(new ConcurrentHashMap<Vector3i, Boolean>());
+  private Set<ChunkPosition> chunksToSave = Collections.newSetFromMap(new ConcurrentHashMap<ChunkPosition, Boolean>());
   private Timer timer = new Timer();
 
   @Inject
@@ -65,7 +65,7 @@ public class WorldSaver {
     writeObjectToFile(infoFile(), info);
   }
 
-  public Optional<Chunk> loadChunkIfOnDisk(Vector3i pos) {
+  public Optional<Chunk> loadChunkIfOnDisk(ChunkPosition pos) {
     File file = chunkFile(pos);
     if (!file.exists()) return Optional.absent();
     LOGGER.info("loading from disk : " + pos);
@@ -121,7 +121,7 @@ public class WorldSaver {
     return new File(chunkDir, "info");
   }
 
-  private File chunkFile(Vector3i position) {
+  private File chunkFile(ChunkPosition position) {
     File chunkDir = new File(settings.getSavePath(), settings.getWorldName());
     chunkDir.mkdirs();
     return new File(chunkDir, "ch#" + position.x + "#" + position.y + "#" + position.z);

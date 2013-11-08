@@ -15,7 +15,6 @@ import fi.haju.haju3d.client.ui.mesh.ChunkSpatialBuilder;
 import fi.haju.haju3d.protocol.coordinate.ChunkPosition;
 import fi.haju.haju3d.protocol.coordinate.GlobalTilePosition;
 import fi.haju.haju3d.protocol.coordinate.LocalTilePosition;
-import fi.haju.haju3d.protocol.coordinate.Vector3i;
 import fi.haju.haju3d.protocol.interaction.WorldEdit;
 import fi.haju.haju3d.protocol.world.Chunk;
 import fi.haju.haju3d.protocol.world.Tile;
@@ -117,15 +116,15 @@ public class WorldManager {
     return null;
   }
 
-  private void removeFarChunks(Vector3i centerChunkIndex) {
-    Set<Vector3i> remove = new HashSet<>();
+  private void removeFarChunks(ChunkPosition centerChunkIndex) {
+    Set<ChunkPosition> remove = new HashSet<>();
     for (Map.Entry<ChunkPosition, ChunkSpatial> c : chunkSpatials.entrySet()) {
       ChunkPosition v = c.getKey();
       if (centerChunkIndex.distanceTo(v) > settings.getChunkRenderDistance() + 1) {
         remove.add(v);
       }
     }
-    for (Vector3i r : remove) {
+    for (ChunkPosition r : remove) {
       chunkSpatials.remove(r);
     }
   }
@@ -134,10 +133,10 @@ public class WorldManager {
     List<ChunkPosition> indexes = new ArrayList<>();
     indexes.add(centerChunkIndex);
     indexes.addAll(centerChunkIndex.getPositionsAtMaxDistance(settings.getChunkRenderDistance()));
-    final Vector3i pos = new Vector3i(position.x, position.y, position.z);
-    Collections.sort(indexes, new Comparator<Vector3i>() {
+    final ChunkPosition pos = new ChunkPosition(position.x, position.y, position.z);
+    Collections.sort(indexes, new Comparator<ChunkPosition>() {
       @Override
-      public int compare(Vector3i o1, Vector3i o2) {
+      public int compare(ChunkPosition o1, ChunkPosition o2) {
         int d1 = o1.distanceTo(pos);
         int d2 = o2.distanceTo(pos);
         if (d1 < d2) {
