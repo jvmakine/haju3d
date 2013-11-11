@@ -22,11 +22,7 @@ public final class Array3d<T> implements Serializable {
     this.data = (T[])Array.newInstance(initial.getClass(), size);
     for(int i = 0; i < size; ++i) data[i] = initial;
   }
-
-  public void set(int x, int y, int z, T value) {
-    data[getIndex(x, y, z)] = value;
-  }
-  
+ 
   public void set(Vector3i pos, T value) {
     data[getIndex(pos.x, pos.y, pos.z)] = value;
   }
@@ -43,10 +39,6 @@ public final class Array3d<T> implements Serializable {
     return pos.x >= 0 && pos.x < width && pos.y >= 0 && pos.y < height && pos.z >= 0 && pos.z < depth;
   }
 
-  public T get(int x, int y, int z) {
-    return data[getIndex(x, y, z)];
-  }
-  
   public T get(Vector3i pos) {
     return data[getIndex(pos.x, pos.y, pos.z)];
   }
