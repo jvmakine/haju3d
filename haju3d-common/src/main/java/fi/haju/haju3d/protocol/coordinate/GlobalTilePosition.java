@@ -4,7 +4,7 @@ package fi.haju.haju3d.protocol.coordinate;
 /**
  * Represents a 3d coordinates of a tile within a world
  */
-public class GlobalTilePosition extends Vector3i {
+public final class GlobalTilePosition extends Vector3i {
 
   private static final long serialVersionUID = 1L;
 

@@ -5,7 +5,10 @@ import fi.haju.haju3d.protocol.coordinate.LocalTilePosition;
 
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+
+import com.google.common.collect.Lists;
 
 
 public final class Chunk implements Serializable {
@@ -131,5 +134,19 @@ public final class Chunk implements Serializable {
         pos.x > 0 && pos.x < getWidth()
             && pos.y > 0 && pos.y < getHeight()
             && pos.z > 0 && pos.z < getDepth();
+  }
+
+  public List<LocalTilePosition> getNeighbours(LocalTilePosition pos) {
+    if(!isWithin(pos)) {
+      throw new IllegalArgumentException(pos + " is not within the chunk");
+    }
+    List<LocalTilePosition> surroundings = pos.getSurroundingPositions(1, 1, 1);
+    List<LocalTilePosition> result = Lists.newArrayList();
+    for(LocalTilePosition sur : surroundings) {
+      if(!pos.equals(sur) && isWithin(sur)) {
+        result.add(sur);
+      }
+    }
+    return result;
   }
 }

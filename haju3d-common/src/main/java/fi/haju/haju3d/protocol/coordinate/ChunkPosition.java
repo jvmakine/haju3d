@@ -8,7 +8,7 @@ import com.google.common.collect.Lists;
 /**
  * Represents a 3d coordinates of a single chunk within world
  */
-public class ChunkPosition extends Vector3i {
+public final class ChunkPosition extends Vector3i {
 
   private static final long serialVersionUID = 1L;
   

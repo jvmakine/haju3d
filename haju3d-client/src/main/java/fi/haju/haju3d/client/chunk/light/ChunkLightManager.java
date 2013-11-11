@@ -1,5 +1,6 @@
 package fi.haju.haju3d.client.chunk.light;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -39,14 +40,45 @@ public class ChunkLightManager {
   
   public void calculateChunkLighting(Chunk chunk) {
     if (chunk.hasLight()) {
-      for (int x = 0; x < chunk.getWidth(); x++) {
-        for (int z = 0; z < chunk.getDepth(); z++) {
-          int light = DAY_LIGHT;
-          for (int y = chunk.getHeight() - 1; y >= 0; y--) {
-            if (chunk.get(x, y, z) != Tile.AIR) {
-              light = AMBIENT;
+      calculateDirectSunLight(chunk);
+      calculateReflectedLight(chunk);
+    }
+  }
+
+  private void calculateDirectSunLight(Chunk chunk) {
+    ChunkPosition pos = chunk.getPosition();
+    ChunkLighting lighting = chunkLights.get(pos);
+    if(lighting == null) {
+      lighting = new ChunkLighting(World.CHUNK_SIZE);
+      chunkLights.put(pos, lighting);
+    }
+    for (int x = 0; x < chunk.getWidth(); x++) {
+      for (int z = 0; z < chunk.getDepth(); z++) {
+        int light = DAY_LIGHT;
+        for (int y = chunk.getHeight() - 1; y >= 0; y--) {
+          if (chunk.get(x, y, z) != Tile.AIR) {
+            light = AMBIENT;
+          }
+          lighting.setLight(new LocalTilePosition(x, y, z), light);
+        }
+      }
+    }
+  }
+  
+  private void calculateReflectedLight(Chunk chunk) {
+    ChunkLighting lighting = chunkLights.get(chunk.getPosition());
+    for (int x = 1; x < chunk.getWidth() - 1; x++) {
+      for (int z = 1; z < chunk.getDepth() - 1; z++) {
+        for (int y = 1; y < chunk.getHeight() - 1; y++) {
+          if (chunk.get(x, y, z) == Tile.AIR) {
+            LocalTilePosition pos = new LocalTilePosition(x,y,z);
+            List<LocalTilePosition> positions = chunk.getNeighbours(pos);
+            int maxLight = lighting.getLight(pos);
+            for(LocalTilePosition nPos : positions) {
+              int val = (int)(lighting.getLight(nPos) * 0.8);
+              if(val > maxLight) maxLight = val;
             }
-            setLight(chunk.getPosition(), new LocalTilePosition(x, y, z), light);
+            lighting.setLight(pos, maxLight);
           }
         }
       }
