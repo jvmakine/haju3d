@@ -19,7 +19,7 @@ import com.jme3.texture.Texture.WrapMode;
 import com.jme3.texture.TextureArray;
 import com.jme3.util.BufferUtils;
 
-import fi.haju.haju3d.client.chunk.light.ChunkLightingManager;
+import fi.haju.haju3d.client.chunk.light.ChunkLightManager;
 import fi.haju.haju3d.client.ui.ChunkRenderer;
 import fi.haju.haju3d.client.ui.ChunkSpatial;
 import fi.haju.haju3d.client.ui.mesh.MyMesh.MyFaceAndIndex;
@@ -46,7 +46,7 @@ public class ChunkSpatialBuilder {
   @Inject
   private ChunkRenderer chunkRenderer;
   @Inject
-  private ChunkLightingManager lightingManager;
+  private ChunkLightManager lightingManager;
 
   public void init() {
     init(chunkRenderer.getAssetManager());
@@ -503,7 +503,7 @@ public class ChunkSpatialBuilder {
     return new Random(x + y * 133 + z * 23525 + edge * 1248234).nextInt();
   }
   
-  public static MyMesh makeCubeMesh(World world, ChunkPosition chunkIndex, ChunkLightingManager lightingManager) {
+  public static MyMesh makeCubeMesh(World world, ChunkPosition chunkIndex, ChunkLightManager lightingManager) {
     synchronized (world) {
       MyMesh myMesh = new MyMesh();
 

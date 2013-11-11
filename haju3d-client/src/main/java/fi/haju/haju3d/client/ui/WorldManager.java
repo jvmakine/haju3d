@@ -10,7 +10,7 @@ import com.jme3.scene.Spatial;
 
 import fi.haju.haju3d.client.ClientSettings;
 import fi.haju.haju3d.client.chunk.ChunkProvider;
-import fi.haju.haju3d.client.chunk.light.ChunkLightingManager;
+import fi.haju.haju3d.client.chunk.light.ChunkLightManager;
 import fi.haju.haju3d.client.ui.mesh.ChunkSpatialBuilder;
 import fi.haju.haju3d.protocol.coordinate.ChunkPosition;
 import fi.haju.haju3d.protocol.coordinate.GlobalTilePosition;
@@ -38,7 +38,7 @@ public class WorldManager {
   @Inject
   private ClientSettings settings;
   @Inject
-  private ChunkLightingManager lightingManager;
+  private ChunkLightManager lightingManager;
 
   private World world = new World();
   private Map<ChunkPosition, ChunkSpatial> chunkSpatials = new ConcurrentHashMap<>();

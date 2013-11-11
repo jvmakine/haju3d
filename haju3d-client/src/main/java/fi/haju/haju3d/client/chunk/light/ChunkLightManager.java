@@ -13,7 +13,7 @@ import fi.haju.haju3d.protocol.world.Tile;
 import fi.haju.haju3d.protocol.world.World;
 
 @Singleton
-public class ChunkLightingManager {
+public class ChunkLightManager {
 
   private Map<ChunkPosition, ChunkLighting> chunkLights = new ConcurrentHashMap<>();
   
