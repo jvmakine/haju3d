@@ -24,6 +24,7 @@ public class ChunkLightManager {
   
   public static final int AMBIENT = 5;
   public static final int DAY_LIGHT = 100;
+  private static final double LIGHT_FALLOFF = 0.8;
   
   public void setLight(ChunkPosition chunkPosition, LocalTilePosition position, int light) {
     if(!chunkLights.containsKey(chunkPosition)) {
@@ -78,9 +79,10 @@ public class ChunkLightManager {
     Queue<LocalTilePosition> tbp = Queues.newArrayDeque(sunned);
     while(!tbp.isEmpty()) {
       LocalTilePosition pos = tbp.remove();
+      //TODO: Neighbouring chunks
       List<LocalTilePosition> positions = chunk.getNeighbours(pos);
       int light = lighting.getLight(pos);
-      int nv = (int)(0.8*light);
+      int nv = (int)(LIGHT_FALLOFF * light);
       for(LocalTilePosition nPos : positions) {
         if(chunk.get(nPos) != Tile.AIR) continue;
         int val = lighting.getLight(nPos);
