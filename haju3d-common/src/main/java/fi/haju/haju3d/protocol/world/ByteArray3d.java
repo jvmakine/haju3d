@@ -9,9 +9,9 @@ public final class ByteArray3d implements Serializable {
   private static final long serialVersionUID = 1L;
 
   private final byte[] data;
-  private final int width;
-  private final int height;
-  private final int depth;
+  public final int width;
+  public final int height;
+  public final int depth;
 
   public ByteArray3d(int width, int height, int depth) {
     this.width = width;

@@ -3,7 +3,7 @@ package fi.haju.haju3d.client.chunk.light;
 import fi.haju.haju3d.protocol.coordinate.LocalTilePosition;
 import fi.haju.haju3d.protocol.world.ByteArray3d;
 
-public class ChunkLighting {
+public final class ChunkLighting {
   
   private final ByteArray3d light;
   
@@ -13,7 +13,8 @@ public class ChunkLighting {
   
   public int getLight(LocalTilePosition pos) {
     if(!light.isInside(pos)) return 0;
-    return light.get(pos);
+    int val = light.get(pos);
+    return val < ChunkLightManager.AMBIENT ? ChunkLightManager.AMBIENT : val;
   }
   
   public void setLight(LocalTilePosition pos, int lightValue) {

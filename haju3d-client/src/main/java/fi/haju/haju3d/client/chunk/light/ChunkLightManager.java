@@ -2,8 +2,10 @@ package fi.haju.haju3d.client.chunk.light;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.google.common.collect.Queues;
 import com.google.inject.Singleton;
 
 import fi.haju.haju3d.protocol.coordinate.ChunkPosition;
@@ -30,7 +32,7 @@ public class ChunkLightManager {
   
   public int getLight(ChunkPosition chunkPosition, LocalTilePosition position) {
     ChunkLighting light = chunkLights.get(chunkPosition);
-    if(light == null) return 0;
+    if(light == null) return AMBIENT;
     return light.getLight(position);
   }
   
@@ -40,12 +42,13 @@ public class ChunkLightManager {
   
   public void calculateChunkLighting(Chunk chunk) {
     if (chunk.hasLight()) {
-      calculateDirectSunLight(chunk);
-      calculateReflectedLight(chunk);
+      Queue<LocalTilePosition> sunned = calculateDirectSunLight(chunk);
+      calculateReflectedLight(chunk, sunned);
     }
   }
 
-  private void calculateDirectSunLight(Chunk chunk) {
+  private Queue<LocalTilePosition> calculateDirectSunLight(Chunk chunk) {
+    Queue<LocalTilePosition> res = Queues.newArrayDeque();
     ChunkPosition pos = chunk.getPosition();
     ChunkLighting lighting = chunkLights.get(pos);
     if(lighting == null) {
@@ -57,29 +60,30 @@ public class ChunkLightManager {
         int light = DAY_LIGHT;
         for (int y = chunk.getHeight() - 1; y >= 0; y--) {
           if (chunk.get(x, y, z) != Tile.AIR) {
-            light = AMBIENT;
+            break;
           }
-          lighting.setLight(new LocalTilePosition(x, y, z), light);
+          LocalTilePosition p = new LocalTilePosition(x, y, z); 
+          lighting.setLight(p, light);
+          res.add(p);
         }
       }
     }
+    return res;
   }
   
-  private void calculateReflectedLight(Chunk chunk) {
+  private void calculateReflectedLight(Chunk chunk, Queue<LocalTilePosition> sunned) {
     ChunkLighting lighting = chunkLights.get(chunk.getPosition());
-    for (int x = 1; x < chunk.getWidth() - 1; x++) {
-      for (int z = 1; z < chunk.getDepth() - 1; z++) {
-        for (int y = 1; y < chunk.getHeight() - 1; y++) {
-          if (chunk.get(x, y, z) == Tile.AIR) {
-            LocalTilePosition pos = new LocalTilePosition(x,y,z);
-            List<LocalTilePosition> positions = chunk.getNeighbours(pos);
-            int maxLight = lighting.getLight(pos);
-            for(LocalTilePosition nPos : positions) {
-              int val = (int)(lighting.getLight(nPos) * 0.8);
-              if(val > maxLight) maxLight = val;
-            }
-            lighting.setLight(pos, maxLight);
-          }
+    Queue<LocalTilePosition> tbp = Queues.newArrayDeque(sunned);
+    while(!tbp.isEmpty()) {
+      LocalTilePosition pos = tbp.remove();
+      List<LocalTilePosition> positions = chunk.getNeighbours(pos);
+      int light = lighting.getLight(pos);
+      int nv = (int)(0.8*light);
+      for(LocalTilePosition nPos : positions) {
+        int val = lighting.getLight(nPos);
+        if(val < nv) {
+          lighting.setLight(nPos, nv);
+          tbp.add(nPos);
         }
       }
     }
