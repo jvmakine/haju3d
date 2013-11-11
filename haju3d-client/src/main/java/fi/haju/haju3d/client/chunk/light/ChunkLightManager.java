@@ -3,9 +3,11 @@ package fi.haju.haju3d.client.chunk.light;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.common.collect.Queues;
+import com.google.common.collect.Sets;
 import com.google.inject.Singleton;
 
 import fi.haju.haju3d.protocol.coordinate.ChunkPosition;
@@ -42,13 +44,13 @@ public class ChunkLightManager {
   
   public void calculateChunkLighting(Chunk chunk) {
     if (chunk.hasLight()) {
-      Queue<LocalTilePosition> sunned = calculateDirectSunLight(chunk);
+      Set<LocalTilePosition> sunned = calculateDirectSunLight(chunk);
       calculateReflectedLight(chunk, sunned);
     }
   }
 
-  private Queue<LocalTilePosition> calculateDirectSunLight(Chunk chunk) {
-    Queue<LocalTilePosition> res = Queues.newArrayDeque();
+  private Set<LocalTilePosition> calculateDirectSunLight(Chunk chunk) {
+    Set<LocalTilePosition> res = Sets.newHashSet();
     ChunkPosition pos = chunk.getPosition();
     ChunkLighting lighting = chunkLights.get(pos);
     if(lighting == null) {
@@ -71,7 +73,7 @@ public class ChunkLightManager {
     return res;
   }
   
-  private void calculateReflectedLight(Chunk chunk, Queue<LocalTilePosition> sunned) {
+  private void calculateReflectedLight(Chunk chunk, Set<LocalTilePosition> sunned) {
     ChunkLighting lighting = chunkLights.get(chunk.getPosition());
     Queue<LocalTilePosition> tbp = Queues.newArrayDeque(sunned);
     while(!tbp.isEmpty()) {
@@ -80,6 +82,7 @@ public class ChunkLightManager {
       int light = lighting.getLight(pos);
       int nv = (int)(0.8*light);
       for(LocalTilePosition nPos : positions) {
+        if(chunk.get(nPos) != Tile.AIR) continue;
         int val = lighting.getLight(nPos);
         if(val < nv) {
           lighting.setLight(nPos, nv);
