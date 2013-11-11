@@ -17,6 +17,9 @@ public class ChunkLightManager {
 
   private Map<ChunkPosition, ChunkLighting> chunkLights = new ConcurrentHashMap<>();
   
+  public static final int AMBIENT = 5;
+  public static final int DAY_LIGHT = 100;
+  
   public void setLight(ChunkPosition chunkPosition, LocalTilePosition position, int light) {
     if(!chunkLights.containsKey(chunkPosition)) {
       chunkLights.put(chunkPosition, new ChunkLighting(World.CHUNK_SIZE));
@@ -38,10 +41,10 @@ public class ChunkLightManager {
     if (chunk.hasLight()) {
       for (int x = 0; x < chunk.getWidth(); x++) {
         for (int z = 0; z < chunk.getDepth(); z++) {
-          int light = 100;
+          int light = DAY_LIGHT;
           for (int y = chunk.getHeight() - 1; y >= 0; y--) {
             if (chunk.get(x, y, z) != Tile.AIR) {
-              light = 20;
+              light = AMBIENT;
             }
             setLight(chunk.getPosition(), new LocalTilePosition(x, y, z), light);
           }

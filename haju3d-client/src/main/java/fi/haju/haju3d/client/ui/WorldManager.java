@@ -218,13 +218,13 @@ public class WorldManager {
       if (y < chunk.getHeight() - 1 && lightingManager.getLight(chunkPos, new LocalTilePosition(x, y + 1, z)) == 100) {
         if (edit.getNewTile() == Tile.AIR) {
           // fill darkness with light
-          int light = 100;
+          int light = ChunkLightManager.DAY_LIGHT;
           for (int yy = y; yy >= 0 && chunk.get(x, yy, z) == Tile.AIR; yy--) {
             lightingManager.setLight(chunkPos, new LocalTilePosition(x, yy, z), light);
           }
         } else if (edit.getNewTile() != Tile.AIR) {
           // fill light with darkness
-          int light = 20;
+          int light = ChunkLightManager.AMBIENT;
           for (int yy = y; yy >= 0 && lightingManager.getLight(chunkPos, new LocalTilePosition(x, yy, z)) == 100; yy--) {
             lightingManager.setLight(chunkPos, new LocalTilePosition(x, yy, z), light);
           }
