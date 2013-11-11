@@ -19,7 +19,7 @@ import com.jme3.texture.Texture.WrapMode;
 import com.jme3.texture.TextureArray;
 import com.jme3.util.BufferUtils;
 
-import fi.haju.haju3d.client.chunk.ChunkLightingManager;
+import fi.haju.haju3d.client.chunk.light.ChunkLightingManager;
 import fi.haju.haju3d.client.ui.ChunkRenderer;
 import fi.haju.haju3d.client.ui.ChunkSpatial;
 import fi.haju.haju3d.client.ui.mesh.MyMesh.MyFaceAndIndex;

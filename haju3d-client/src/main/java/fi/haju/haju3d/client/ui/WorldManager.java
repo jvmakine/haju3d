@@ -9,8 +9,8 @@ import com.jme3.math.Vector3f;
 import com.jme3.scene.Spatial;
 
 import fi.haju.haju3d.client.ClientSettings;
-import fi.haju.haju3d.client.chunk.ChunkLightingManager;
 import fi.haju.haju3d.client.chunk.ChunkProvider;
+import fi.haju.haju3d.client.chunk.light.ChunkLightingManager;
 import fi.haju.haju3d.client.ui.mesh.ChunkSpatialBuilder;
 import fi.haju.haju3d.protocol.coordinate.ChunkPosition;
 import fi.haju.haju3d.protocol.coordinate.GlobalTilePosition;
@@ -165,7 +165,7 @@ public class WorldManager {
     // need 3x3 chunks around meshing area so that mesh borders can be handled correctly
     List<Chunk> chunks = chunkProvider.getChunks(chunkIndex.getSurroundingPositions());
     for (Chunk c : chunks) {
-      calculateChunkLighting(c);
+      lightingManager.calculateChunkLighting(c);
       world.setChunk(c.getPosition(), c);
     }
     ChunkSpatial spatial = builder.makeChunkSpatial(world, chunkIndex);
@@ -256,22 +256,6 @@ public class WorldManager {
 
     for (ChunkPosition s : spatialsToUpdate) {
       rebuildChunkSpatial(getChunkSpatial(s));
-    }
-  }
-
-  private void calculateChunkLighting(Chunk chunk) {
-    if (chunk.hasLight()) {
-      for (int x = 0; x < chunk.getWidth(); x++) {
-        for (int z = 0; z < chunk.getDepth(); z++) {
-          int light = 100;
-          for (int y = chunk.getHeight() - 1; y >= 0; y--) {
-            if (chunk.get(x, y, z) != Tile.AIR) {
-              light = 20;
-            }
-            lightingManager.setLight(chunk.getPosition(), new LocalTilePosition(x, y, z), light);
-          }
-        }
-      }
     }
   }
 

@@ -1,4 +1,4 @@
-package fi.haju.haju3d.client.chunk;
+package fi.haju.haju3d.client.chunk.light;
 
 import fi.haju.haju3d.protocol.coordinate.LocalTilePosition;
 import fi.haju.haju3d.protocol.world.ByteArray3d;

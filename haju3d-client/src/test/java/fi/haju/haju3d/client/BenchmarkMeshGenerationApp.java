@@ -1,6 +1,6 @@
 package fi.haju.haju3d.client;
 
-import fi.haju.haju3d.client.chunk.ChunkLightingManager;
+import fi.haju.haju3d.client.chunk.light.ChunkLightingManager;
 import fi.haju.haju3d.client.ui.mesh.ChunkSpatialBuilder;
 import fi.haju.haju3d.client.ui.mesh.MyMesh;
 import fi.haju.haju3d.protocol.coordinate.ChunkPosition;
