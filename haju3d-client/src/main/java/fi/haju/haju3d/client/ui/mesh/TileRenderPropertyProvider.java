@@ -42,7 +42,7 @@ public final class TileRenderPropertyProvider {
       this.topTextures = topTextures;
       this.sideTextures = sideTextures;
     }
-    
+
     public TileProperties(int maxSmooths, List<MyTexture> textures) {
       this.maxSmooths = maxSmooths;
       this.topTextures = textures;

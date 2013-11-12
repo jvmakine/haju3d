@@ -1,19 +1,18 @@
 package fi.haju.haju3d.server.world.utils;
 
-import java.util.List;
-import java.util.Random;
-
 import com.google.common.collect.Lists;
-
 import fi.haju.haju3d.protocol.coordinate.LocalTilePosition;
 import fi.haju.haju3d.protocol.world.Chunk;
 import fi.haju.haju3d.protocol.world.Tile;
 
+import java.util.List;
+import java.util.Random;
+
 public final class WorldGenerationUtils {
-  
+
   private WorldGenerationUtils() {
   }
-  
+
   private static class TreeBranchState {
     public final int lengthLeft;
     public final LocalTilePosition place;
@@ -28,7 +27,7 @@ public final class WorldGenerationUtils {
     }
 
   }
-  
+
   public static void makeTreeAt(Chunk chunk, Random r, LocalTilePosition pos) {
     int x = pos.x;
     int y = pos.y;
@@ -42,13 +41,13 @@ public final class WorldGenerationUtils {
       chunk.set(x, y + k, z + 1, Tile.WOOD);
       if (k > 5) {
         if (r.nextInt(6) == 0)
-          branches.add(new TreeBranchState(r.nextInt(7) + (height-k), new LocalTilePosition(x, y + k, z), new LocalTilePosition(-1, 0, 0), 0));
+          branches.add(new TreeBranchState(r.nextInt(7) + (height - k), new LocalTilePosition(x, y + k, z), new LocalTilePosition(-1, 0, 0), 0));
         if (r.nextInt(6) == 0)
-          branches.add(new TreeBranchState(r.nextInt(7) + (height-k), new LocalTilePosition(x + 1, y + k, z), new LocalTilePosition(0, 0, -1), 0));
+          branches.add(new TreeBranchState(r.nextInt(7) + (height - k), new LocalTilePosition(x + 1, y + k, z), new LocalTilePosition(0, 0, -1), 0));
         if (r.nextInt(6) == 0)
-          branches.add(new TreeBranchState(r.nextInt(7) + (height-k), new LocalTilePosition(x + 1, y + k, z + 1), new LocalTilePosition(1, 0, 0), 0));
+          branches.add(new TreeBranchState(r.nextInt(7) + (height - k), new LocalTilePosition(x + 1, y + k, z + 1), new LocalTilePosition(1, 0, 0), 0));
         if (r.nextInt(6) == 0)
-          branches.add(new TreeBranchState(r.nextInt(7) + (height-k), new LocalTilePosition(x, y + k, z + 1), new LocalTilePosition(0, 0, 1), 0));
+          branches.add(new TreeBranchState(r.nextInt(7) + (height - k), new LocalTilePosition(x, y + k, z + 1), new LocalTilePosition(0, 0, 1), 0));
       }
     }
     while (!branches.isEmpty()) {
@@ -80,10 +79,10 @@ public final class WorldGenerationUtils {
       if (!chunk.isWithin(next)) continue;
       if (!chunk.get(next).equals(Tile.AIR) && !chunk.get(next).equals(Tile.WOOD)) continue;
       chunk.set(next.x, next.y, next.z, Tile.WOOD);
-      branches.add(new TreeBranchState(state.lengthLeft - 1, next, state.dir, state.length+1));
+      branches.add(new TreeBranchState(state.lengthLeft - 1, next, state.dir, state.length + 1));
     }
   }
-  
+
   public static int findGround(Chunk chunk, int h, int midX, int midZ) {
     for (int y = 0; y < h; y++) {
       int testY = h - 1 - y;
@@ -93,5 +92,5 @@ public final class WorldGenerationUtils {
     }
     return -1;
   }
-  
+
 }

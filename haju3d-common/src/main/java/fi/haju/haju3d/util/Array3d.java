@@ -1,9 +1,9 @@
 package fi.haju.haju3d.util;
 
+import fi.haju.haju3d.protocol.coordinate.Vector3i;
+
 import java.io.Serializable;
 import java.lang.reflect.Array;
-
-import fi.haju.haju3d.protocol.coordinate.Vector3i;
 
 public final class Array3d<T> implements Serializable {
   private static final long serialVersionUID = 1L;
@@ -19,10 +19,10 @@ public final class Array3d<T> implements Serializable {
     this.height = height;
     this.depth = depth;
     int size = width * height * depth;
-    this.data = (T[])Array.newInstance(initial.getClass(), size);
-    for(int i = 0; i < size; ++i) data[i] = initial;
+    this.data = (T[]) Array.newInstance(initial.getClass(), size);
+    for (int i = 0; i < size; ++i) data[i] = initial;
   }
- 
+
   public void set(Vector3i pos, T value) {
     data[getIndex(pos.x, pos.y, pos.z)] = value;
   }
@@ -34,7 +34,7 @@ public final class Array3d<T> implements Serializable {
   public boolean isInside(int x, int y, int z) {
     return x >= 0 && x < width && y >= 0 && y < height && z >= 0 && z < depth;
   }
-  
+
   public boolean isInside(Vector3i pos) {
     return pos.x >= 0 && pos.x < width && pos.y >= 0 && pos.y < height && pos.z >= 0 && pos.z < depth;
   }

@@ -1,7 +1,6 @@
 package fi.haju.haju3d.protocol.world;
 
 import com.jme3.math.Vector3f;
-
 import fi.haju.haju3d.protocol.coordinate.ChunkPosition;
 import fi.haju.haju3d.protocol.coordinate.LocalTilePosition;
 
@@ -39,7 +38,7 @@ public class TilePosition implements Serializable {
         (int) Math.floor(position.x / chunkSize / scale),
         (int) Math.floor(position.y / chunkSize / scale),
         (int) Math.floor(position.z / chunkSize / scale));
-    LocalTilePosition tilePos = new LocalTilePosition (
+    LocalTilePosition tilePos = new LocalTilePosition(
         (int) Math.floor(position.x / scale - chunkPos.x * chunkSize),
         (int) Math.floor(position.y / scale - chunkPos.y * chunkSize),
         (int) Math.floor(position.z / scale - chunkPos.z * chunkSize)

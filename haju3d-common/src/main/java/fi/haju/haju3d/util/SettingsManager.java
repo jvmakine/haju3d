@@ -7,10 +7,11 @@ import java.io.IOException;
 import java.util.Properties;
 
 public abstract class SettingsManager {
-  
+
   protected final Properties properties = new Properties();
 
   protected abstract void loadSettings();
+
   protected abstract String getPropertiesFileName();
 
   protected void load() {
@@ -29,26 +30,26 @@ public abstract class SettingsManager {
       throw new RuntimeException(e);
     }
   }
-  
+
   protected int loadInt(String key, int defval) {
     if (!properties.containsKey(key)) {
       properties.setProperty(key, Integer.toString(defval));
     }
     return Integer.parseInt(properties.getProperty(key));
   }
-  
+
   protected String loadString(String key, String defval) {
     if (!properties.containsKey(key)) {
       properties.setProperty(key, defval);
     }
     return properties.getProperty(key);
   }
-  
+
   public void init() {
     load();
     loadSettings();
     // Save missing properties as defaults
     save();
   }
-  
+
 }

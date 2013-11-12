@@ -1,8 +1,8 @@
 package fi.haju.haju3d.protocol.coordinate;
 
-import java.util.List;
-
 import com.google.common.collect.Lists;
+
+import java.util.List;
 
 
 /**
@@ -11,16 +11,16 @@ import com.google.common.collect.Lists;
 public final class ChunkPosition extends Vector3i {
 
   private static final long serialVersionUID = 1L;
-  
+
   public ChunkPosition(int x, int y, int z) {
     super(x, y, z);
-  }  
-  
+  }
+
   @Override
   public ChunkPosition add(int x, int y, int z) {
     return convertFromVector(super.add(x, y, z));
   }
-  
+
   public List<ChunkPosition> getPositionsAtMaxDistance(int distance) {
     List<ChunkPosition> positions = getSurroundingPositions(distance, distance, distance);
     List<ChunkPosition> result = Lists.newArrayList();
@@ -29,7 +29,7 @@ public final class ChunkPosition extends Vector3i {
     }
     return result;
   }
-  
+
   /**
    * Returns 3x3x3 list of all positions around this position. (This vector is also included in the set)
    */
@@ -48,9 +48,9 @@ public final class ChunkPosition extends Vector3i {
     }
     return positions;
   }
-    
+
   private static ChunkPosition convertFromVector(Vector3i v) {
     return new ChunkPosition(v.x, v.y, v.z);
   }
-  
+
 }
