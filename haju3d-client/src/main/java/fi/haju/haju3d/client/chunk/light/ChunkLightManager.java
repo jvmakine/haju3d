@@ -41,7 +41,7 @@ public class ChunkLightManager {
   }
 
   public int getLightAtWorldPos(GlobalTilePosition worldPosition) {
-    return getLight(chunkCoordinateSystem.getChunkIndex(worldPosition), chunkCoordinateSystem.getPositionWithinChunk(worldPosition));
+    return getLight(chunkCoordinateSystem.getChunkPosition(worldPosition), chunkCoordinateSystem.getPositionWithinChunk(worldPosition));
   }
 
   public void calculateChunkLighting(Chunk chunk) {

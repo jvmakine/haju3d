@@ -26,13 +26,13 @@ public final class World implements Serializable {
   }
 
   public Tile get(int x, int y, int z) {
-    ChunkPosition c = chunkCoordinateSystem.getChunkIndex(x, y, z);
+    ChunkPosition c = chunkCoordinateSystem.getChunkPosition(x, y, z);
     GlobalTilePosition wp = chunkCoordinateSystem.getWorldPosition(c);
     return chunks.get(c).get(x - wp.x, y - wp.y, z - wp.z);
   }
 
   public float getColor(int x, int y, int z) {
-    ChunkPosition c = chunkCoordinateSystem.getChunkIndex(x, y, z);
+    ChunkPosition c = chunkCoordinateSystem.getChunkPosition(x, y, z);
     GlobalTilePosition wp = chunkCoordinateSystem.getWorldPosition(c);
     return chunks.get(c).getColor(x - wp.x, y - wp.y, z - wp.z);
   }

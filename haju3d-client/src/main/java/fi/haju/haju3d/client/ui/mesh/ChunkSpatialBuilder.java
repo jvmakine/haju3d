@@ -137,10 +137,10 @@ public class ChunkSpatialBuilder {
     return geom;
   }
 
-  public ChunkSpatial makeChunkSpatial(World world, ChunkPosition chunkIndex) {
-    LOGGER.info("Making chunk spatial at " + chunkIndex);
+  public ChunkSpatial makeChunkSpatial(World world, ChunkPosition chunkPosition) {
+    LOGGER.info("Making chunk spatial at " + chunkPosition);
     ChunkSpatial chunkSpatial = new ChunkSpatial();
-    chunkSpatial.chunk = world.getChunk(chunkIndex);
+    chunkSpatial.chunk = world.getChunk(chunkPosition);
     rebuildChunkSpatial(world, chunkSpatial);
     return chunkSpatial;
   }
@@ -501,12 +501,12 @@ public class ChunkSpatialBuilder {
     return new Random(x + y * 133 + z * 23525 + edge * 1248234).nextInt();
   }
 
-  public static MyMesh makeCubeMesh(World world, ChunkPosition chunkIndex, ChunkLightManager lightingManager) {
+  public static MyMesh makeCubeMesh(World world, ChunkPosition chunkPosition, ChunkLightManager lightingManager) {
     synchronized (world) {
       MyMesh myMesh = new MyMesh();
 
-      GlobalTilePosition w1o = world.getChunkCoordinateSystem().getWorldPosition(chunkIndex);
-      GlobalTilePosition w2o = world.getChunkCoordinateSystem().getWorldPosition(chunkIndex.add(1, 1, 1));
+      GlobalTilePosition w1o = world.getChunkCoordinateSystem().getWorldPosition(chunkPosition);
+      GlobalTilePosition w2o = world.getChunkCoordinateSystem().getWorldPosition(chunkPosition.add(1, 1, 1));
 
       GlobalTilePosition w1 = w1o.add(-SMOOTH_BUFFER, -SMOOTH_BUFFER, -SMOOTH_BUFFER);
       GlobalTilePosition w2 = w2o.add(SMOOTH_BUFFER, SMOOTH_BUFFER, SMOOTH_BUFFER);

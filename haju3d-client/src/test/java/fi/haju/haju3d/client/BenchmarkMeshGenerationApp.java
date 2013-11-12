@@ -17,10 +17,10 @@ public class BenchmarkMeshGenerationApp {
     for (int x = 0; x < 3; x++) {
       for (int y = 0; y < 3; y++) {
         for (int z = 0; z < 3; z++) {
-          ChunkPosition chunkIndex = new ChunkPosition(x, y, z);
+          ChunkPosition chunkPosition = new ChunkPosition(x, y, z);
           int chunkSize = world.getChunkCoordinateSystem().getChunkSize();
-          Chunk chunk = new Chunk(chunkSize, 0, chunkIndex);
-          world.setChunk(chunkIndex, chunk);
+          Chunk chunk = new Chunk(chunkSize, 0, chunkPosition);
+          world.setChunk(chunkPosition, chunk);
         }
       }
     }

@@ -18,29 +18,29 @@ public final class ChunkCoordinateSystem {
   }
 
   public LocalTilePosition getPositionWithinChunk(GlobalTilePosition position) {
-    ChunkPosition c = getChunkIndex(position);
+    ChunkPosition c = getChunkPosition(position);
     GlobalTilePosition wp = getWorldPosition(c);
     return new LocalTilePosition(position.x - wp.x, position.y - wp.y, position.z - wp.z);
   }
 
-  public ChunkPosition getChunkIndex(int x, int y, int z) {
-    return new ChunkPosition(getChunkIndex(x), getChunkIndex(y), getChunkIndex(z));
+  public ChunkPosition getChunkPosition(int x, int y, int z) {
+    return new ChunkPosition(getChunkPosition(x), getChunkPosition(y), getChunkPosition(z));
   }
 
-  public ChunkPosition getChunkIndex(GlobalTilePosition worldPosition) {
-    return new ChunkPosition(getChunkIndex(worldPosition.x), getChunkIndex(worldPosition.y), getChunkIndex(worldPosition.z));
+  public ChunkPosition getChunkPosition(GlobalTilePosition worldPosition) {
+    return new ChunkPosition(getChunkPosition(worldPosition.x), getChunkPosition(worldPosition.y), getChunkPosition(worldPosition.z));
   }
 
-  public GlobalTilePosition getWorldPosition(ChunkPosition chunkIndex) {
-    return new GlobalTilePosition(getWorldPosition(chunkIndex.x), getWorldPosition(chunkIndex.y), getWorldPosition(chunkIndex.z));
+  public GlobalTilePosition getWorldPosition(ChunkPosition chunkPosition) {
+    return new GlobalTilePosition(getWorldPosition(chunkPosition.x), getWorldPosition(chunkPosition.y), getWorldPosition(chunkPosition.z));
   }
 
-  private int getChunkIndex(int worldPosition) {
+  private int getChunkPosition(int worldPosition) {
     return (worldPosition + chunkOffsetWorld) / chunkSize - chunkOffsetIndex;
   }
 
-  private int getWorldPosition(int chunkIndex) {
-    return chunkIndex * chunkSize;
+  private int getWorldPosition(int chunkPosition) {
+    return chunkPosition * chunkSize;
   }
 
   public int getChunkSize() {

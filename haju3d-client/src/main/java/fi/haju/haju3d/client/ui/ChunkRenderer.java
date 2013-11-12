@@ -239,20 +239,20 @@ public class ChunkRenderer extends SimpleApplication {
   }
 
   private void updateWorldMesh() {
-    worldManager.setPosition(getCurrentChunkIndex());
+    worldManager.setPosition(getCurrentChunkPosition());
   }
 
-  private ChunkPosition getCurrentChunkIndex() {
-    return worldManager.getChunkIndexForLocation(getCamera().getLocation());
+  private ChunkPosition getCurrentChunkPosition() {
+    return worldManager.getChunkPositionForLocation(getCamera().getLocation());
   }
 
   private void updateChunkSpatialVisibility() {
-    ChunkPosition chunkIndex = getCurrentChunkIndex();
+    ChunkPosition chunkPosition = getCurrentChunkPosition();
     terrainNode.detachAllChildren();
-    for (ChunkPosition pos : chunkIndex.getSurroundingPositions(CHUNK_CUT_OFF, CHUNK_CUT_OFF, CHUNK_CUT_OFF)) {
+    for (ChunkPosition pos : chunkPosition.getSurroundingPositions(CHUNK_CUT_OFF, CHUNK_CUT_OFF, CHUNK_CUT_OFF)) {
       ChunkSpatial cs = worldManager.getChunkSpatial(pos);
       if (cs != null) {
-        terrainNode.attachChild(pos.distanceTo(chunkIndex) <= 2 ? cs.highDetail : cs.lowDetail);
+        terrainNode.attachChild(pos.distanceTo(chunkPosition) <= 2 ? cs.highDetail : cs.lowDetail);
       }
     }
   }
@@ -354,7 +354,7 @@ public class ChunkRenderer extends SimpleApplication {
     tpf = Math.min(tpf, 1.0f / 30);
 
     if (viewMode == ViewMode.FLYCAM
-        || worldManager.getChunkSpatial(getCurrentChunkIndex()) == null) {
+        || worldManager.getChunkSpatial(getCurrentChunkPosition()) == null) {
       return;
     }
 

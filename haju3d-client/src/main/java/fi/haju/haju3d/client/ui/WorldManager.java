@@ -64,8 +64,8 @@ public class WorldManager {
     return new GlobalTilePosition((int) Math.floor(location.x / SCALE), (int) Math.floor(location.y / SCALE), (int) Math.floor(location.z / SCALE));
   }
 
-  public ChunkPosition getChunkIndexForLocation(Vector3f location) {
-    return chunkCoordinateSystem.getChunkIndex(getWorldPosition(location));
+  public ChunkPosition getChunkPositionForLocation(Vector3f location) {
+    return chunkCoordinateSystem.getChunkPosition(getWorldPosition(location));
   }
 
   public Vector3f getGlobalPosition(GlobalTilePosition worldPosition) {
@@ -95,7 +95,7 @@ public class WorldManager {
   }
 
   private Vector3f getCollisionPoint(Vector3f from, Vector3f to, float distanceFix, boolean useBoxes) {
-    Set<ChunkPosition> chunkPositions = Sets.newHashSet(getChunkIndexForLocation(from), getChunkIndexForLocation(to));
+    Set<ChunkPosition> chunkPositions = Sets.newHashSet(getChunkPositionForLocation(from), getChunkPositionForLocation(to));
     Ray ray = new Ray(from, to.subtract(from).normalize());
     float distance = from.distance(to);
     for (ChunkPosition pos : chunkPositions) {
@@ -113,11 +113,11 @@ public class WorldManager {
     return null;
   }
 
-  private void removeFarChunks(ChunkPosition centerChunkIndex) {
+  private void removeFarChunks(ChunkPosition centerChunkPosition) {
     Set<ChunkPosition> remove = new HashSet<>();
     for (Map.Entry<ChunkPosition, ChunkSpatial> c : chunkSpatials.entrySet()) {
       ChunkPosition v = c.getKey();
-      if (centerChunkIndex.distanceTo(v) > settings.getChunkRenderDistance() + 1) {
+      if (centerChunkPosition.distanceTo(v) > settings.getChunkRenderDistance() + 1) {
         remove.add(v);
       }
     }
@@ -126,10 +126,10 @@ public class WorldManager {
     }
   }
 
-  private void makeChunkNearPosition(ChunkPosition centerChunkIndex) {
+  private void makeChunkNearPosition(ChunkPosition centerChunkPosition) {
     List<ChunkPosition> indexes = new ArrayList<>();
-    indexes.add(centerChunkIndex);
-    indexes.addAll(centerChunkIndex.getPositionsAtMaxDistance(settings.getChunkRenderDistance()));
+    indexes.add(centerChunkPosition);
+    indexes.addAll(centerChunkPosition.getPositionsAtMaxDistance(settings.getChunkRenderDistance()));
     final ChunkPosition pos = new ChunkPosition(position.x, position.y, position.z);
     Collections.sort(indexes, new Comparator<ChunkPosition>() {
       @Override
@@ -158,15 +158,15 @@ public class WorldManager {
     builder.rebuildChunkSpatial(world, spatial);
   }
 
-  private void makeChunkAt(ChunkPosition chunkIndex) {
+  private void makeChunkAt(ChunkPosition chunkPosition) {
     // need 3x3 chunks around meshing area so that mesh borders can be handled correctly
-    List<Chunk> chunks = chunkProvider.getChunks(chunkIndex.getSurroundingPositions());
+    List<Chunk> chunks = chunkProvider.getChunks(chunkPosition.getSurroundingPositions());
     for (Chunk c : chunks) {
       lightingManager.calculateChunkLighting(c);
       world.setChunk(c.getPosition(), c);
     }
-    ChunkSpatial spatial = builder.makeChunkSpatial(world, chunkIndex);
-    chunkSpatials.put(chunkIndex, spatial);
+    ChunkSpatial spatial = builder.makeChunkSpatial(world, chunkPosition);
+    chunkSpatials.put(chunkPosition, spatial);
   }
 
   public void setPosition(ChunkPosition position) {
