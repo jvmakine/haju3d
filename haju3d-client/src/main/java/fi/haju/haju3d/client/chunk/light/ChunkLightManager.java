@@ -59,10 +59,11 @@ public class ChunkLightManager {
       lighting = new ChunkLighting(chunkCoordinateSystem.getChunkSize());
       chunkLights.put(pos, lighting);
     }
-    for (int x = 0; x < chunk.getWidth(); x++) {
-      for (int z = 0; z < chunk.getDepth(); z++) {
+    int size = chunk.getSize();
+    for (int x = 0; x < size; x++) {
+      for (int z = 0; z < size; z++) {
         int light = DAY_LIGHT;
-        for (int y = chunk.getHeight() - 1; y >= 0; y--) {
+        for (int y = size - 1; y >= 0; y--) {
           if (chunk.get(x, y, z) != Tile.AIR) {
             break;
           }

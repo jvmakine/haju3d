@@ -85,8 +85,8 @@ public class ServerImpl implements Server {
         world.setChunk(position, opt.get());
         return opt.get();
       }
-      int sz = chunkCoordinateSystem.getChunkSize();
-      Chunk newChunk = generator.generateChunk(position, sz, sz, sz);
+      int size = chunkCoordinateSystem.getChunkSize();
+      Chunk newChunk = generator.generateChunk(position, size);
       world.setChunk(position, newChunk);
       saver.saveChunk(newChunk);
       return newChunk;

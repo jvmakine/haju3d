@@ -212,7 +212,7 @@ public class WorldManager {
       int z = tile.getTileWithinChunk().z;
       chunk.set(x, y, z, edit.getNewTile());
 
-      if (y < chunk.getHeight() - 1 && lightingManager.getLight(chunkPos, new LocalTilePosition(x, y + 1, z)) == 100) {
+      if (y < chunk.getSize() - 1 && lightingManager.getLight(chunkPos, new LocalTilePosition(x, y + 1, z)) == 100) {
         if (edit.getNewTile() == Tile.AIR) {
           // fill darkness with light
           int light = ChunkLightManager.DAY_LIGHT;

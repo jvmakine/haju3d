@@ -214,13 +214,13 @@ public class CharacterCreationApp extends SimpleApplication {
       for (int y = 0; y < 10; y++) {
         for (int z = 0; z < 10; z++) {
           ChunkPosition pos = new ChunkPosition(x - 5, y - 5, z - 5);
-          world.setChunk(pos, new Chunk(sz, sz, sz, 0, pos, Tile.AIR));
+          world.setChunk(pos, new Chunk(sz, 0, pos, Tile.AIR));
         }
       }
     }
 
     ChunkPosition cp = new ChunkPosition(0, 0, 0);
-    Chunk chunk = new Chunk(sz, sz, sz, 0, cp);
+    Chunk chunk = new Chunk(sz, 0, cp);
     chunk.set(new Chunk.GetValue() {
       @Override
       public Tile getValue(int x, int y, int z) {

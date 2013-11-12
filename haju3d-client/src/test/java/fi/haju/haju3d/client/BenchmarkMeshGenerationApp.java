@@ -19,7 +19,7 @@ public class BenchmarkMeshGenerationApp {
         for (int z = 0; z < 3; z++) {
           ChunkPosition chunkIndex = new ChunkPosition(x, y, z);
           int chunkSize = world.getChunkCoordinateSystem().getChunkSize();
-          Chunk chunk = new Chunk(chunkSize, chunkSize, chunkSize, 0, chunkIndex);
+          Chunk chunk = new Chunk(chunkSize, 0, chunkIndex);
           world.setChunk(chunkIndex, chunk);
         }
       }

@@ -18,9 +18,7 @@ public final class Chunk implements Serializable {
   private final int seed;
   private final ChunkPosition position;
   private Tile tile;
-  private final int width;
-  private final int height;
-  private final int depth;
+  private final int size;
 
   private final static Map<Byte, Tile> byteToTile = new HashMap<>();
   private final static Map<Tile, Byte> tileToByte = new HashMap<>();
@@ -36,38 +34,31 @@ public final class Chunk implements Serializable {
     Tile getValue(int x, int y, int z);
   }
 
-  public Chunk(int width, int height, int depth, int seed, ChunkPosition position) {
+  public Chunk(int size, int seed, ChunkPosition position) {
     this.seed = seed;
     this.position = position;
-    this.tiles = new ByteArray3d(width, height, depth);
-    this.colors = new ByteArray3d(width, height, depth);
+    this.tiles = new ByteArray3d(size, size, size);
+    this.colors = new ByteArray3d(size, size, size);
     this.tile = null;
-    this.width = width;
-    this.height = height;
-    this.depth = depth;
+    this.size = size;
   }
 
   /**
    * Chunk that has constant tile value (typically AIR or GROUND).
    */
-  public Chunk(int width, int height, int depth, int seed, ChunkPosition position, Tile tile) {
+  public Chunk(int size, int seed, ChunkPosition position, Tile tile) {
     this.seed = seed;
     this.position = position;
     this.tiles = null;
     this.colors = null;
     this.tile = tile;
-    this.width = width;
-    this.height = height;
-    this.depth = depth;
+    this.size = size;
   }
 
   public void set(GetValue getValue) {
-    int w = getWidth();
-    int h = getHeight();
-    int d = getDepth();
-    for (int x = 0; x < w; x++) {
-      for (int y = 0; y < h; y++) {
-        for (int z = 0; z < d; z++) {
+    for (int x = 0; x < size; x++) {
+      for (int y = 0; y < size; y++) {
+        for (int z = 0; z < size; z++) {
           set(x, y, z, getValue.getValue(x, y, z));
         }
       }
@@ -76,8 +67,8 @@ public final class Chunk implements Serializable {
 
   public void set(int x, int y, int z, Tile value) {
     if (tiles == null) { //Changing a constant chunk -> convert
-      this.tiles = new ByteArray3d(getWidth(), getHeight(), getDepth());
-      this.colors = new ByteArray3d(getWidth(), getHeight(), getDepth());
+      this.tiles = new ByteArray3d(size, size, size);
+      this.colors = new ByteArray3d(size, size, size);
       tiles.fill(tileToByte.get(tile));
       tile = null;
     }
@@ -89,7 +80,14 @@ public final class Chunk implements Serializable {
   }
 
   public boolean isInside(int x, int y, int z) {
-    return x >= 0 && x < width && y >= 0 && y < height && z >= 0 && z < depth;
+    return x >= 0 && x < size && y >= 0 && y < size && z >= 0 && z < size;
+  }
+
+  public boolean isWithin(LocalTilePosition pos) {
+    return
+        pos.x >= 0 && pos.x < size
+            && pos.y >= 0 && pos.y < size
+            && pos.z >= 0 && pos.z < size;
   }
 
   public Tile get(int x, int y, int z) {
@@ -108,16 +106,8 @@ public final class Chunk implements Serializable {
     return tile == null;
   }
 
-  public int getWidth() {
-    return width;
-  }
-
-  public int getHeight() {
-    return height;
-  }
-
-  public int getDepth() {
-    return depth;
+  public int getSize() {
+    return size;
   }
 
   public int getSeed() {
@@ -128,16 +118,9 @@ public final class Chunk implements Serializable {
     return position;
   }
 
-  public boolean isWithin(LocalTilePosition pos) {
-    return
-        pos.x >= 0 && pos.x < getWidth()
-            && pos.y >= 0 && pos.y < getHeight()
-            && pos.z >= 0 && pos.z < getDepth();
-  }
-
   public List<LocalTilePosition> getNeighbours(LocalTilePosition pos) {
     if (!isWithin(pos)) {
-      throw new IllegalArgumentException(pos + " is not within the chunk, chunkSize = " + getWidth());
+      throw new IllegalArgumentException(pos + " is not within the chunk, chunkSize = " + size);
     }
     List<LocalTilePosition> surroundings = Lists.newArrayList(
         new LocalTilePosition(pos.x + 1, pos.y, pos.z),
