@@ -18,7 +18,6 @@ import com.jme3.texture.Texture.MinFilter;
 import com.jme3.texture.Texture.WrapMode;
 import com.jme3.texture.TextureArray;
 import com.jme3.util.BufferUtils;
-
 import fi.haju.haju3d.client.chunk.light.ChunkLightManager;
 import fi.haju.haju3d.client.ui.ChunkRenderer;
 import fi.haju.haju3d.client.ui.ChunkSpatial;
@@ -28,7 +27,6 @@ import fi.haju.haju3d.protocol.coordinate.ChunkPosition;
 import fi.haju.haju3d.protocol.coordinate.GlobalTilePosition;
 import fi.haju.haju3d.protocol.world.Tile;
 import fi.haju.haju3d.protocol.world.World;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -502,13 +500,13 @@ public class ChunkSpatialBuilder {
   private static int getZIndex(int x, int y, int z, int edge) {
     return new Random(x + y * 133 + z * 23525 + edge * 1248234).nextInt();
   }
-  
+
   public static MyMesh makeCubeMesh(World world, ChunkPosition chunkIndex, ChunkLightManager lightingManager) {
     synchronized (world) {
       MyMesh myMesh = new MyMesh();
 
-      GlobalTilePosition w1o = World.getWorldPosition(chunkIndex);
-      GlobalTilePosition w2o = World.getWorldPosition(chunkIndex.add(1, 1, 1));
+      GlobalTilePosition w1o = world.getChunkCoordinateSystem().getWorldPosition(chunkIndex);
+      GlobalTilePosition w2o = world.getChunkCoordinateSystem().getWorldPosition(chunkIndex.add(1, 1, 1));
 
       GlobalTilePosition w1 = w1o.add(-SMOOTH_BUFFER, -SMOOTH_BUFFER, -SMOOTH_BUFFER);
       GlobalTilePosition w2 = w2o.add(SMOOTH_BUFFER, SMOOTH_BUFFER, SMOOTH_BUFFER);

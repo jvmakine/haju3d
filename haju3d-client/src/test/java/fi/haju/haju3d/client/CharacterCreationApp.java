@@ -20,14 +20,13 @@ import com.jme3.scene.Mesh;
 import com.jme3.scene.Spatial;
 import com.jme3.shadow.DirectionalLightShadowRenderer;
 import com.jme3.shadow.EdgeFilteringMode;
+import fi.haju.haju3d.client.chunk.light.ChunkLightManager;
 import fi.haju.haju3d.client.ui.input.InputActions;
 import fi.haju.haju3d.client.ui.mesh.ChunkSpatialBuilder;
 import fi.haju.haju3d.client.ui.mesh.MyMesh;
-import fi.haju.haju3d.protocol.Vector3i;
-import fi.haju.haju3d.protocol.world.Chunk;
-import fi.haju.haju3d.protocol.world.Tile;
-import fi.haju.haju3d.protocol.world.TilePosition;
-import fi.haju.haju3d.protocol.world.World;
+import fi.haju.haju3d.protocol.coordinate.ChunkPosition;
+import fi.haju.haju3d.protocol.coordinate.Vector3i;
+import fi.haju.haju3d.protocol.world.*;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -36,9 +35,14 @@ public class CharacterCreationApp extends SimpleApplication {
 
   public static final float SCALE = 0.1f;
   private static final float SELECTOR_DISTANCE = 100f;
+  public static final Tile GROUND_TILE = Tile.GROUND;
+
+  private ChunkCoordinateSystem chunkCoordinateSystem = new ChunkCoordinateSystem(32);
+
   private World world;
   private boolean dig;
   private boolean build;
+  private ChunkLightManager light = new ChunkLightManager();
 
   public static void main(String[] args) {
     CharacterCreationApp app = new CharacterCreationApp();
@@ -55,7 +59,7 @@ public class CharacterCreationApp extends SimpleApplication {
     flyCam.setRotationSpeed(2.0f);
     setupLights();
     setupCrosshair();
-    updateChunkMesh(new Vector3i());
+    updateChunkMesh(new ChunkPosition(0, 0, 0));
     setupControls();
   }
 
@@ -97,7 +101,7 @@ public class CharacterCreationApp extends SimpleApplication {
       setTile(Tile.AIR);
     }
     if (build) {
-      setTile(Tile.BRICK);
+      setTile(GROUND_TILE);
     }
   }
 
@@ -122,13 +126,22 @@ public class CharacterCreationApp extends SimpleApplication {
 
   private void setupLights() {
     DirectionalLight light = new DirectionalLight();
-    Vector3f lightDir = new Vector3f(-1, -2, -3);
-    light.setDirection(lightDir.normalizeLocal());
+    light.setDirection(new Vector3f(-1, -2, -3).normalizeLocal());
     light.setColor(new ColorRGBA(1f, 1f, 1f, 1f).mult(1.0f));
     rootNode.addLight(light);
 
+    DirectionalLight light2 = new DirectionalLight();
+    light2.setDirection(new Vector3f(1, -2, 3).normalizeLocal());
+    light2.setColor(new ColorRGBA(0.4f, 0.4f, 1f, 1f).mult(1.0f));
+    rootNode.addLight(light2);
+
+    DirectionalLight light3 = new DirectionalLight();
+    light3.setDirection(new Vector3f(-4, 2, 2).normalizeLocal());
+    light3.setColor(new ColorRGBA(0.6f, 0.2f, 0.3f, 1f).mult(1.0f));
+    rootNode.addLight(light3);
+
     AmbientLight ambient = new AmbientLight();
-    ambient.setColor(ColorRGBA.Blue);
+    ambient.setColor(ColorRGBA.Blue.mult(0.4f));
     rootNode.addLight(ambient);
 
     DirectionalLightShadowRenderer dlsr = new DirectionalLightShadowRenderer(assetManager, 2048, 4);
@@ -153,13 +166,14 @@ public class CharacterCreationApp extends SimpleApplication {
     viewPort.addProcessor(fpp);
   }
 
-  private void updateChunkMesh(Vector3i pos) {
+  private void updateChunkMesh(ChunkPosition pos) {
     Spatial oldSpatial = spatials.get(pos);
     if (oldSpatial != null) {
       rootNode.detachChild(oldSpatial);
     }
 
-    MyMesh myMesh = ChunkSpatialBuilder.makeCubeMesh(world, pos);
+    MyMesh myMesh = ChunkSpatialBuilder.makeCubeMesh(world, pos, light);
+    ChunkSpatialBuilder.smoothMesh(myMesh);
     ChunkSpatialBuilder.prepareMesh(myMesh);
     Spatial spatial = makeSpatial(myMesh);
     spatial.setLocalScale(SCALE);
@@ -171,7 +185,7 @@ public class CharacterCreationApp extends SimpleApplication {
     Vector3f camPos = cam.getLocation();
     Vector3f collisionPoint = getCollisionPoint(camPos, camPos.add(cam.getDirection().normalize().mult(SELECTOR_DISTANCE)));
     if (collisionPoint != null) {
-      return TilePosition.getTilePosition(SCALE, world.getChunkSize(), collisionPoint);
+      return TilePosition.getTilePosition(SCALE, chunkCoordinateSystem.getChunkSize(), collisionPoint);
     }
     return null;
   }
@@ -193,26 +207,27 @@ public class CharacterCreationApp extends SimpleApplication {
   }
 
   private World createWorld() {
-    World world = new World(32);
-    final int sz = world.getChunkSize();
+    World world = new World(chunkCoordinateSystem);
+    final int sz = chunkCoordinateSystem.getChunkSize();
 
     for (int x = 0; x < 10; x++) {
       for (int y = 0; y < 10; y++) {
         for (int z = 0; z < 10; z++) {
-          Vector3i pos = new Vector3i(x - 5, y - 5, z - 5);
+          ChunkPosition pos = new ChunkPosition(x - 5, y - 5, z - 5);
           world.setChunk(pos, new Chunk(sz, sz, sz, 0, pos, Tile.AIR));
         }
       }
     }
 
-    Chunk chunk = new Chunk(sz, sz, sz, 0, new Vector3i());
+    ChunkPosition cp = new ChunkPosition(0, 0, 0);
+    Chunk chunk = new Chunk(sz, sz, sz, 0, cp);
     chunk.set(new Chunk.GetValue() {
       @Override
       public Tile getValue(int x, int y, int z) {
-        return (x - sz / 2) * (x - sz / 2) + (y - sz / 2) * (y - sz / 2) + (z - sz / 2) * (z - sz / 2) < (sz / 2) * (sz / 2) ? Tile.BRICK : Tile.AIR;
+        return (x - sz / 2) * (x - sz / 2) + (y - sz / 2) * (y - sz / 2) + (z - sz / 2) * (z - sz / 2) < (sz / 2) * (sz / 2) ? GROUND_TILE : Tile.AIR;
       }
     });
-    world.setChunk(new Vector3i(), chunk);
+    world.setChunk(cp, chunk);
     return world;
   }
 

@@ -30,7 +30,6 @@ import com.jme3.texture.Texture;
 import com.jme3.texture.Texture2D;
 import com.jme3.util.SkyFactory;
 import com.jme3.water.WaterFilter;
-
 import fi.haju.haju3d.client.Character;
 import fi.haju.haju3d.client.ClientSettings;
 import fi.haju.haju3d.client.CloseEventHandler;
@@ -152,7 +151,7 @@ public class ChunkRenderer extends SimpleApplication {
 
   private void setupCharacter() {
     character = new Character();
-    character.setPosition(worldManager.getGlobalPosition(new GlobalTilePosition(20, 32, 25)));
+    character.setPosition(worldManager.getGlobalPosition(new GlobalTilePosition(20, 64, 25)));
 
     Geometry characterBody = makeSimpleMesh(
         new Box(0.3f, 0.4f, 0.2f),

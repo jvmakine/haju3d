@@ -7,7 +7,6 @@ import com.jme3.collision.CollisionResults;
 import com.jme3.math.Ray;
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Spatial;
-
 import fi.haju.haju3d.client.ClientSettings;
 import fi.haju.haju3d.client.chunk.ChunkProvider;
 import fi.haju.haju3d.client.chunk.light.ChunkLightManager;
@@ -16,10 +15,7 @@ import fi.haju.haju3d.protocol.coordinate.ChunkPosition;
 import fi.haju.haju3d.protocol.coordinate.GlobalTilePosition;
 import fi.haju.haju3d.protocol.coordinate.LocalTilePosition;
 import fi.haju.haju3d.protocol.interaction.WorldEdit;
-import fi.haju.haju3d.protocol.world.Chunk;
-import fi.haju.haju3d.protocol.world.Tile;
-import fi.haju.haju3d.protocol.world.TilePosition;
-import fi.haju.haju3d.protocol.world.World;
+import fi.haju.haju3d.protocol.world.*;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -40,9 +36,10 @@ public class WorldManager {
   @Inject
   private ChunkLightManager lightingManager;
 
-  private World world = new World();
-  private Map<ChunkPosition, ChunkSpatial> chunkSpatials = new ConcurrentHashMap<>();
-  private Object lock = new Object();
+  private final ChunkCoordinateSystem chunkCoordinateSystem = ChunkCoordinateSystem.DEFAULT;
+  private final World world = new World(chunkCoordinateSystem);
+  private final Map<ChunkPosition, ChunkSpatial> chunkSpatials = new ConcurrentHashMap<>();
+  private final Object lock = new Object();
 
   private volatile boolean running;
   private volatile ChunkPosition position;
@@ -68,7 +65,7 @@ public class WorldManager {
   }
 
   public ChunkPosition getChunkIndexForLocation(Vector3f location) {
-    return World.getChunkIndex(getWorldPosition(location));
+    return chunkCoordinateSystem.getChunkIndex(getWorldPosition(location));
   }
 
   public Vector3f getGlobalPosition(GlobalTilePosition worldPosition) {
@@ -81,7 +78,7 @@ public class WorldManager {
 
   public TilePosition getVoxelCollisionPoint(Vector3f from, Vector3f to) {
     Vector3f collision = getCollisionPoint(from, to, 0.0f, true);
-    int chunkSize = world.getChunkSize();
+    int chunkSize = chunkCoordinateSystem.getChunkSize();
     if (collision == null) return null;
     // Move collision slightly to the other side of the polygon
     Vector3f collisionTile = collision.add(to.subtract(from).normalize().mult(PICK_ACCURACY));
@@ -90,7 +87,7 @@ public class WorldManager {
 
   public TilePosition getVoxelCollisionDirection(Vector3f from, Vector3f to) {
     Vector3f collision = getCollisionPoint(from, to, 0.0f, true);
-    int chunkSize = world.getChunkSize();
+    int chunkSize = chunkCoordinateSystem.getChunkSize();
     if (collision == null) return null;
     // Move collision slightly to the other side of the polygon
     Vector3f collisionTile = collision.subtract(to.subtract(from).normalize().mult(PICK_ACCURACY));
@@ -201,7 +198,7 @@ public class WorldManager {
   }
 
   public int getChunkSize() {
-    return world.getChunkSize();
+    return chunkCoordinateSystem.getChunkSize();
   }
 
   public void registerWorldEdits(List<WorldEdit> edits) {
@@ -237,19 +234,19 @@ public class WorldManager {
       if (x < ChunkSpatialBuilder.SMOOTH_BUFFER) {
         spatialsToUpdate.add(tile.getChunkPosition().add(-1, 0, 0));
       }
-      if (x >= world.getChunkSize() - ChunkSpatialBuilder.SMOOTH_BUFFER) {
+      if (x >= chunkCoordinateSystem.getChunkSize() - ChunkSpatialBuilder.SMOOTH_BUFFER) {
         spatialsToUpdate.add(tile.getChunkPosition().add(1, 0, 0));
       }
       if (y < ChunkSpatialBuilder.SMOOTH_BUFFER) {
         spatialsToUpdate.add(tile.getChunkPosition().add(0, -1, 0));
       }
-      if (y >= world.getChunkSize() - ChunkSpatialBuilder.SMOOTH_BUFFER) {
+      if (y >= chunkCoordinateSystem.getChunkSize() - ChunkSpatialBuilder.SMOOTH_BUFFER) {
         spatialsToUpdate.add(tile.getChunkPosition().add(0, 1, 0));
       }
       if (z < ChunkSpatialBuilder.SMOOTH_BUFFER) {
         spatialsToUpdate.add(tile.getChunkPosition().add(0, 0, -1));
       }
-      if (z >= world.getChunkSize() - ChunkSpatialBuilder.SMOOTH_BUFFER) {
+      if (z >= chunkCoordinateSystem.getChunkSize() - ChunkSpatialBuilder.SMOOTH_BUFFER) {
         spatialsToUpdate.add(tile.getChunkPosition().add(0, 0, 1));
       }
     }
