@@ -20,9 +20,9 @@ public final class LocalTilePosition extends Vector3i {
   public LocalTilePosition add(int x, int y, int z) {
     return convertFromVector(super.add(x, y, z));
   }
-  
+
   private static LocalTilePosition convertFromVector(Vector3i v) {
     return new LocalTilePosition(v.x, v.y, v.z);
   }
-  
+
 }

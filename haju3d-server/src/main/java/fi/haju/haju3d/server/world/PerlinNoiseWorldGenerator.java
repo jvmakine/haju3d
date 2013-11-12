@@ -2,7 +2,6 @@ package fi.haju.haju3d.server.world;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
-
 import fi.haju.haju3d.protocol.coordinate.ChunkPosition;
 import fi.haju.haju3d.protocol.coordinate.LocalTilePosition;
 import fi.haju.haju3d.protocol.world.Chunk;
@@ -12,7 +11,9 @@ import fi.haju.haju3d.server.world.utils.FloodFiller;
 import fi.haju.haju3d.server.world.utils.WorldGenerationUtils;
 import fi.haju.haju3d.util.noise.InterpolationUtil;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 
 public class PerlinNoiseWorldGenerator implements WorldGenerator {
   private int seed;
@@ -20,14 +21,14 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
   private Map<ChunkPosition, PerlinNoiseScales> perlinNoises = Maps.newHashMap();
 
   @Override
-  public Chunk generateChunk(ChunkPosition position, int width, int height, int depth) {
+  public Chunk generateChunk(ChunkPosition position, int size) {
     int realseed = seed ^ (position.x + position.y * 123 + position.z * 12347);
     if (position.y < 0) {
-      return new Chunk(width, height, depth, realseed, position, Tile.GROUND);
+      return new Chunk(size, realseed, position, Tile.GROUND);
     } else if (position.y > 0) {
-      return new Chunk(width, height, depth, realseed, position, Tile.AIR);
+      return new Chunk(size, realseed, position, Tile.AIR);
     }
-    Chunk chunk = new Chunk(width, height, depth, realseed, position);
+    Chunk chunk = new Chunk(size, realseed, position);
     return makeChunk(chunk, realseed, position);
   }
 
@@ -64,7 +65,7 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
   }
 
   private static Chunk filterFloaters(Chunk chunk) {
-    Chunk ground = new Chunk(chunk.getWidth(), chunk.getHeight(), chunk.getDepth(), chunk.getSeed(), chunk.getPosition());
+    Chunk ground = new Chunk(chunk.getSize(), chunk.getSeed(), chunk.getPosition());
     new FloodFiller(ground, chunk).fill();
     return ground;
   }
@@ -146,27 +147,25 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
   }
 
   private Chunk makeChunk(Chunk chunk, int seed, ChunkPosition position) {
-    int w = chunk.getWidth();
-    int h = chunk.getHeight();
-    int d = chunk.getDepth();
+    int size = chunk.getSize();
 
-    FloatArray3d noise = make3dPerlinNoise(seed, w, h, d, position);
-    float thres = h / 3;
-    for (int x = 0; x < w; x++) {
-      for (int y = 0; y < h; y++) {
-        for (int z = 0; z < d; z++) {
+    FloatArray3d noise = make3dPerlinNoise(seed, size, size, size, position);
+    float thres = size / 3;
+    for (int x = 0; x < size; x++) {
+      for (int y = 0; y < size; y++) {
+        for (int z = 0; z < size; z++) {
           float v = Math.abs(y);
-          if (y < h / 5) {
-            v += InterpolationUtil.interpolateLinear(y / (float) (h / 5), -80, 0);
+          if (y < size / 5) {
+            v += InterpolationUtil.interpolateLinear(y / (float) (size / 5), -80, 0);
           }
           // create a platform at h/4:
-          if (y < h / 4) {
+          if (y < size / 4) {
             v -= 5;
           }
           v += noise.get(x, y, z) * 4;
-          Tile terrain = noise.get(x, h - 1 - y, z) < 0 ? Tile.GROUND : Tile.ROCK;
+          Tile terrain = noise.get(x, size - 1 - y, z) < 0 ? Tile.GROUND : Tile.ROCK;
           chunk.set(x, y, z, v < thres ? terrain : Tile.AIR);
-          float col = 0.75f + noise.get(w - 1 - x, y, z) * 0.1f;
+          float col = 0.75f + noise.get(size - 1 - x, y, z) * 0.1f;
           if (col < 0.5f) {
             col = 0.5f;
           } else if (col > 1.0f) {
@@ -178,10 +177,10 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
     }
     Random r = new Random(seed);
     // add a "building" in the chunk
-    int midX = r.nextInt(w - 10);
-    int midZ = r.nextInt(d - 10);
-    int groundY = WorldGenerationUtils.findGround(chunk, h, midX, midZ);
-    if (groundY >= 0 && groundY < h - 10) {
+    int midX = r.nextInt(size - 10);
+    int midZ = r.nextInt(size - 10);
+    int groundY = WorldGenerationUtils.findGround(chunk, size, midX, midZ);
+    if (groundY >= 0 && groundY < size - 10) {
       for (int x = 0; x < 10; x++) {
         for (int y = 0; y < 10; y++) {
           for (int z = 0; z < 5; z++) {
@@ -197,11 +196,12 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
   }
 
   private void generateTrees(Chunk chunk, Random r) {
+    int size = chunk.getSize();
     for (int i = 0; i < 4; ++i) {
-      int x = r.nextInt(chunk.getWidth() - 3);
-      int z = r.nextInt(chunk.getDepth() - 3);
-      int y = WorldGenerationUtils.findGround(chunk, chunk.getHeight(), x, z);
-      if (y >= 1 && y < chunk.getHeight() - 20 && chunk.get(x, y - 1, z) == Tile.GROUND) {
+      int x = r.nextInt(size - 3);
+      int z = r.nextInt(size - 3);
+      int y = WorldGenerationUtils.findGround(chunk, size, x, z);
+      if (y >= 1 && y < size - 20 && chunk.get(x, y - 1, z) == Tile.GROUND) {
         WorldGenerationUtils.makeTreeAt(chunk, r, new LocalTilePosition(x, z, y));
       }
     }

@@ -1,7 +1,6 @@
 package fi.haju.haju3d.client;
 
 import com.google.inject.Singleton;
-
 import fi.haju.haju3d.util.SettingsManager;
 
 @Singleton
@@ -23,7 +22,7 @@ public class ClientSettings extends SettingsManager {
     screenHeight = loadInt(SCREEN_HEIGHT_KEY, 600);
     chunkRenderDistance = loadInt(CHUNK_RENDER_DISTANCE_KEY, 4);
   }
-  
+
   public int getScreenWidth() {
     return screenWidth;
   }

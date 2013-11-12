@@ -4,17 +4,16 @@ import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-
 import fi.haju.haju3d.protocol.Client;
 import fi.haju.haju3d.protocol.Server;
 import fi.haju.haju3d.protocol.coordinate.ChunkPosition;
 import fi.haju.haju3d.protocol.coordinate.LocalTilePosition;
 import fi.haju.haju3d.protocol.interaction.WorldEdit;
 import fi.haju.haju3d.protocol.world.Chunk;
+import fi.haju.haju3d.protocol.world.ChunkCoordinateSystem;
 import fi.haju.haju3d.protocol.world.World;
 import fi.haju.haju3d.server.world.WorldGenerator;
 import fi.haju.haju3d.server.world.WorldInfo;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +34,8 @@ public class ServerImpl implements Server {
   private ServerSettings settings;
 
   private List<Client> loggedInClients = Collections.synchronizedList(new ArrayList<Client>());
-  private World world = new World();
+  private ChunkCoordinateSystem chunkCoordinateSystem = ChunkCoordinateSystem.DEFAULT;
+  private World world = new World(chunkCoordinateSystem);
 
   private interface AsyncClientCall {
     void run() throws RemoteException;
@@ -76,7 +76,7 @@ public class ServerImpl implements Server {
   }
 
   private synchronized Chunk getOrGenerateChunk(ChunkPosition position) {
-    LOGGER.info("getOrGenerateChunk: " + position);
+    LOGGER.debug("getOrGenerateChunk: " + position);
     if (world.hasChunk(position)) {
       return world.getChunk(position);
     } else {
@@ -85,8 +85,8 @@ public class ServerImpl implements Server {
         world.setChunk(position, opt.get());
         return opt.get();
       }
-      int sz = world.getChunkSize();
-      Chunk newChunk = generator.generateChunk(position, sz, sz, sz);
+      int size = chunkCoordinateSystem.getChunkSize();
+      Chunk newChunk = generator.generateChunk(position, size);
       world.setChunk(position, newChunk);
       saver.saveChunk(newChunk);
       return newChunk;

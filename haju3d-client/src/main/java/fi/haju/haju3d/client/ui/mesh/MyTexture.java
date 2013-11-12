@@ -7,11 +7,10 @@ public enum MyTexture {
   ROCK("new-rock.png"), ROCK2("new-rock2.png"),
   BRICK("new-brick.png"),
   WOOD1("wood1.png"), WOOD2("wood2.png"),
-  COBBLESTONE1("cobblestone1.png"), COBBLESTONE2("cobblestone2.png")
-  ;
-  
+  COBBLESTONE1("cobblestone1.png"), COBBLESTONE2("cobblestone2.png");
+
   private final String texturefileName;
-  
+
   private MyTexture(String filename) {
     texturefileName = filename;
   }
@@ -19,5 +18,5 @@ public enum MyTexture {
   public String getTexturefileName() {
     return texturefileName;
   }
-  
+
 }

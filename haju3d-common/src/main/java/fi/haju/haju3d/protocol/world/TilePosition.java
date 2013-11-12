@@ -2,7 +2,6 @@ package fi.haju.haju3d.protocol.world;
 
 import com.google.common.collect.Lists;
 import com.jme3.math.Vector3f;
-
 import fi.haju.haju3d.protocol.coordinate.ChunkPosition;
 import fi.haju.haju3d.protocol.coordinate.LocalTilePosition;
 
@@ -41,7 +40,7 @@ public class TilePosition implements Serializable {
         (int) Math.floor(position.x / chunkSize / scale),
         (int) Math.floor(position.y / chunkSize / scale),
         (int) Math.floor(position.z / chunkSize / scale));
-    LocalTilePosition tilePos = new LocalTilePosition (
+    LocalTilePosition tilePos = new LocalTilePosition(
         (int) Math.floor(position.x / scale - chunkPos.x * chunkSize),
         (int) Math.floor(position.y / scale - chunkPos.y * chunkSize),
         (int) Math.floor(position.z / scale - chunkPos.z * chunkSize)
@@ -66,11 +65,11 @@ public class TilePosition implements Serializable {
     return "Chunk: " + chunkPosition + ", tile: " + tileWithinChunk;
   }
 
-  public final TilePosition add(LocalTilePosition v) {
+  public final TilePosition add(LocalTilePosition v, int chunkSize) {
     ChunkPosition cPos = new ChunkPosition(chunkPosition.x, chunkPosition.y, chunkPosition.z);
     LocalTilePosition tPos = new LocalTilePosition(tileWithinChunk.x, tileWithinChunk.y, tileWithinChunk.z);
     tPos = tPos.add(v);
-    int cs = World.CHUNK_SIZE;
+    int cs = chunkSize;
     while(tPos.x < 0) {
       tPos.x += cs;
       cPos.x--;
@@ -98,14 +97,14 @@ public class TilePosition implements Serializable {
     return new TilePosition(cPos, tPos);
   }
   
-  public List<TilePosition> getDirectNeighbourTiles() {
+  public List<TilePosition> getDirectNeighbourTiles(int chunkSize) {
     return Lists.newArrayList(
-        add(new LocalTilePosition(1, 0, 0)),
-        add(new LocalTilePosition(-1, 0, 0)),
-        add(new LocalTilePosition(0, 1, 0)),
-        add(new LocalTilePosition(0, -1, 0)),
-        add(new LocalTilePosition(0, 0, 1)),
-        add(new LocalTilePosition(0, 0, -1))
+        add(new LocalTilePosition(1, 0, 0), chunkSize),
+        add(new LocalTilePosition(-1, 0, 0), chunkSize),
+        add(new LocalTilePosition(0, 1, 0), chunkSize),
+        add(new LocalTilePosition(0, -1, 0), chunkSize),
+        add(new LocalTilePosition(0, 0, 1), chunkSize),
+        add(new LocalTilePosition(0, 0, -1), chunkSize)
     );
   }
 

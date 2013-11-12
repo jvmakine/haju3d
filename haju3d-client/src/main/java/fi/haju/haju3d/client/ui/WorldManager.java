@@ -17,6 +17,7 @@ import fi.haju.haju3d.protocol.coordinate.GlobalTilePosition;
 import fi.haju.haju3d.protocol.coordinate.LocalTilePosition;
 import fi.haju.haju3d.protocol.interaction.WorldEdit;
 import fi.haju.haju3d.protocol.world.Chunk;
+import fi.haju.haju3d.protocol.world.ChunkCoordinateSystem;
 import fi.haju.haju3d.protocol.world.Tile;
 import fi.haju.haju3d.protocol.world.TilePosition;
 import fi.haju.haju3d.protocol.world.World;
@@ -40,9 +41,10 @@ public class WorldManager {
   @Inject
   private ChunkLightManager lightingManager;
 
-  private World world = new World();
-  private Map<ChunkPosition, ChunkSpatial> chunkSpatials = new ConcurrentHashMap<>();
-  private Object lock = new Object();
+  private final ChunkCoordinateSystem chunkCoordinateSystem = ChunkCoordinateSystem.DEFAULT;
+  private final World world = new World(chunkCoordinateSystem);
+  private final Map<ChunkPosition, ChunkSpatial> chunkSpatials = new ConcurrentHashMap<>();
+  private final Object lock = new Object();
 
   private volatile boolean running;
   private volatile ChunkPosition position;
@@ -67,8 +69,8 @@ public class WorldManager {
     return new GlobalTilePosition((int) Math.floor(location.x / SCALE), (int) Math.floor(location.y / SCALE), (int) Math.floor(location.z / SCALE));
   }
 
-  public ChunkPosition getChunkIndexForLocation(Vector3f location) {
-    return World.getChunkIndex(getWorldPosition(location));
+  public ChunkPosition getChunkPositionForLocation(Vector3f location) {
+    return chunkCoordinateSystem.getChunkPosition(getWorldPosition(location));
   }
 
   public Vector3f getGlobalPosition(GlobalTilePosition worldPosition) {
@@ -81,7 +83,7 @@ public class WorldManager {
 
   public TilePosition getVoxelCollisionPoint(Vector3f from, Vector3f to) {
     Vector3f collision = getCollisionPoint(from, to, 0.0f, true);
-    int chunkSize = world.getChunkSize();
+    int chunkSize = chunkCoordinateSystem.getChunkSize();
     if (collision == null) return null;
     // Move collision slightly to the other side of the polygon
     Vector3f collisionTile = collision.add(to.subtract(from).normalize().mult(PICK_ACCURACY));
@@ -90,7 +92,7 @@ public class WorldManager {
 
   public TilePosition getVoxelCollisionDirection(Vector3f from, Vector3f to) {
     Vector3f collision = getCollisionPoint(from, to, 0.0f, true);
-    int chunkSize = world.getChunkSize();
+    int chunkSize = chunkCoordinateSystem.getChunkSize();
     if (collision == null) return null;
     // Move collision slightly to the other side of the polygon
     Vector3f collisionTile = collision.subtract(to.subtract(from).normalize().mult(PICK_ACCURACY));
@@ -98,7 +100,7 @@ public class WorldManager {
   }
 
   private Vector3f getCollisionPoint(Vector3f from, Vector3f to, float distanceFix, boolean useBoxes) {
-    Set<ChunkPosition> chunkPositions = Sets.newHashSet(getChunkIndexForLocation(from), getChunkIndexForLocation(to));
+    Set<ChunkPosition> chunkPositions = Sets.newHashSet(getChunkPositionForLocation(from), getChunkPositionForLocation(to));
     Ray ray = new Ray(from, to.subtract(from).normalize());
     float distance = from.distance(to);
     for (ChunkPosition pos : chunkPositions) {
@@ -116,11 +118,11 @@ public class WorldManager {
     return null;
   }
 
-  private void removeFarChunks(ChunkPosition centerChunkIndex) {
+  private void removeFarChunks(ChunkPosition centerChunkPosition) {
     Set<ChunkPosition> remove = new HashSet<>();
     for (Map.Entry<ChunkPosition, ChunkSpatial> c : chunkSpatials.entrySet()) {
       ChunkPosition v = c.getKey();
-      if (centerChunkIndex.distanceTo(v) > settings.getChunkRenderDistance() + 1) {
+      if (centerChunkPosition.distanceTo(v) > settings.getChunkRenderDistance() + 1) {
         remove.add(v);
       }
     }
@@ -129,10 +131,10 @@ public class WorldManager {
     }
   }
 
-  private void makeChunkNearPosition(ChunkPosition centerChunkIndex) {
+  private void makeChunkNearPosition(ChunkPosition centerChunkPosition) {
     List<ChunkPosition> indexes = new ArrayList<>();
-    indexes.add(centerChunkIndex);
-    indexes.addAll(centerChunkIndex.getPositionsAtMaxDistance(settings.getChunkRenderDistance()));
+    indexes.add(centerChunkPosition);
+    indexes.addAll(centerChunkPosition.getPositionsAtMaxDistance(settings.getChunkRenderDistance()));
     final ChunkPosition pos = new ChunkPosition(position.x, position.y, position.z);
     Collections.sort(indexes, new Comparator<ChunkPosition>() {
       @Override
@@ -161,15 +163,15 @@ public class WorldManager {
     builder.rebuildChunkSpatial(world, spatial);
   }
 
-  private void makeChunkAt(ChunkPosition chunkIndex) {
+  private void makeChunkAt(ChunkPosition chunkPosition) {
     // need 3x3 chunks around meshing area so that mesh borders can be handled correctly
-    List<Chunk> chunks = chunkProvider.getChunks(chunkIndex.getSurroundingPositions());
+    List<Chunk> chunks = chunkProvider.getChunks(chunkPosition.getSurroundingPositions());
     for (Chunk c : chunks) {
       lightingManager.calculateChunkLighting(c);
       world.setChunk(c.getPosition(), c);
     }
-    ChunkSpatial spatial = builder.makeChunkSpatial(world, chunkIndex);
-    chunkSpatials.put(chunkIndex, spatial);
+    ChunkSpatial spatial = builder.makeChunkSpatial(world, chunkPosition);
+    chunkSpatials.put(chunkPosition, spatial);
   }
 
   public void setPosition(ChunkPosition position) {
@@ -201,7 +203,7 @@ public class WorldManager {
   }
 
   public int getChunkSize() {
-    return world.getChunkSize();
+    return chunkCoordinateSystem.getChunkSize();
   }
 
   public void registerWorldEdits(List<WorldEdit> edits) {
@@ -227,19 +229,19 @@ public class WorldManager {
       if (x < ChunkSpatialBuilder.SMOOTH_BUFFER) {
         spatialsToUpdate.add(tile.getChunkPosition().add(-1, 0, 0));
       }
-      if (x >= world.getChunkSize() - ChunkSpatialBuilder.SMOOTH_BUFFER) {
+      if (x >= chunkCoordinateSystem.getChunkSize() - ChunkSpatialBuilder.SMOOTH_BUFFER) {
         spatialsToUpdate.add(tile.getChunkPosition().add(1, 0, 0));
       }
       if (y < ChunkSpatialBuilder.SMOOTH_BUFFER) {
         spatialsToUpdate.add(tile.getChunkPosition().add(0, -1, 0));
       }
-      if (y >= world.getChunkSize() - ChunkSpatialBuilder.SMOOTH_BUFFER) {
+      if (y >= chunkCoordinateSystem.getChunkSize() - ChunkSpatialBuilder.SMOOTH_BUFFER) {
         spatialsToUpdate.add(tile.getChunkPosition().add(0, 1, 0));
       }
       if (z < ChunkSpatialBuilder.SMOOTH_BUFFER) {
         spatialsToUpdate.add(tile.getChunkPosition().add(0, 0, -1));
       }
-      if (z >= world.getChunkSize() - ChunkSpatialBuilder.SMOOTH_BUFFER) {
+      if (z >= chunkCoordinateSystem.getChunkSize() - ChunkSpatialBuilder.SMOOTH_BUFFER) {
         spatialsToUpdate.add(tile.getChunkPosition().add(0, 0, 1));
       }
     }

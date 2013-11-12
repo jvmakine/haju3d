@@ -15,13 +15,9 @@
   <name>Haju3dClient</name>
   <url>https://github.com/jvmakine/haju3d</url>
 
-  <repositories>
-    <repository>
-      <id>project-lib</id>
-      <name>project-local libraries</name>
-      <url>file:${basedir}${file.separator}libs</url>
-    </repository>
-  </repositories>
+  <properties>
+    <main.basedir>${project.basedir}${file.separator}..</main.basedir>
+  </properties>
 
   <dependencies>
     <dependency>

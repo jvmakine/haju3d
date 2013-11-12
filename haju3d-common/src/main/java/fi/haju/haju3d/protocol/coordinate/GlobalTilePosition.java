@@ -21,10 +21,10 @@ public final class GlobalTilePosition extends Vector3i {
   public GlobalTilePosition add(int x, int y, int z) {
     return convertFromVector(super.add(x, y, z));
   }
-  
+
   private static GlobalTilePosition convertFromVector(Vector3i v) {
     return new GlobalTilePosition(v.x, v.y, v.z);
   }
-  
+
 
 }
