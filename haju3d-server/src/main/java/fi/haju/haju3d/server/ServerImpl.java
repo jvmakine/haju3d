@@ -76,7 +76,7 @@ public class ServerImpl implements Server {
   }
 
   private synchronized Chunk getOrGenerateChunk(ChunkPosition position) {
-    LOGGER.info("getOrGenerateChunk: " + position);
+    LOGGER.debug("getOrGenerateChunk: " + position);
     if (world.hasChunk(position)) {
       return world.getChunk(position);
     } else {

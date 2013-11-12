@@ -11,7 +11,7 @@ import java.util.Map;
 
 
 public final class Chunk implements Serializable {
-  private static final long serialVersionUID = 4L;
+  private static final long serialVersionUID = 5L;
 
   private ByteArray3d tiles;
   private ByteArray3d colors;

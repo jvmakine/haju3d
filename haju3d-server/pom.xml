@@ -16,13 +16,9 @@
 
   <url>https://github.com/jvmakine/haju3d</url>
 
-  <repositories>
-    <repository>
-      <id>project-lib</id>
-      <name>project-local libraries</name>
-      <url>file:${basedir}${file.separator}..${file.separator}haju3d-client${file.separator}libs</url>
-    </repository>
-  </repositories>
+  <properties>
+    <main.basedir>${project.basedir}${file.separator}..</main.basedir>
+  </properties>
 
   <dependencies>
     <dependency>
@@ -31,19 +27,8 @@
       <version>0.1-SNAPSHOT</version>
     </dependency>
     <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-lang3</artifactId>
-      <version>3.1</version>
-    </dependency>
-    <dependency>
-      <groupId>commons-io</groupId>
-      <artifactId>commons-io</artifactId>
-      <version>2.4</version>
-    </dependency>
-    <dependency>
       <groupId>net.jpountz.lz4</groupId>
       <artifactId>lz4</artifactId>
-      <version>1.2.0</version>
     </dependency>
   </dependencies>
 

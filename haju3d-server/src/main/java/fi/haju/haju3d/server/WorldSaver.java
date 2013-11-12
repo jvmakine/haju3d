@@ -3,14 +3,12 @@ package fi.haju.haju3d.server;
 import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-
 import fi.haju.haju3d.protocol.coordinate.ChunkPosition;
 import fi.haju.haju3d.protocol.world.Chunk;
 import fi.haju.haju3d.server.world.WorldInfo;
 import net.jpountz.lz4.LZ4Compressor;
 import net.jpountz.lz4.LZ4Factory;
 import net.jpountz.lz4.LZ4FastDecompressor;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.SerializationUtils;
@@ -49,7 +47,7 @@ public class WorldSaver {
       timer.schedule(new TimerTask() {
         @Override
         public void run() {
-          LOGGER.info("Saving chunk : " + chunk.getPosition());
+          LOGGER.debug("Saving chunk : " + chunk.getPosition());
           writeObjectToFile(chunkFile(chunk.getPosition()), chunk);
           chunksToSave.remove(chunk.getPosition());
         }
@@ -68,7 +66,7 @@ public class WorldSaver {
   public Optional<Chunk> loadChunkIfOnDisk(ChunkPosition pos) {
     File file = chunkFile(pos);
     if (!file.exists()) return Optional.absent();
-    LOGGER.info("loading from disk : " + pos);
+    LOGGER.debug("loading from disk : " + pos);
     try {
       return Optional.of((Chunk) readObjectFromFile(file));
     } catch (RuntimeException e) {
