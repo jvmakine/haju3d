@@ -6,15 +6,22 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Optional;
 import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
+import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
+import fi.haju.haju3d.client.chunk.ChunkProvider;
 import fi.haju.haju3d.protocol.coordinate.ChunkPosition;
 import fi.haju.haju3d.protocol.coordinate.GlobalTilePosition;
 import fi.haju.haju3d.protocol.coordinate.LocalTilePosition;
 import fi.haju.haju3d.protocol.world.Chunk;
 import fi.haju.haju3d.protocol.world.Tile;
+import fi.haju.haju3d.protocol.world.TilePosition;
 import fi.haju.haju3d.protocol.world.World;
 
 @Singleton
@@ -26,17 +33,25 @@ public class ChunkLightManager {
   public static final int DAY_LIGHT = 100;
   private static final double LIGHT_FALLOFF = 0.8;
   
-  public void setLight(ChunkPosition chunkPosition, LocalTilePosition position, int light) {
-    if(!chunkLights.containsKey(chunkPosition)) {
-      chunkLights.put(chunkPosition, new ChunkLighting(World.CHUNK_SIZE));
-    }
-    chunkLights.get(chunkPosition).setLight(position, light);
-  }
+  private static final Logger LOGGER = LoggerFactory.getLogger(ChunkLightManager.class);
   
+  @Inject
+  private ChunkProvider chunkProvider;
+    
   public int getLight(ChunkPosition chunkPosition, LocalTilePosition position) {
     ChunkLighting light = chunkLights.get(chunkPosition);
     if(light == null) return AMBIENT;
     return light.getLight(position);
+  }
+  
+  private void setLight(TilePosition pos, int val) {
+    ChunkLighting light = chunkLights.get(pos.getChunkPosition());
+    if(light == null) return;
+    light.setLight(pos.getTileWithinChunk(), val);
+  }
+  
+  public int getLight(TilePosition pos) {
+    return getLight(pos.getChunkPosition(), pos.getTileWithinChunk());
   }
   
   public int getLightAtWorldPos(GlobalTilePosition worldPosition) {
@@ -44,14 +59,15 @@ public class ChunkLightManager {
   }
   
   public void calculateChunkLighting(Chunk chunk) {
+    long st = System.currentTimeMillis();
     if (chunk.hasLight()) {
-      Set<LocalTilePosition> sunned = calculateDirectSunLight(chunk);
-      calculateReflectedLight(chunk, sunned);
+      Set<TilePosition> sunned = calculateDirectSunLight(chunk);
+      calculateReflectedLight(sunned);
     }
   }
 
-  private Set<LocalTilePosition> calculateDirectSunLight(Chunk chunk) {
-    Set<LocalTilePosition> res = Sets.newHashSet();
+  private Set<TilePosition> calculateDirectSunLight(Chunk chunk) {
+    Set<TilePosition> res = Sets.newHashSet();
     ChunkPosition pos = chunk.getPosition();
     ChunkLighting lighting = chunkLights.get(pos);
     if(lighting == null) {
@@ -67,32 +83,80 @@ public class ChunkLightManager {
           }
           LocalTilePosition p = new LocalTilePosition(x, y, z); 
           lighting.setLight(p, light);
-          res.add(p);
+          res.add(new TilePosition(pos, p));
         }
       }
     }
     return res;
   }
   
-  private void calculateReflectedLight(Chunk chunk, Set<LocalTilePosition> sunned) {
-    ChunkLighting lighting = chunkLights.get(chunk.getPosition());
-    Queue<LocalTilePosition> tbp = Queues.newArrayDeque(sunned);
+  public void addOpaqueBlock(TilePosition position) {
+    //TODO: More efficient implementation
+    resetChunkLighting(position.getChunkPosition());
+    calculateChunkLighting(chunkProvider.getChunkIfLoaded(position.getChunkPosition()).get());
+  }
+  
+  private void resetChunkLighting(ChunkPosition chunkPosition) {
+    chunkLights.put(chunkPosition, new ChunkLighting(World.CHUNK_SIZE));
+  }
+
+  public void removeOpaqueBlock(TilePosition position) {
+    updateLightFromNeighbours(position);
+    calculateReflectedLight(Sets.newHashSet(position));
+  }
+
+  private void updateLightFromNeighbours(TilePosition position) {
+    List<TilePosition> neighbours = position.getDirectNeighbourTiles();
+    int light = getLight(position);
+    for(TilePosition nPos : neighbours) {
+      int nLight = getLight(nPos);
+      int rLight = (int)(nLight * LIGHT_FALLOFF); 
+      if(rLight > light) {
+        light = rLight;
+        setLight(position, rLight);
+      }
+    }
+  }
+  
+  private void calculateReflectedLight(Set<TilePosition> updateStarters) {
+    Queue<TilePosition> tbp = Queues.newArrayDeque(updateStarters);
+    // Variables to prevent continuous refetching of the active chunk data.
+    ChunkPosition lastChunkPos = null;
+    ChunkLighting lighting = null;
+    Chunk lastChunk = null;
     while(!tbp.isEmpty()) {
-      LocalTilePosition pos = tbp.remove();
-      //TODO: Neighbouring chunks
-      List<LocalTilePosition> positions = chunk.getNeighbours(pos);
-      int light = lighting.getLight(pos);
+      TilePosition pos = tbp.remove();
+      // Get new chunk only if chunk position changes
+      if(!pos.getChunkPosition().equals(lastChunkPos)) {
+        Optional<Chunk> optChunk = chunkProvider.getChunkIfLoaded(pos.getChunkPosition());
+        if(!optChunk.isPresent()) continue;
+        lighting = chunkLights.get(pos.getChunkPosition());
+        lastChunkPos = pos.getChunkPosition();
+        lastChunk = optChunk.get();
+      }
+      List<TilePosition> positions = pos.getDirectNeighbourTiles();
+      int light = lighting == null ? AMBIENT : lighting.getLight(pos.getTileWithinChunk());
       int nv = (int)(LIGHT_FALLOFF * light);
-      for(LocalTilePosition nPos : positions) {
-        if(chunk.get(nPos) != Tile.AIR) continue;
-        int val = lighting.getLight(nPos);
-        if(val < nv) {
-          lighting.setLight(nPos, nv);
-          tbp.add(nPos);
+      if(nv > AMBIENT) {
+        for(TilePosition nPos : positions) {
+          // Get new chunk only if chunk position changes
+          if(!nPos.getChunkPosition().equals(lastChunkPos)) {
+            Optional<Chunk> optChunk = chunkProvider.getChunkIfLoaded(pos.getChunkPosition());
+            if(!optChunk.isPresent()) continue;
+            lighting = chunkLights.get(pos.getChunkPosition());
+            lastChunkPos = pos.getChunkPosition();
+            lastChunk = optChunk.get();
+          }
+          if(lighting == null) continue;
+          if(lastChunk.get(nPos.getTileWithinChunk()) != Tile.AIR) continue;
+          int val = lighting.getLight(nPos.getTileWithinChunk());
+          if(val < nv) {
+            lighting.setLight(nPos.getTileWithinChunk(), nv);
+            tbp.add(nPos);
+          }
         }
       }
     }
   }
-
   
 }

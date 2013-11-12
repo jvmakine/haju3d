@@ -1,9 +1,11 @@
 package fi.haju.haju3d.client.chunk;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 
 import fi.haju.haju3d.client.connection.ServerConnector;
 import fi.haju.haju3d.protocol.coordinate.ChunkPosition;
@@ -17,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+@Singleton
 public class ChunkProvider {
   private static final Logger LOGGER = LoggerFactory.getLogger(ChunkProvider.class);
 
@@ -44,6 +47,14 @@ public class ChunkProvider {
       return chunks;
     }
     return Lists.newArrayList();
+  }
+  
+  public Optional<Chunk> getChunkIfLoaded(ChunkPosition pos) {
+    if(chunkCache.containsKey(pos)) {
+      return Optional.of(chunkCache.get(pos));
+    } else {
+      return Optional.absent();
+    }
   }
 
 }

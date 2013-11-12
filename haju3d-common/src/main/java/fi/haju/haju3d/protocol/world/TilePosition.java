@@ -1,11 +1,13 @@
 package fi.haju.haju3d.protocol.world;
 
+import com.google.common.collect.Lists;
 import com.jme3.math.Vector3f;
 
 import fi.haju.haju3d.protocol.coordinate.ChunkPosition;
 import fi.haju.haju3d.protocol.coordinate.LocalTilePosition;
 
 import java.io.Serializable;
+import java.util.List;
 
 public class TilePosition implements Serializable {
   private static final long serialVersionUID = 1L;
@@ -64,4 +66,48 @@ public class TilePosition implements Serializable {
     return "Chunk: " + chunkPosition + ", tile: " + tileWithinChunk;
   }
 
+  public final TilePosition add(LocalTilePosition v) {
+    ChunkPosition cPos = new ChunkPosition(chunkPosition.x, chunkPosition.y, chunkPosition.z);
+    LocalTilePosition tPos = new LocalTilePosition(tileWithinChunk.x, tileWithinChunk.y, tileWithinChunk.z);
+    tPos = tPos.add(v);
+    int cs = World.CHUNK_SIZE;
+    while(tPos.x < 0) {
+      tPos.x += cs;
+      cPos.x--;
+    }
+    while(tPos.y < 0) {
+      tPos.y += cs;
+      cPos.y--;
+    }
+    while(tPos.z < 0) {
+      tPos.z += cs;
+      cPos.z--;
+    }
+    while(tPos.x >= cs) {
+      tPos.x -= cs;
+      cPos.x++;
+    }
+    while(tPos.y >= cs) {
+      tPos.y -= cs;
+      cPos.y++;
+    }
+    while(tPos.z >= cs) {
+      tPos.z -= cs;
+      cPos.z++;
+    }
+    return new TilePosition(cPos, tPos);
+  }
+  
+  public List<TilePosition> getDirectNeighbourTiles() {
+    return Lists.newArrayList(
+        add(new LocalTilePosition(1, 0, 0)),
+        add(new LocalTilePosition(-1, 0, 0)),
+        add(new LocalTilePosition(0, 1, 0)),
+        add(new LocalTilePosition(0, -1, 0)),
+        add(new LocalTilePosition(0, 0, 1)),
+        add(new LocalTilePosition(0, 0, -1))
+    );
+  }
+
 }
+

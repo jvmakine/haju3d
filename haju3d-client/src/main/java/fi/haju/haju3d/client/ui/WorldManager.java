@@ -215,22 +215,12 @@ public class WorldManager {
       int z = tile.getTileWithinChunk().z;
       chunk.set(x, y, z, edit.getNewTile());
 
-      if (y < chunk.getHeight() - 1 && lightingManager.getLight(chunkPos, new LocalTilePosition(x, y + 1, z)) == 100) {
-        if (edit.getNewTile() == Tile.AIR) {
-          // fill darkness with light
-          int light = ChunkLightManager.DAY_LIGHT;
-          for (int yy = y; yy >= 0 && chunk.get(x, yy, z) == Tile.AIR; yy--) {
-            lightingManager.setLight(chunkPos, new LocalTilePosition(x, yy, z), light);
-          }
-        } else if (edit.getNewTile() != Tile.AIR) {
-          // fill light with darkness
-          int light = ChunkLightManager.AMBIENT;
-          for (int yy = y; yy >= 0 && lightingManager.getLight(chunkPos, new LocalTilePosition(x, yy, z)) == 100; yy--) {
-            lightingManager.setLight(chunkPos, new LocalTilePosition(x, yy, z), light);
-          }
-        }
+      if (edit.getNewTile() == Tile.AIR) {
+        lightingManager.removeOpaqueBlock(new TilePosition(chunk.getPosition(), new LocalTilePosition(x, y, z)));
+      } else if (edit.getNewTile() != Tile.AIR) {
+        lightingManager.addOpaqueBlock(new TilePosition(chunk.getPosition(), new LocalTilePosition(x, y, z)));
       }
-
+      
       spatialsToUpdate.add(tile.getChunkPosition());
 
       // Update also the bordering chunks if necessary

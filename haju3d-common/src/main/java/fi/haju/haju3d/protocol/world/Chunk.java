@@ -136,24 +136,4 @@ public final class Chunk implements Serializable {
             && pos.z >= 0 && pos.z < getDepth();
   }
 
-  public List<LocalTilePosition> getNeighbours(LocalTilePosition pos) {
-    if(!isWithin(pos)) {
-      throw new IllegalArgumentException(pos + " is not within the chunk, chunkSize = " + World.CHUNK_SIZE);
-    }
-    List<LocalTilePosition> surroundings = Lists.newArrayList(
-        new LocalTilePosition(pos.x+1, pos.y, pos.z),
-        new LocalTilePosition(pos.x-1, pos.y, pos.z),
-        new LocalTilePosition(pos.x, pos.y+1, pos.z),
-        new LocalTilePosition(pos.x, pos.y-1, pos.z),
-        new LocalTilePosition(pos.x, pos.y, pos.z+1),
-        new LocalTilePosition(pos.x, pos.y, pos.z-1)
-    );
-    List<LocalTilePosition> result = Lists.newArrayList();
-    for(LocalTilePosition sur : surroundings) {
-      if(isWithin(sur)) {
-        result.add(sur);
-      }
-    }
-    return result;
-  }
 }

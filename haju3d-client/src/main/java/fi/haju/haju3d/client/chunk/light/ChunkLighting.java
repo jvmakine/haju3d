@@ -20,5 +20,5 @@ public final class ChunkLighting {
   public void setLight(LocalTilePosition pos, int lightValue) {
     light.set(pos, (byte)lightValue);
   }
-  
+
 }
