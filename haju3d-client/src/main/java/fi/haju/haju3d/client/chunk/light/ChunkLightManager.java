@@ -61,8 +61,19 @@ public class ChunkLightManager {
     if (chunk.hasLight()) {
       Set<TilePosition> sunned = calculateDirectSunLight(chunk);
       calculateReflectedLight(sunned);
-      //TODO: get reflected light from neighboring chunks
+      calculateLightFromNeighbours(chunk);
     }
+  }
+
+  private void calculateLightFromNeighbours(Chunk chunk) {
+    Set<TilePosition> edge = chunk.getPosition().getEdgeTilePositions(chunkCoordinateSystem.getChunkSize());
+    Set<TilePosition> updated = Sets.newHashSet();
+    for(TilePosition pos : edge) {
+      if(updateLightFromNeighbours(pos)) {
+        updated.add(pos);
+      }
+    }
+    calculateReflectedLight(updated);
   }
 
   private Set<TilePosition> calculateDirectSunLight(Chunk chunk) {
@@ -105,17 +116,20 @@ public class ChunkLightManager {
     calculateReflectedLight(Sets.newHashSet(position));
   }
 
-  private void updateLightFromNeighbours(TilePosition position) {
+  private boolean updateLightFromNeighbours(TilePosition position) {
     List<TilePosition> neighbours = position.getDirectNeighbourTiles(chunkCoordinateSystem.getChunkSize());
     int light = getLight(position);
+    boolean updated = false;
     for(TilePosition nPos : neighbours) {
       int nLight = getLight(nPos);
       int rLight = (int)(nLight * LIGHT_FALLOFF); 
       if(rLight > light) {
+        updated = true;
         light = rLight;
         setLight(position, rLight);
       }
     }
+    return updated;
   }
   
   private void calculateReflectedLight(Set<TilePosition> updateStarters) {

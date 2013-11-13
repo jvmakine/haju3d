@@ -1,8 +1,10 @@
 package fi.haju.haju3d.protocol.coordinate;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 import java.util.List;
+import java.util.Set;
 
 
 /**
@@ -47,6 +49,23 @@ public final class ChunkPosition extends Vector3i {
       }
     }
     return positions;
+  }
+  
+  public Set<TilePosition> getEdgeTilePositions(int chunkSize) {
+    Set<TilePosition> result = Sets.newHashSet();
+    for(int i = 0; i < chunkSize; ++i) {
+      for(int j = 0; j < chunkSize; ++j) {
+        result.add(new TilePosition(this, new LocalTilePosition(i, j, 0)));
+        result.add(new TilePosition(this, new LocalTilePosition(i, j, chunkSize-1)));
+        
+        result.add(new TilePosition(this, new LocalTilePosition(i, 0, j)));
+        result.add(new TilePosition(this, new LocalTilePosition(i, chunkSize-1, j)));
+        
+        result.add(new TilePosition(this, new LocalTilePosition(0, i, j)));
+        result.add(new TilePosition(this, new LocalTilePosition(chunkSize-1, i, j)));
+      } 
+    }
+    return result;
   }
 
   private static ChunkPosition convertFromVector(Vector3i v) {
