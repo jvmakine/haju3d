@@ -30,6 +30,7 @@ import com.jme3.texture.Texture;
 import com.jme3.texture.Texture2D;
 import com.jme3.util.SkyFactory;
 import com.jme3.water.WaterFilter;
+
 import fi.haju.haju3d.client.Character;
 import fi.haju.haju3d.client.ClientSettings;
 import fi.haju.haju3d.client.CloseEventHandler;
@@ -38,8 +39,8 @@ import fi.haju.haju3d.client.ui.input.InputActions;
 import fi.haju.haju3d.client.ui.mesh.ChunkSpatialBuilder;
 import fi.haju.haju3d.protocol.coordinate.ChunkPosition;
 import fi.haju.haju3d.protocol.coordinate.GlobalTilePosition;
+import fi.haju.haju3d.protocol.coordinate.TilePosition;
 import fi.haju.haju3d.protocol.world.Tile;
-import fi.haju.haju3d.protocol.world.TilePosition;
 
 import java.util.Set;
 import java.util.concurrent.Callable;

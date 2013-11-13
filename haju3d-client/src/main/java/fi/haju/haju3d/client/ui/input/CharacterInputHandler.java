@@ -8,14 +8,15 @@ import com.jme3.input.KeyInput;
 import com.jme3.input.MouseInput;
 import com.jme3.input.controls.*;
 import com.jme3.math.Vector3f;
+
 import fi.haju.haju3d.client.Character;
 import fi.haju.haju3d.client.connection.ServerConnector;
 import fi.haju.haju3d.client.ui.ChunkRenderer;
 import fi.haju.haju3d.client.ui.ViewMode;
 import fi.haju.haju3d.client.ui.WorldManager;
+import fi.haju.haju3d.protocol.coordinate.TilePosition;
 import fi.haju.haju3d.protocol.interaction.WorldEdit;
 import fi.haju.haju3d.protocol.world.Tile;
-import fi.haju.haju3d.protocol.world.TilePosition;
 
 import java.util.HashSet;
 import java.util.Set;

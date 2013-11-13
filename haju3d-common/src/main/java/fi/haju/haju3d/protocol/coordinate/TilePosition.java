@@ -1,9 +1,7 @@
-package fi.haju.haju3d.protocol.world;
+package fi.haju.haju3d.protocol.coordinate;
 
 import com.google.common.collect.Lists;
 import com.jme3.math.Vector3f;
-import fi.haju.haju3d.protocol.coordinate.ChunkPosition;
-import fi.haju.haju3d.protocol.coordinate.LocalTilePosition;
 
 import java.io.Serializable;
 import java.util.List;

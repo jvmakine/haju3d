@@ -1,7 +1,7 @@
 package fi.haju.haju3d.protocol.interaction;
 
+import fi.haju.haju3d.protocol.coordinate.TilePosition;
 import fi.haju.haju3d.protocol.world.Tile;
-import fi.haju.haju3d.protocol.world.TilePosition;
 
 import java.io.Serializable;
 

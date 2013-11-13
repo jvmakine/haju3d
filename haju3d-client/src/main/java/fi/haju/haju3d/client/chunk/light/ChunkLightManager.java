@@ -16,10 +16,10 @@ import fi.haju.haju3d.client.chunk.ChunkProvider;
 import fi.haju.haju3d.protocol.coordinate.ChunkPosition;
 import fi.haju.haju3d.protocol.coordinate.GlobalTilePosition;
 import fi.haju.haju3d.protocol.coordinate.LocalTilePosition;
+import fi.haju.haju3d.protocol.coordinate.TilePosition;
 import fi.haju.haju3d.protocol.world.Chunk;
 import fi.haju.haju3d.protocol.world.ChunkCoordinateSystem;
 import fi.haju.haju3d.protocol.world.Tile;
-import fi.haju.haju3d.protocol.world.TilePosition;
 
 @Singleton
 public class ChunkLightManager {
@@ -61,6 +61,7 @@ public class ChunkLightManager {
     if (chunk.hasLight()) {
       Set<TilePosition> sunned = calculateDirectSunLight(chunk);
       calculateReflectedLight(sunned);
+      //TODO: get reflected light from neighboring chunks
     }
   }
 
@@ -68,11 +69,11 @@ public class ChunkLightManager {
     Set<TilePosition> res = Sets.newHashSet();
     ChunkPosition pos = chunk.getPosition();
     ChunkLighting lighting = chunkLights.get(pos);
+    int cs = chunkCoordinateSystem.getChunkSize();
     if(lighting == null) {
-      lighting = new ChunkLighting(chunkCoordinateSystem.getChunkSize());
+      lighting = new ChunkLighting(cs);
       chunkLights.put(pos, lighting);
     }
-    int cs = chunkCoordinateSystem.getChunkSize();
     for (int x = 0; x < cs; x++) {
       for (int z = 0; z < cs; z++) {
         int light = DAY_LIGHT;
