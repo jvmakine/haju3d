@@ -42,12 +42,6 @@ public final class ChunkLightManager {
     return light.getLight(position);
   }
   
-  private void setLight(TilePosition pos, int val) {
-    ChunkLighting light = chunkLights.get(pos.getChunkPosition());
-    if(light == null) return;
-    light.setLight(pos.getTileWithinChunk(), val);
-  }
-  
   public int getLight(TilePosition pos) {
     return getLight(pos.getChunkPosition(), pos.getTileWithinChunk());
   }
@@ -62,6 +56,27 @@ public final class ChunkLightManager {
       calculateReflectedLight(sunned);
       calculateLightFromNeighbours(chunk);
     }
+  }
+  
+  public void removeOpaqueBlock(TilePosition position) {
+    //TODO: Calculate sun light
+    updateLightFromNeighbours(position);
+    calculateReflectedLight(Sets.newHashSet(position));
+  }
+  
+  public void addOpaqueBlock(TilePosition position) {
+    // TODO: Calculate sun light
+    int light = getLight(position);
+    int maxDist = (int)Math.ceil(Math.log((double)AMBIENT/(double)light)/Math.log(LIGHT_FALLOFF));
+    Set<TilePosition> edge = updateDarkness(position, maxDist);
+    setLight(position, AMBIENT);
+    calculateReflectedLight(edge);
+  }
+  
+  private void setLight(TilePosition pos, int val) {
+    ChunkLighting light = chunkLights.get(pos.getChunkPosition());
+    if(light == null) return;
+    light.setLight(pos.getTileWithinChunk(), val);
   }
   
   private Optional<Tile> getTileAt(TilePosition p) {
@@ -109,14 +124,6 @@ public final class ChunkLightManager {
     return res;
   }
   
-  public void addOpaqueBlock(TilePosition position) {
-    int light = getLight(position);
-    int maxDist = (int)Math.ceil(Math.log((double)AMBIENT/(double)light)/Math.log(LIGHT_FALLOFF));
-    Set<TilePosition> edge = updateDarkness(position, maxDist);
-    setLight(position, AMBIENT);
-    calculateReflectedLight(edge);
-  }
-  
   private static class DarkUpdater {
     public TilePosition pos;
     public int dist;
@@ -150,11 +157,6 @@ public final class ChunkLightManager {
       }
     }
     return edge;
-  }
-
-  public void removeOpaqueBlock(TilePosition position) {
-    updateLightFromNeighbours(position);
-    calculateReflectedLight(Sets.newHashSet(position));
   }
 
   private boolean updateLightFromNeighbours(TilePosition position) {
