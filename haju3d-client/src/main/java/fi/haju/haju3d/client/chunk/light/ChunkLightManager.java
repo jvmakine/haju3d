@@ -22,7 +22,7 @@ import fi.haju.haju3d.protocol.world.ChunkCoordinateSystem;
 import fi.haju.haju3d.protocol.world.Tile;
 
 @Singleton
-public class ChunkLightManager {
+public final class ChunkLightManager {
 
   private Map<ChunkPosition, ChunkLighting> chunkLights = new ConcurrentHashMap<>();
   
@@ -31,7 +31,6 @@ public class ChunkLightManager {
   private static final double LIGHT_FALLOFF = 0.8;
 
   private ChunkCoordinateSystem chunkCoordinateSystem = ChunkCoordinateSystem.DEFAULT;
-
 
   
   @Inject
@@ -64,6 +63,15 @@ public class ChunkLightManager {
       calculateLightFromNeighbours(chunk);
     }
   }
+  
+  private Optional<Tile> getTileAt(TilePosition p) {
+    Optional<Chunk> c = chunkProvider.getChunkIfLoaded(p.getChunkPosition());
+    if(!c.isPresent()) {
+      return Optional.absent();
+    } else {
+      return Optional.of(c.get().get(p.getTileWithinChunk()));
+    }
+  }
 
   private void calculateLightFromNeighbours(Chunk chunk) {
     Set<TilePosition> edge = chunk.getPosition().getEdgeTilePositions(chunkCoordinateSystem.getChunkSize());
@@ -89,7 +97,7 @@ public class ChunkLightManager {
       for (int z = 0; z < cs; z++) {
         int light = DAY_LIGHT;
         for (int y = cs - 1; y >= 0; y--) {
-          if (chunk.get(x, y, z) != Tile.AIR) {
+          if (isOpaque(chunk.get(x, y, z))) {
             break;
           }
           LocalTilePosition p = new LocalTilePosition(x, y, z); 
@@ -102,13 +110,46 @@ public class ChunkLightManager {
   }
   
   public void addOpaqueBlock(TilePosition position) {
-    //TODO: More efficient implementation
-    resetChunkLighting(position.getChunkPosition());
-    calculateChunkLighting(chunkProvider.getChunkIfLoaded(position.getChunkPosition()).get());
+    int light = getLight(position);
+    int maxDist = (int)Math.ceil(Math.log((double)AMBIENT/(double)light)/Math.log(LIGHT_FALLOFF));
+    Set<TilePosition> edge = updateDarkness(position, maxDist);
+    setLight(position, AMBIENT);
+    calculateReflectedLight(edge);
   }
   
-  private void resetChunkLighting(ChunkPosition chunkPosition) {
-    chunkLights.put(chunkPosition, new ChunkLighting(chunkCoordinateSystem.getChunkSize()));
+  private static class DarkUpdater {
+    public TilePosition pos;
+    public int dist;
+    
+    public DarkUpdater(TilePosition pos, int d) {
+      this.pos = pos;
+      this.dist = d;
+    }
+    
+  }
+  
+  private Set<TilePosition> updateDarkness(TilePosition position, int maxDist) {
+    Set<TilePosition> edge = Sets.newHashSet();
+    Queue<DarkUpdater> tbd = Queues.newArrayDeque();
+    tbd.add(new DarkUpdater(position, 0));
+    while(!tbd.isEmpty()) {
+      DarkUpdater current = tbd.remove();
+      if(current.dist > maxDist) continue;
+      int l = getLight(current.pos);
+      setLight(current.pos, AMBIENT);
+      List<TilePosition> neighs = current.pos.getDirectNeighbourTiles(chunkCoordinateSystem.getChunkSize());
+      for(TilePosition n : neighs) {
+        Optional<Tile> optTile = getTileAt(n);
+        if(!optTile.isPresent() || isOpaque(optTile.get())) continue;
+        int nl = getLight(n);
+        if(nl > l) {
+          edge.add(n);
+        } else if(nl < l && nl > AMBIENT) {
+          tbd.add(new DarkUpdater(n, current.dist+1));
+        }
+      }
+    }
+    return edge;
   }
 
   public void removeOpaqueBlock(TilePosition position) {
@@ -121,6 +162,8 @@ public class ChunkLightManager {
     int light = getLight(position);
     boolean updated = false;
     for(TilePosition nPos : neighbours) {
+      Optional<Tile> optTile = getTileAt(nPos);
+      if(!optTile.isPresent() || isOpaque(optTile.get())) continue;
       int nLight = getLight(nPos);
       int rLight = (int)(nLight * LIGHT_FALLOFF); 
       if(rLight > light) {
@@ -162,7 +205,7 @@ public class ChunkLightManager {
             lastChunk = optChunk.get();
           }
           if(lighting == null) continue;
-          if(lastChunk.get(nPos.getTileWithinChunk()) != Tile.AIR) continue;
+          if(isOpaque(lastChunk.get(nPos.getTileWithinChunk()))) continue;
           int val = lighting.getLight(nPos.getTileWithinChunk());
           if(val < nv) {
             lighting.setLight(nPos.getTileWithinChunk(), nv);
@@ -171,6 +214,10 @@ public class ChunkLightManager {
         }
       }
     }
+  }
+  
+  private boolean isOpaque(Tile t) {
+    return t != Tile.AIR;
   }
   
 }

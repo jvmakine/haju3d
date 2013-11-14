@@ -215,8 +215,9 @@ public class WorldManager {
       int x = tile.getTileWithinChunk().x;
       int y = tile.getTileWithinChunk().y;
       int z = tile.getTileWithinChunk().z;
+      
       chunk.set(x, y, z, edit.getNewTile());
-
+      
       if (edit.getNewTile() == Tile.AIR) {
         lightingManager.removeOpaqueBlock(new TilePosition(chunk.getPosition(), new LocalTilePosition(x, y, z)));
       } else if (edit.getNewTile() != Tile.AIR) {
