@@ -41,7 +41,7 @@ public final class ChunkLightManager {
     if(light == null) return AMBIENT;
     return light.getLight(position);
   }
-  
+    
   public int getLight(TilePosition pos) {
     return getLight(pos.getChunkPosition(), pos.getTileWithinChunk());
   }
@@ -59,18 +59,43 @@ public final class ChunkLightManager {
   }
   
   public void removeOpaqueBlock(TilePosition position) {
-    //TODO: Calculate sun light
+    if(isSunLight(position.add(LocalTilePosition.UP, chunkCoordinateSystem.getChunkSize()))) {
+      addSunlightFrom(position);
+    }
     updateLightFromNeighbours(position);
     calculateReflectedLight(Sets.newHashSet(position));
   }
   
+  private void addSunlightFrom(TilePosition position) {
+    setLight(position, DAY_LIGHT);
+    setSunLight(position, true);
+    calculateReflectedLight(Sets.newHashSet(position));
+    TilePosition next = position.add(LocalTilePosition.DOWN, chunkCoordinateSystem.getChunkSize()); 
+    if(!isOpaque(getTileAt(next))) {
+      addSunlightFrom(next);
+    }
+  }
+
   public void addOpaqueBlock(TilePosition position) {
     // TODO: Calculate sun light
     int light = getLight(position);
     int maxDist = (int)Math.ceil(Math.log((double)AMBIENT/(double)light)/Math.log(LIGHT_FALLOFF));
+    //blockSunLight(position);
     Set<TilePosition> edge = updateDarkness(position, maxDist);
     setLight(position, AMBIENT);
     calculateReflectedLight(edge);
+  }
+  
+  private boolean isSunLight(TilePosition pos) {
+    ChunkLighting light = chunkLights.get(pos.getChunkPosition());
+    if(light == null) return false;
+    return light.isSunLight(pos.getTileWithinChunk());
+  }
+  
+  private void setSunLight(TilePosition pos, boolean sun) {
+    ChunkLighting light = chunkLights.get(pos.getChunkPosition());
+    if(light == null) return;
+    light.setSunLight(pos.getTileWithinChunk(), sun);
   }
   
   private void setLight(TilePosition pos, int val) {
@@ -117,6 +142,7 @@ public final class ChunkLightManager {
           }
           LocalTilePosition p = new LocalTilePosition(x, y, z); 
           lighting.setLight(p, light);
+          lighting.setSunLight(p, true);
           res.add(new TilePosition(pos, p));
         }
       }
@@ -220,6 +246,10 @@ public final class ChunkLightManager {
   
   private boolean isOpaque(Tile t) {
     return t != Tile.AIR;
+  }
+  
+  private boolean isOpaque(Optional<Tile> t) {
+    return !t.isPresent() || isOpaque(t.get());
   }
   
 }

@@ -7,6 +7,9 @@ public final class LocalTilePosition extends Vector3i {
 
   private static final long serialVersionUID = 1L;
 
+  public final static LocalTilePosition UP = new LocalTilePosition(0, 1, 0);
+  public final static LocalTilePosition DOWN = new LocalTilePosition(0, -1, 0);
+  
   public LocalTilePosition(int x, int y, int z) {
     super(x, y, z);
   }
