@@ -85,7 +85,6 @@ public final class ChunkLightManager {
     } else {
       edge = updateDarkness(position, maxDist);
     }
-    setLight(position, AMBIENT);
     calculateReflectedLight(edge);
   }
   
@@ -177,20 +176,30 @@ public final class ChunkLightManager {
   
   private Set<TilePosition> updateDarkness(TilePosition position, int maxDist) {
     Set<TilePosition> edge = Sets.newHashSet();
+    Set<TilePosition> processed = Sets.newHashSet();
     Queue<DarkUpdater> tbd = Queues.newArrayDeque();
     tbd.add(new DarkUpdater(position, 0));
     while(!tbd.isEmpty()) {
       DarkUpdater current = tbd.remove();
-      if(current.dist > maxDist) continue;
       int l = getLight(current.pos);
       setLight(current.pos, AMBIENT);
+      processed.add(current.pos);
+      if(edge.contains(current.pos)) {
+        edge.remove(current.pos);
+      }
       List<TilePosition> neighs = current.pos.getDirectNeighbourTiles(chunkCoordinateSystem.getChunkSize());
       for(TilePosition n : neighs) {
         Optional<Tile> optTile = getTileAt(n);
-        if(!optTile.isPresent() || isOpaque(optTile.get())) continue;
+        if(!optTile.isPresent() || isOpaque(optTile.get())) {
+          continue;
+        }
+        if(current.dist+1 > maxDist) {
+          if(!processed.contains(n)) edge.add(n);
+          continue;
+        }
         int nl = getLight(n);
-        if(nl > l) {
-          edge.add(n);
+        if(nl > l*LIGHT_FALLOFF) {
+          if(!processed.contains(n)) edge.add(n);
         } else if(nl < l && nl > AMBIENT) {
           tbd.add(new DarkUpdater(n, current.dist+1));
         }
