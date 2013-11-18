@@ -77,15 +77,29 @@ public final class ChunkLightManager {
   }
 
   public void addOpaqueBlock(TilePosition position) {
-    // TODO: Calculate sun light
     int light = getLight(position);
     int maxDist = (int)Math.ceil(Math.log((double)AMBIENT/(double)light)/Math.log(LIGHT_FALLOFF));
-    //blockSunLight(position);
-    Set<TilePosition> edge = updateDarkness(position, maxDist);
+    Set<TilePosition> edge = null;
+    if(isSunLight(position)) {
+      edge = blockSunLight(position, maxDist);
+    } else {
+      edge = updateDarkness(position, maxDist);
+    }
     setLight(position, AMBIENT);
     calculateReflectedLight(edge);
   }
   
+  private Set<TilePosition> blockSunLight(TilePosition position, int maxDist) {
+    setSunLight(position, false);
+    TilePosition down = position.add(LocalTilePosition.DOWN, chunkCoordinateSystem.getChunkSize());
+    Set<TilePosition> edge = Sets.newHashSet();
+    if(isSunLight(down)) {
+      edge.addAll(blockSunLight(down, maxDist));
+    }
+    edge.addAll(updateDarkness(position, maxDist));
+    return edge;
+  }
+
   private boolean isSunLight(TilePosition pos) {
     ChunkLighting light = chunkLights.get(pos.getChunkPosition());
     if(light == null) return false;
