@@ -89,13 +89,13 @@ public final class ChunkLightManager {
   private boolean isSunLight(TilePosition pos) {
     ChunkLighting light = chunkLights.get(pos.getChunkPosition());
     if(light == null) return false;
-    return light.isSunLight(pos.getTileWithinChunk());
+    return light.isLightSource(pos.getTileWithinChunk());
   }
   
   private void setSunLight(TilePosition pos, boolean sun) {
     ChunkLighting light = chunkLights.get(pos.getChunkPosition());
     if(light == null) return;
-    light.setSunLight(pos.getTileWithinChunk(), sun);
+    light.setLightSource(pos.getTileWithinChunk(), sun);
   }
   
   private void setLight(TilePosition pos, int val) {
@@ -142,7 +142,7 @@ public final class ChunkLightManager {
           }
           LocalTilePosition p = new LocalTilePosition(x, y, z); 
           lighting.setLight(p, light);
-          lighting.setSunLight(p, true);
+          lighting.setLightSource(p, true);
           res.add(new TilePosition(pos, p));
         }
       }

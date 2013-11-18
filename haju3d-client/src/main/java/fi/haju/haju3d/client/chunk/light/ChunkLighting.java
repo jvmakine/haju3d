@@ -5,31 +5,37 @@ import fi.haju.haju3d.protocol.world.ByteArray3d;
 
 public final class ChunkLighting {
 
+  private final static byte LIGHT_MASK = (byte)0x7F;
+  private final static byte SOURCE_MASK = (byte)0x80;
+  
   private final ByteArray3d light;
-  private final ByteArray3d sunLight;
-
+  
   public ChunkLighting(int chunkSize) {
     light = new ByteArray3d(chunkSize, chunkSize, chunkSize);
-    sunLight = new ByteArray3d(chunkSize, chunkSize, chunkSize);
   }
 
   public int getLight(LocalTilePosition pos) {
     if (!light.isInside(pos)) return 0;
-    int val = light.get(pos);
+    int val = light.get(pos) & LIGHT_MASK;
     return val < ChunkLightManager.AMBIENT ? ChunkLightManager.AMBIENT : val;
   }
 
   public void setLight(LocalTilePosition pos, int lightValue) {
-    light.set(pos, (byte) lightValue);
+    light.set(pos, (byte)((byte)lightValue & (byte)LIGHT_MASK));
   }
   
-  public boolean isSunLight(LocalTilePosition pos) {
-    if (!sunLight.isInside(pos)) return false;
-    return sunLight.get(pos) == 1;
+  public boolean isLightSource(LocalTilePosition pos) {
+    if (!light.isInside(pos)) return false;
+    return (light.get(pos) & SOURCE_MASK) != 0;
   }
   
-  public void setSunLight(LocalTilePosition pos, boolean isInSunLight) {
-    sunLight.set(pos, (byte)(isInSunLight ? 1 : 0));
+  public void setLightSource(LocalTilePosition pos, boolean isSource) {
+    byte l = light.get(pos);
+    if(isSource) {
+      l = (byte)(l | SOURCE_MASK);
+    } else {
+      l = (byte)(l & LIGHT_MASK);
+    }
   }
 
 }

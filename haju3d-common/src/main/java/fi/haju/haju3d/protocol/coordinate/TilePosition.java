@@ -64,6 +64,7 @@ public class TilePosition implements Serializable {
   }
 
   public final TilePosition add(LocalTilePosition v, int chunkSize) {
+    if(chunkSize == 0) throw new IllegalArgumentException("chunkSize == 0");
     ChunkPosition cPos = new ChunkPosition(chunkPosition.x, chunkPosition.y, chunkPosition.z);
     LocalTilePosition tPos = new LocalTilePosition(tileWithinChunk.x, tileWithinChunk.y, tileWithinChunk.z);
     tPos = tPos.add(v);
