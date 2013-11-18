@@ -6,7 +6,7 @@ import fi.haju.haju3d.protocol.world.ByteArray3d;
 public final class ChunkLighting {
 
   private final static byte LIGHT_MASK = (byte)0x7F;
-  private final static byte SOURCE_MASK = (byte)0x80;
+  private final static byte SOURCE_MASK = (byte)(1<<7);
   
   private final ByteArray3d light;
   
@@ -21,7 +21,7 @@ public final class ChunkLighting {
   }
 
   public void setLight(LocalTilePosition pos, int lightValue) {
-    light.set(pos, (byte)((byte)lightValue & (byte)LIGHT_MASK));
+    light.set(pos, (byte)(lightValue & LIGHT_MASK));
   }
   
   public boolean isLightSource(LocalTilePosition pos) {
@@ -30,12 +30,13 @@ public final class ChunkLighting {
   }
   
   public void setLightSource(LocalTilePosition pos, boolean isSource) {
-    byte l = light.get(pos);
+    byte l = (byte)(light.get(pos) & 0xFF);
     if(isSource) {
       l = (byte)(l | SOURCE_MASK);
     } else {
       l = (byte)(l & LIGHT_MASK);
     }
+    light.set(pos, l);
   }
 
 }
