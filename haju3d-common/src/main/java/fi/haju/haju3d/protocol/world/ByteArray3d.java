@@ -33,7 +33,7 @@ public final class ByteArray3d implements Serializable {
   }
 
   private int getIndex(int x, int y, int z) {
-    return x + y * width + z * width * height;
+    return x + z * width + y * width * depth;
   }
 
   public boolean isInside(int x, int y, int z) {
@@ -62,5 +62,9 @@ public final class ByteArray3d implements Serializable {
 
   public int getDepth() {
     return depth;
+  }
+
+  public byte[] getData() {
+    return data;
   }
 }

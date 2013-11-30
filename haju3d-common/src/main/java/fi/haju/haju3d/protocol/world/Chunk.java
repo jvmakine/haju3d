@@ -139,4 +139,7 @@ public final class Chunk implements Serializable {
     return result;
   }
 
+  public ByteArray3d getTiles() {
+    return tiles;
+  }
 }
