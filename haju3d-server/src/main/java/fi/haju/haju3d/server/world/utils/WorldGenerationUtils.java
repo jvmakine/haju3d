@@ -35,6 +35,10 @@ public final class WorldGenerationUtils {
     List<TreeBranchState> branches = Lists.newArrayList();
     int height = r.nextInt(10) + 10;
     for (int k = height; k >= 0; k--) {
+      if (y + k >= chunk.getSize()) {
+        continue;
+      }
+
       chunk.set(x, y + k, z, Tile.WOOD);
       chunk.set(x + 1, y + k, z, Tile.WOOD);
       chunk.set(x + 1, y + k, z + 1, Tile.WOOD);
