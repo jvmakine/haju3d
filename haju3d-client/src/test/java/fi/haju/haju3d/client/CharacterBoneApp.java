@@ -9,7 +9,6 @@ import com.jme3.scene.Spatial;
 import com.jme3.scene.shape.Box;
 
 public class CharacterBoneApp extends SimpleApplication {
-
   public static void main(String[] args) {
     CharacterBoneApp app = new CharacterBoneApp();
     SimpleApplicationUtils.configureSimpleApplication(app);

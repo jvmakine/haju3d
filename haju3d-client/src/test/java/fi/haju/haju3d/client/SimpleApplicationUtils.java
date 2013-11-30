@@ -15,12 +15,18 @@ import com.jme3.scene.Node;
 import com.jme3.shadow.DirectionalLightShadowRenderer;
 import com.jme3.shadow.EdgeFilteringMode;
 import com.jme3.system.AppSettings;
+import org.slf4j.bridge.SLF4JBridgeHandler;
+
+import java.util.logging.LogManager;
 
 public final class SimpleApplicationUtils {
   private SimpleApplicationUtils() {
   }
 
   public static AppSettings configureSimpleApplication(SimpleApplication app) {
+    LogManager.getLogManager().reset();
+    SLF4JBridgeHandler.install();
+
     AppSettings settings = new AppSettings(true);
     settings.setResolution(1024, 768);
     settings.setVSync(true);
