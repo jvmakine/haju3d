@@ -2,25 +2,16 @@ package fi.haju.haju3d.client;
 
 import com.jme3.app.SimpleApplication;
 import com.jme3.collision.CollisionResults;
-import com.jme3.font.BitmapText;
 import com.jme3.input.MouseInput;
 import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.MouseButtonTrigger;
-import com.jme3.light.AmbientLight;
-import com.jme3.light.DirectionalLight;
-import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Ray;
 import com.jme3.math.Vector3f;
-import com.jme3.post.FilterPostProcessor;
-import com.jme3.post.filters.CartoonEdgeFilter;
 import com.jme3.renderer.queue.RenderQueue;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Mesh;
 import com.jme3.scene.Spatial;
-import com.jme3.shadow.DirectionalLightShadowRenderer;
-import com.jme3.shadow.EdgeFilteringMode;
-
 import fi.haju.haju3d.client.chunk.light.ChunkLightManager;
 import fi.haju.haju3d.client.ui.input.InputActions;
 import fi.haju.haju3d.client.ui.mesh.ChunkSpatialBuilder;
@@ -28,7 +19,10 @@ import fi.haju.haju3d.client.ui.mesh.MyMesh;
 import fi.haju.haju3d.protocol.coordinate.ChunkPosition;
 import fi.haju.haju3d.protocol.coordinate.TilePosition;
 import fi.haju.haju3d.protocol.coordinate.Vector3i;
-import fi.haju.haju3d.protocol.world.*;
+import fi.haju.haju3d.protocol.world.Chunk;
+import fi.haju.haju3d.protocol.world.ChunkCoordinateSystem;
+import fi.haju.haju3d.protocol.world.Tile;
+import fi.haju.haju3d.protocol.world.World;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -57,22 +51,13 @@ public class CharacterCreationApp extends SimpleApplication {
   @Override
   public void simpleInitApp() {
     this.world = createWorld();
-    flyCam.setMoveSpeed(20);
+    flyCam.setMoveSpeed(21);
     flyCam.setRotationSpeed(2.0f);
-    setupLights();
-    setupCrosshair();
+    SimpleApplicationUtils.addLights(this);
+    SimpleApplicationUtils.addCartoonEdges(this);
+    SimpleApplicationUtils.setupCrosshair(this, this.settings);
     updateChunkMesh(new ChunkPosition(0, 0, 0));
     setupControls();
-  }
-
-  private void setupCrosshair() {
-    guiFont = assetManager.loadFont("Interface/Fonts/Default.fnt");
-    BitmapText crossHair = new BitmapText(guiFont, false);
-    crossHair.setSize(guiFont.getCharSet().getRenderedSize() * 2);
-    crossHair.setText("+");
-    crossHair.setLocalTranslation(settings.getWidth() / 2 - crossHair.getLineWidth() / 2,
-        settings.getHeight() / 2 + crossHair.getLineHeight() / 2, 0);
-    guiNode.attachChild(crossHair);
   }
 
   private void setupControls() {
@@ -124,48 +109,6 @@ public class CharacterCreationApp extends SimpleApplication {
       }
       updateChunkMesh(collisionTile.getChunkPosition());
     }
-  }
-
-  private void setupLights() {
-    DirectionalLight light = new DirectionalLight();
-    light.setDirection(new Vector3f(-1, -2, -3).normalizeLocal());
-    light.setColor(new ColorRGBA(1f, 1f, 1f, 1f).mult(1.0f));
-    rootNode.addLight(light);
-
-    DirectionalLight light2 = new DirectionalLight();
-    light2.setDirection(new Vector3f(1, -2, 3).normalizeLocal());
-    light2.setColor(new ColorRGBA(0.4f, 0.4f, 1f, 1f).mult(1.0f));
-    rootNode.addLight(light2);
-
-    DirectionalLight light3 = new DirectionalLight();
-    light3.setDirection(new Vector3f(-4, 2, 2).normalizeLocal());
-    light3.setColor(new ColorRGBA(0.6f, 0.2f, 0.3f, 1f).mult(1.0f));
-    rootNode.addLight(light3);
-
-    AmbientLight ambient = new AmbientLight();
-    ambient.setColor(ColorRGBA.Blue.mult(0.4f));
-    rootNode.addLight(ambient);
-
-    DirectionalLightShadowRenderer dlsr = new DirectionalLightShadowRenderer(assetManager, 2048, 4);
-    dlsr.setLight(light);
-    dlsr.setShadowIntensity(0.4f);
-    dlsr.setEdgeFilteringMode(EdgeFilteringMode.PCF4);
-    viewPort.addProcessor(dlsr);
-
-    CartoonEdgeFilter rimLightFilter = new CartoonEdgeFilter();
-    rimLightFilter.setEdgeColor(ColorRGBA.Black);
-
-    rimLightFilter.setEdgeIntensity(0.5f);
-    rimLightFilter.setEdgeWidth(1.0f);
-
-    rimLightFilter.setNormalSensitivity(0.0f);
-    rimLightFilter.setNormalThreshold(0.0f);
-
-    rimLightFilter.setDepthSensitivity(20.0f);
-    rimLightFilter.setDepthThreshold(0.0f);
-    FilterPostProcessor fpp = new FilterPostProcessor(assetManager);
-    fpp.addFilter(rimLightFilter);
-    viewPort.addProcessor(fpp);
   }
 
   private void updateChunkMesh(ChunkPosition pos) {
@@ -226,25 +169,21 @@ public class CharacterCreationApp extends SimpleApplication {
     chunk.set(new Chunk.GetValue() {
       @Override
       public Tile getValue(int x, int y, int z) {
-        return (x - sz / 2) * (x - sz / 2) + (y - sz / 2) * (y - sz / 2) + (z - sz / 2) * (z - sz / 2) < (sz / 2) * (sz / 2) ? GROUND_TILE : Tile.AIR;
+        int xd = x - sz / 2;
+        int yd = y - sz / 2;
+        int zd = z - sz / 2;
+        int bsz = sz / 2;
+        return xd * xd + yd * yd + zd * zd < bsz * bsz ? GROUND_TILE : Tile.AIR;
       }
     });
     world.setChunk(cp, chunk);
     return world;
   }
 
-  private Material makeColorMaterial(ColorRGBA color) {
-    Material mat = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
-    mat.setBoolean("UseMaterialColors", true);
-    mat.setColor("Ambient", color);
-    mat.setColor("Diffuse", color);
-    return mat;
-  }
-
   public Spatial makeSpatial(MyMesh myMesh) {
     Mesh m = new ChunkSpatialBuilder.SimpleMeshBuilder(myMesh).build();
     final Geometry geom = new Geometry("ColoredMesh", m);
-    geom.setMaterial(makeColorMaterial(ColorRGBA.White));
+    geom.setMaterial(SimpleApplicationUtils.makeColorMaterial(assetManager, ColorRGBA.White));
     geom.setShadowMode(RenderQueue.ShadowMode.CastAndReceive);
     return geom;
   }
