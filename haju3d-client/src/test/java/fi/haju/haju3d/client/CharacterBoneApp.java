@@ -106,10 +106,12 @@ public class CharacterBoneApp extends SimpleApplication {
       @Override
       public void onAction(String name, boolean isPressed, float tpf) {
         if (isPressed) {
-          dragTarget = bones.get(0).start;
-          dragPlane = makeDragPlane();
-          dragPlanePreview = makeDragPlanePreview();
-          rootNode.attachChild(dragPlanePreview);
+          dragTarget = findDragTarget();
+          if (dragTarget != null) {
+            dragPlane = makeDragPlane();
+            dragPlanePreview = makeDragPlanePreview();
+            rootNode.attachChild(dragPlanePreview);
+          }
         } else {
           if (dragPlanePreview != null) {
             rootNode.detachChild(dragPlanePreview);
@@ -120,6 +122,29 @@ public class CharacterBoneApp extends SimpleApplication {
         }
       }
     }, Actions.CLICK);
+  }
+
+  private Vector3f findDragTarget() {
+    Vector3f best = null;
+    float bestDist = 20;
+    for (MyBone bone : bones) {
+      float distance = cursorDistanceTo(bone.start);
+      if (distance < bestDist) {
+        bestDist = distance;
+        best = bone.start;
+      }
+      distance = cursorDistanceTo(bone.end);
+      if (distance < bestDist) {
+        bestDist = distance;
+        best = bone.end;
+      }
+    }
+    return best;
+  }
+
+  private float cursorDistanceTo(Vector3f pos) {
+    Vector3f sc = cam.getScreenCoordinates(pos);
+    return new Vector2f(sc.x, sc.y).distance(inputManager.getCursorPosition());
   }
 
   private Spatial makeDragPlanePreview() {
