@@ -101,4 +101,10 @@ public final class SimpleApplicationUtils {
     mat.setColor("Diffuse", color);
     return mat;
   }
+
+  public static Material makeLineMaterial(AssetManager assetManager, ColorRGBA color) {
+    Material matVC = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+    matVC.setColor("Color", color);
+    return matVC;
+  }
 }
