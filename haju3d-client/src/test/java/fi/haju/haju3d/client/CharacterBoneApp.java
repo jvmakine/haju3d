@@ -16,6 +16,7 @@ import com.jme3.scene.debug.WireBox;
 import com.jme3.scene.shape.Box;
 import com.jme3.scene.shape.Line;
 import com.jme3.scene.shape.Quad;
+import com.jme3.scene.shape.Sphere;
 import com.jme3.util.BufferUtils;
 
 import java.nio.FloatBuffer;
@@ -35,7 +36,7 @@ public class CharacterBoneApp extends SimpleApplication {
   private static class MyBone {
     private Vector3f start;
     private Vector3f end;
-    private float scale = 1.0f;
+    private float thickness = 1.0f;
     private float rotation;
     private Spatial spatial;
     private Spatial guiSpatial;
@@ -70,8 +71,8 @@ public class CharacterBoneApp extends SimpleApplication {
     MyBone bone = new MyBone();
     bone.start = new Vector3f(0, 2, 0);
     bone.end = new Vector3f(1, -1, 2);
-    bone.scale = 0.5f;
-    bone.spatial = makeBox();
+    bone.thickness = 0.2f;
+    bone.spatial = makeSphere();
     bones.add(bone);
 
     inputManager.addMapping(Actions.ROTATE_LEFT, new KeyTrigger(KeyInput.KEY_LEFT));
@@ -106,22 +107,59 @@ public class CharacterBoneApp extends SimpleApplication {
       @Override
       public void onAction(String name, boolean isPressed, float tpf) {
         if (isPressed) {
+          stopDragging();
           dragTarget = findDragTarget();
           if (dragTarget != null) {
-            dragPlane = makeDragPlane();
-            dragPlanePreview = makeDragPlanePreview();
-            rootNode.attachChild(dragPlanePreview);
+            startDragging();
+          } else {
+            // create new bone
+            Vector3f attachPoint = findBoneAttachPoint();
+            if (attachPoint != null) {
+              MyBone bone = new MyBone();
+              bone.start = attachPoint.clone();
+              bone.end = attachPoint.clone();
+              bone.thickness = 0.2f;
+              bone.spatial = makeSphere();
+              bones.add(bone);
+              dragTarget = bone.end;
+              startDragging();
+            }
           }
         } else {
-          if (dragPlanePreview != null) {
-            rootNode.detachChild(dragPlanePreview);
-          }
-          dragPlane = null;
-          dragPlanePreview = null;
-          dragTarget = null;
+          stopDragging();
         }
       }
     }, Actions.CLICK);
+  }
+
+  private void startDragging() {
+    // start dragging
+    dragPlane = makeDragPlane();
+    dragPlanePreview = makeDragPlanePreview();
+    rootNode.attachChild(dragPlanePreview);
+  }
+
+  private void stopDragging() {
+    // stop dragging
+    if (dragPlanePreview != null) {
+      rootNode.detachChild(dragPlanePreview);
+    }
+    dragPlane = null;
+    dragPlanePreview = null;
+    dragTarget = null;
+  }
+
+  private Vector3f findBoneAttachPoint() {
+    Node allBones = new Node();
+    for (MyBone bone : bones) {
+      allBones.attachChild(bone.spatial);
+    }
+    CollisionResults results = new CollisionResults();
+    int i = allBones.collideWith(getCursorRay(), results);
+    if (i > 0) {
+      return results.getClosestCollision().getContactPoint();
+    }
+    return null;
   }
 
   private Vector3f findDragTarget() {
@@ -173,10 +211,7 @@ public class CharacterBoneApp extends SimpleApplication {
   @Override
   public void simpleUpdate(float tpf) {
     if (dragTarget != null) {
-      Vector3f origin = cam.getWorldCoordinates(inputManager.getCursorPosition(), 0.0f);
-      Vector3f direction = cam.getWorldCoordinates(inputManager.getCursorPosition(), 0.3f);
-      direction.subtractLocal(origin).normalizeLocal();
-      Ray ray = new Ray(origin, direction);
+      Ray ray = getCursorRay();
       CollisionResults results = new CollisionResults();
       if (dragPlane.collideWith(ray, results) > 0) {
         dragTarget.set(results.getCollision(0).getContactPoint());
@@ -187,13 +222,27 @@ public class CharacterBoneApp extends SimpleApplication {
     updateBoneSpatials();
   }
 
+  /**
+   * returns a ray pointing from camera to cursor
+   */
+  private Ray getCursorRay() {
+    Vector3f origin = cam.getWorldCoordinates(inputManager.getCursorPosition(), 0.0f);
+    Vector3f direction = cam.getWorldCoordinates(inputManager.getCursorPosition(), 0.3f);
+    direction.subtractLocal(origin).normalizeLocal();
+    return new Ray(origin, direction);
+  }
+
   private void updateBoneSpatials() {
     for (MyBone b : bones) {
-      b.spatial.setLocalTransform(transformBetween(b.start, b.end, Vector3f.UNIT_Z, b.scale));
-      rootNode.attachChild(b.spatial);
+      Transform t = transformBetween(b.start, b.end, Vector3f.UNIT_Z, b.thickness);
+      if (Vector3f.isValidVector(t.getTranslation())) {
+        b.spatial.setLocalTransform(t);
+        rootNode.attachChild(b.spatial);
+      }
 
       if (b.guiSpatial != null) {
         guiNode.detachChild(b.guiSpatial);
+        b.guiSpatial = null;
       }
 
       Node gui = new Node();
@@ -261,9 +310,16 @@ public class CharacterBoneApp extends SimpleApplication {
     return geom;
   }
 
+  public Spatial makeSphere() {
+    Mesh m = new Sphere(20, 20, 0.6f);
+    final Geometry geom = new Geometry("ColoredMesh", m);
+    geom.setMaterial(SimpleApplicationUtils.makeColorMaterial(assetManager, ColorRGBA.White));
+    geom.setShadowMode(RenderQueue.ShadowMode.CastAndReceive);
+    return geom;
+  }
+
   public Spatial makeFloor() {
     Mesh m = new Quad(100, 100);
-    //Mesh m = makeGridMesh(100, 100, 50, 50);
     final Geometry geom = new Geometry("Floor", m);
     geom.setMaterial(SimpleApplicationUtils.makeColorMaterial(assetManager, ColorRGBA.Blue));
     geom.setShadowMode(RenderQueue.ShadowMode.Receive);
