@@ -1,14 +1,12 @@
 package fi.haju.haju3d.client;
 
 import com.jme3.app.SimpleApplication;
+import com.jme3.collision.CollisionResult;
 import com.jme3.collision.CollisionResults;
 import com.jme3.font.BitmapText;
 import com.jme3.input.KeyInput;
 import com.jme3.input.MouseInput;
-import com.jme3.input.controls.ActionListener;
-import com.jme3.input.controls.AnalogListener;
-import com.jme3.input.controls.KeyTrigger;
-import com.jme3.input.controls.MouseButtonTrigger;
+import com.jme3.input.controls.*;
 import com.jme3.math.*;
 import com.jme3.renderer.queue.RenderQueue;
 import com.jme3.scene.*;
@@ -25,12 +23,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CharacterBoneApp extends SimpleApplication {
+
+  public static final float MINIMUM_BONE_THICKNESS = 0.05f;
+
   private static class Actions {
     public static final String ROTATE_LEFT = "RotateLeft";
     public static final String ROTATE_RIGHT = "RotateRight";
     public static final String ROTATE_UP = "RotateUp";
     public static final String ROTATE_DOWN = "RotateDown";
     public static final String CLICK = "Click";
+    public static final String RESIZE_DOWN = "ResizeDown";
+    public static final String RESIZE_UP = "ResizeUp";
+    public static final String SHOW_GUIDES = "ShowGuides";
   }
 
   private static class MyBone {
@@ -57,15 +61,13 @@ public class CharacterBoneApp extends SimpleApplication {
   private Vector3f dragTarget;
   private Spatial dragPlane;
   private Spatial dragPlanePreview;
+  private boolean showGuides = true;
 
   @Override
   public void simpleInitApp() {
     flyCam.setEnabled(false);
     SimpleApplicationUtils.addLights(this);
     SimpleApplicationUtils.addCartoonEdges(this);
-    Spatial box = makeBox();
-    camTarget = box;
-    rootNode.attachChild(box);
     rootNode.attachChild(makeFloor());
 
     MyBone bone = new MyBone();
@@ -74,6 +76,8 @@ public class CharacterBoneApp extends SimpleApplication {
     bone.thickness = 0.2f;
     bone.spatial = makeSphere();
     bones.add(bone);
+
+    camTarget = bone.spatial;
 
     inputManager.addMapping(Actions.ROTATE_LEFT, new KeyTrigger(KeyInput.KEY_LEFT));
     inputManager.addMapping(Actions.ROTATE_RIGHT, new KeyTrigger(KeyInput.KEY_RIGHT));
@@ -101,6 +105,24 @@ public class CharacterBoneApp extends SimpleApplication {
         }
       }
     }, Actions.ROTATE_LEFT, Actions.ROTATE_RIGHT, Actions.ROTATE_UP, Actions.ROTATE_DOWN);
+
+    inputManager.addMapping(Actions.RESIZE_DOWN, new MouseAxisTrigger(MouseInput.AXIS_WHEEL, true));
+    inputManager.addMapping(Actions.RESIZE_UP, new MouseAxisTrigger(MouseInput.AXIS_WHEEL, false));
+    inputManager.addListener(new AnalogListener() {
+      @Override
+      public void onAnalog(String name, float value, float tpf) {
+        if (name.equals(Actions.RESIZE_DOWN)) {
+          value = -value;
+        }
+        MyBone bone = findCurrentBone();
+        if (bone != null) {
+          bone.thickness += value * 0.05f;
+          if (bone.thickness < MINIMUM_BONE_THICKNESS) {
+            bone.thickness = MINIMUM_BONE_THICKNESS;
+          }
+        }
+      }
+    }, Actions.RESIZE_DOWN, Actions.RESIZE_UP);
 
     inputManager.addMapping(Actions.CLICK, new MouseButtonTrigger(MouseInput.BUTTON_LEFT));
     inputManager.addListener(new ActionListener() {
@@ -130,13 +152,24 @@ public class CharacterBoneApp extends SimpleApplication {
         }
       }
     }, Actions.CLICK);
+
+
+    inputManager.addMapping(Actions.SHOW_GUIDES, new KeyTrigger(KeyInput.KEY_SPACE));
+    inputManager.addListener(new ActionListener() {
+      @Override
+      public void onAction(String name, boolean isPressed, float tpf) {
+        if (isPressed) {
+          showGuides = !showGuides;
+        }
+      }
+    }, Actions.SHOW_GUIDES);
   }
 
   private void startDragging() {
     // start dragging
     dragPlane = makeDragPlane();
-    dragPlanePreview = makeDragPlanePreview();
-    rootNode.attachChild(dragPlanePreview);
+    //dragPlanePreview = makeDragPlanePreview();
+    //rootNode.attachChild(dragPlanePreview);
   }
 
   private void stopDragging() {
@@ -150,6 +183,27 @@ public class CharacterBoneApp extends SimpleApplication {
   }
 
   private Vector3f findBoneAttachPoint() {
+    CollisionResult collision = findBoneCollision();
+    if (collision != null) {
+      return collision.getContactPoint();
+    }
+    return null;
+  }
+
+  private MyBone findCurrentBone() {
+    CollisionResult collision = findBoneCollision();
+    if (collision != null) {
+      Geometry geom = collision.getGeometry();
+      for (MyBone bone : bones) {
+        if (bone.spatial == geom) {
+          return bone;
+        }
+      }
+    }
+    return null;
+  }
+
+  private CollisionResult findBoneCollision() {
     Node allBones = new Node();
     for (MyBone bone : bones) {
       allBones.attachChild(bone.spatial);
@@ -157,7 +211,7 @@ public class CharacterBoneApp extends SimpleApplication {
     CollisionResults results = new CollisionResults();
     int i = allBones.collideWith(getCursorRay(), results);
     if (i > 0) {
-      return results.getClosestCollision().getContactPoint();
+      return results.getClosestCollision();
     }
     return null;
   }
@@ -245,17 +299,19 @@ public class CharacterBoneApp extends SimpleApplication {
         b.guiSpatial = null;
       }
 
-      Node gui = new Node();
+      if (showGuides) {
+        Node gui = new Node();
 
-      Vector3f screenStart = cam.getScreenCoordinates(b.start);
-      gui.attachChild(makeCircle(screenStart));
+        Vector3f screenStart = cam.getScreenCoordinates(b.start);
+        gui.attachChild(makeCircle(screenStart));
 
-      Vector3f screenEnd = cam.getScreenCoordinates(b.end);
-      gui.attachChild(makeCircle(screenEnd));
-      gui.attachChild(makeLine(screenStart, screenEnd, ColorRGBA.Green));
+        Vector3f screenEnd = cam.getScreenCoordinates(b.end);
+        gui.attachChild(makeCircle(screenEnd));
+        gui.attachChild(makeLine(screenStart, screenEnd, ColorRGBA.Green));
 
-      b.guiSpatial = gui;
-      guiNode.attachChild(b.guiSpatial);
+        b.guiSpatial = gui;
+        guiNode.attachChild(b.guiSpatial);
+      }
     }
   }
 
