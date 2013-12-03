@@ -15,9 +15,12 @@ public final class MyFace {
   public boolean realTile;
   public int zIndex;
   public Tile tile;
-  public int light;
+  
+  public int lightR;
+  public int lightG;
+  public int lightB;
 
-  public MyFace(MyVertex v1, MyVertex v2, MyVertex v3, MyVertex v4, MyTexture texture, float color, boolean realTile, int zIndex, Tile tile, int light) {
+  public MyFace(MyVertex v1, MyVertex v2, MyVertex v3, MyVertex v4, MyTexture texture, float color, boolean realTile, int zIndex, Tile tile, int lightR, int lightG, int lightB) {
     this.v1 = v1;
     this.v2 = v2;
     this.v3 = v3;
@@ -27,7 +30,9 @@ public final class MyFace {
     this.realTile = realTile;
     this.zIndex = zIndex;
     this.tile = tile;
-    this.light = light;
+    this.lightR = lightR;
+    this.lightG = lightG;
+    this.lightB = lightB;
   }
 
   public void calcCenter() {

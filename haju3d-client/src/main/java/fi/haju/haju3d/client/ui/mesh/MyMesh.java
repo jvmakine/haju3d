@@ -1,6 +1,8 @@
 package fi.haju.haju3d.client.ui.mesh;
 
 import com.jme3.math.Vector3f;
+
+import fi.haju.haju3d.client.chunk.light.TileLight;
 import fi.haju.haju3d.protocol.world.Tile;
 
 import java.util.ArrayList;
@@ -23,8 +25,10 @@ public final class MyMesh {
   public void addFace(
       Vector3f v1, Vector3f v2, Vector3f v3, Vector3f v4,
       MyTexture texture, float color, boolean realTile, int zIndex,
-      Tile tile, int light) {
-    MyFace face = new MyFace(getVertex(v1), getVertex(v2), getVertex(v3), getVertex(v4), texture, color, realTile, zIndex, tile, light);
+      Tile tile, TileLight light) {
+    MyFace face = new MyFace(
+        getVertex(v1), getVertex(v2), getVertex(v3), getVertex(v4), 
+        texture, color, realTile, zIndex, tile, light.red, light.green, light.blue);
 
     addVertexFace(face, face.v1, 1);
     addVertexFace(face, face.v2, 2);
@@ -67,12 +71,21 @@ public final class MyMesh {
     if (vertexToLight.containsKey(v)) {
       return;
     }
-    int sum = 0;
+    float sumR = 0;
+    float sumG = 0;
+    float sumB = 0;
     for (MyFaceAndIndex f : vertexFaces.get(v)) {
-      sum += f.face.light;
+      sumR += f.face.lightR;
+      sumG += f.face.lightG;
+      sumB += f.face.lightB;
     }
-    sum /= vertexFaces.get(v).size();
-    vertexToLight.put(v, new Vector3f(1.0f, 1.0f, 1.0f).multLocal(sum / 100.0f));
+    sumR /= vertexFaces.get(v).size();
+    sumG /= vertexFaces.get(v).size();
+    sumB /= vertexFaces.get(v).size();
+    vertexToLight.put(v, new Vector3f(
+        sumR / (float)TileLight.MAX_DISTANCE, 
+        sumG / (float)TileLight.MAX_DISTANCE,
+        sumB / (float)TileLight.MAX_DISTANCE));
   }
 
   public void calcVertexNormals() {
