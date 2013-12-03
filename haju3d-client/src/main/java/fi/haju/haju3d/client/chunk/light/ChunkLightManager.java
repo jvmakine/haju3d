@@ -53,7 +53,7 @@ public final class ChunkLightManager {
     if (chunk.hasLight()) {
       Set<TilePosition> sunned = calculateDirectSunLight(chunk);
       calculateReflectedLight(sunned);
-      //calculateLightFromNeighbours(chunk);
+      calculateLightFromNeighbours(chunk);
     }
   }
   

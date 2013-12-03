@@ -5,6 +5,8 @@ import com.jme3.light.DirectionalLight;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Spatial;
+
+import fi.haju.haju3d.client.chunk.light.TileLight;
 import fi.haju.haju3d.client.ui.mesh.ChunkSpatialBuilder;
 import fi.haju.haju3d.client.ui.mesh.MyMesh;
 import fi.haju.haju3d.client.ui.mesh.MyTexture;
@@ -74,7 +76,7 @@ public class ShaderTestingApp extends SimpleApplication {
             1.0f, true,
             zindex,
             Tile.ROCK,
-            100);
+            new TileLight());
       }
     }
 
