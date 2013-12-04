@@ -26,8 +26,8 @@ public final class ChunkLightManager {
 
   private Map<ChunkPosition, ChunkLighting> chunkLights = new ConcurrentHashMap<>();
   
-  public static final TileLight AMBIENT = new TileLight((byte)0, (byte)0, (byte)0, false, false);
-  public static final TileLight DAY_LIGHT = new TileLight((byte)14, (byte)14, (byte)14, true, true);
+  public static final TileLight AMBIENT = new TileLight(0, 0, 0, false, false);
+  public static final TileLight DAY_LIGHT = new TileLight(14, 14, 14, true, true);
 
   private ChunkCoordinateSystem chunkCoordinateSystem = ChunkCoordinateSystem.DEFAULT;
 
@@ -227,38 +227,17 @@ public final class ChunkLightManager {
   
   private void calculateReflectedLight(Set<TilePosition> updateStarters) {
     Queue<TilePosition> tbp = Queues.newArrayDeque(updateStarters);
-    // Variables to prevent continuous refetching of the active chunk data.
-    ChunkPosition lastChunkPos = null;
-    ChunkLighting lighting = null;
-    Chunk lastChunk = null;
     while(!tbp.isEmpty()) {
       TilePosition pos = tbp.remove();
-      // Get new chunk only if chunk position changes
-      if(!pos.getChunkPosition().equals(lastChunkPos)) {
-        Optional<Chunk> optChunk = chunkProvider.getChunkIfLoaded(pos.getChunkPosition());
-        if(!optChunk.isPresent()) continue;
-        lighting = chunkLights.get(pos.getChunkPosition());
-        lastChunkPos = pos.getChunkPosition();
-        lastChunk = optChunk.get();
-      }
       List<TilePosition> positions = pos.getDirectNeighbourTiles(chunkCoordinateSystem.getChunkSize());
-      TileLight light = lighting == null ? AMBIENT : lighting.getLight(pos.getTileWithinChunk());
+      TileLight light = getLight(pos);
       TileLight nv = light.getDimmer();
       if(nv.hasLight()) {
         for(TilePosition nPos : positions) {
-          // Get new chunk only if chunk position changes
-          if(!nPos.getChunkPosition().equals(lastChunkPos)) {
-            Optional<Chunk> optChunk = chunkProvider.getChunkIfLoaded(pos.getChunkPosition());
-            if(!optChunk.isPresent()) continue;
-            lighting = chunkLights.get(pos.getChunkPosition());
-            lastChunkPos = pos.getChunkPosition();
-            lastChunk = optChunk.get();
-          }
-          if(lighting == null) continue;
-          if(isOpaque(lastChunk.get(nPos.getTileWithinChunk()))) continue;
-          TileLight val = lighting.getLight(nPos.getTileWithinChunk());
+          if(isOpaque(getTileAt(nPos))) continue;
+          TileLight val = getLight(nPos);
           if(nv.hasBrighter(val)) {
-            lighting.setLight(nPos.getTileWithinChunk(), nv.combineBrightest(val));
+            setLight(nPos, val.combineBrightest(nv));
             tbp.add(nPos);
           }
         }

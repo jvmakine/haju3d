@@ -57,8 +57,8 @@ public final class TileLight {
         other.red > red ? other.red : red,
         other.green > green ? other.green : green,
         other.blue > blue ? other.blue : blue,
-        false,
-        false);
+        source,
+        inSun);
   }
   
   public boolean hasLight() {
