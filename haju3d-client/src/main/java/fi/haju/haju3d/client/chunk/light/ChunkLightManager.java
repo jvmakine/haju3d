@@ -130,6 +130,7 @@ public final class ChunkLightManager {
     Set<TilePosition> edge = chunk.getPosition().getEdgeTilePositions(chunkCoordinateSystem.getChunkSize());
     Set<TilePosition> updated = Sets.newHashSet();
     for(TilePosition pos : edge) {
+      if(isOpaque(getTileAt(pos))) continue;
       if(updateLightFromNeighbours(pos)) {
         updated.add(pos);
       }
