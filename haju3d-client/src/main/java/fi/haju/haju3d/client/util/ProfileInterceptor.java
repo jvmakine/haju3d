@@ -15,6 +15,7 @@ public class ProfileInterceptor implements MethodInterceptor {
     public MethodProfile(String method, long time) {
       this.method = method;
       this.time = time;
+      this.calls = 1;
     }
     public String method;
     public long calls;

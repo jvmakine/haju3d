@@ -145,7 +145,8 @@ public class ChunkLightManager {
     }
   }
 
-  private Set<ChunkPosition> calculateLightFromNeighbours(Chunk chunk) {
+  @Profiled
+  protected Set<ChunkPosition> calculateLightFromNeighbours(Chunk chunk) {
     Set<TilePosition> edge = chunk.getPosition().getEdgeTilePositions(chunkCoordinateSystem.getChunkSize());
     Set<TilePosition> updated = Sets.newHashSet();
     for(TilePosition pos : edge) {
@@ -157,7 +158,8 @@ public class ChunkLightManager {
     return calculateReflectedLight(updated);
   }
 
-  private Set<TilePosition> calculateDirectSunLight(Chunk chunk) {
+  @Profiled
+  protected Set<TilePosition> calculateDirectSunLight(Chunk chunk) {
     Set<TilePosition> res = Sets.newHashSet();
     ChunkPosition pos = chunk.getPosition();
     ChunkLighting lighting = chunkLights.get(pos);
@@ -194,14 +196,15 @@ public class ChunkLightManager {
   }
   
   private Set<TilePosition> updateDarkness(TilePosition position, int maxDist) {
+    LightAccessor accessor = new LightAccessor();
     Set<TilePosition> edge = Sets.newHashSet();
     Set<TilePosition> processed = Sets.newHashSet();
     Queue<DarkUpdater> tbd = Queues.newArrayDeque();
     tbd.add(new DarkUpdater(position, 0));
     while(!tbd.isEmpty()) {
       DarkUpdater current = tbd.remove();
-      TileLight l = getLight(current.pos);
-      setLight(current.pos, AMBIENT);
+      TileLight l = accessor.getLight(current.pos);
+      accessor.setLight(current.pos, AMBIENT);
       processed.add(current.pos);
       if(edge.contains(current.pos)) {
         edge.remove(current.pos);
@@ -216,7 +219,7 @@ public class ChunkLightManager {
           if(!processed.contains(n)) edge.add(n);
           continue;
         }
-        TileLight nl = getLight(n);
+        TileLight nl = accessor.getLight(n);
         if(nl.hasBrighter(l.getDimmer())) {
           if(!processed.contains(n)) edge.add(n);
         } else if(l.hasBrighter(nl) && nl.hasBrighter(AMBIENT)) {
@@ -245,20 +248,47 @@ public class ChunkLightManager {
     return updated;
   }
   
-  private Set<ChunkPosition> calculateReflectedLight(Set<TilePosition> updateStarters) {
+  /**
+   * Helper class to prevent continuous references chunkLights hashMap.
+   * Optimizes light calculations
+   */
+  private final class LightAccessor {
+    private ChunkLighting lastLighting;
+    private ChunkPosition lastPosition;
+    
+    public void setLight(TilePosition pos, TileLight light) {
+      if(!pos.getChunkPosition().equals(lastPosition)) {
+        lastPosition = pos.getChunkPosition();
+        lastLighting = chunkLights.get(lastPosition);
+      }
+      if(lastLighting != null) lastLighting.setLight(pos.getTileWithinChunk(), light);
+    }
+    
+    public TileLight getLight(TilePosition pos) {
+      if(!pos.getChunkPosition().equals(lastPosition)) {
+        lastPosition = pos.getChunkPosition();
+        lastLighting = chunkLights.get(lastPosition);
+      }
+      return lastLighting == null ? new TileLight() : lastLighting.getLight(pos.getTileWithinChunk());
+    }
+  }
+  
+  @Profiled
+  protected Set<ChunkPosition> calculateReflectedLight(Set<TilePosition> updateStarters) {
+    LightAccessor accessor = new LightAccessor();
     Set<ChunkPosition> affectedChunks = Sets.newHashSet();
     Queue<TilePosition> tbp = Queues.newArrayDeque(updateStarters);
     while(!tbp.isEmpty()) {
       TilePosition pos = tbp.remove();
       List<TilePosition> positions = pos.getDirectNeighbourTiles(chunkCoordinateSystem.getChunkSize());
-      TileLight light = getLight(pos);
+      TileLight light = accessor.getLight(pos);
       TileLight nv = light.getDimmer();
       if(nv.hasLight()) {
         for(TilePosition nPos : positions) {
           if(isOpaque(getTileAt(nPos))) continue;
-          TileLight val = getLight(nPos);
+          TileLight val = accessor.getLight(nPos);
           if(nv.hasBrighter(val)) {
-            setLight(nPos, val.combineBrightest(nv));
+            accessor.setLight(nPos, val.combineBrightest(nv));
             affectedChunks.add(nPos.getChunkPosition());
             tbp.add(nPos);
           }
