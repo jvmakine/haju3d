@@ -13,6 +13,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
 import fi.haju.haju3d.client.chunk.ChunkProvider;
+import fi.haju.haju3d.client.util.Profiled;
 import fi.haju.haju3d.protocol.coordinate.ChunkPosition;
 import fi.haju.haju3d.protocol.coordinate.GlobalTilePosition;
 import fi.haju.haju3d.protocol.coordinate.LocalTilePosition;
@@ -22,7 +23,7 @@ import fi.haju.haju3d.protocol.world.ChunkCoordinateSystem;
 import fi.haju.haju3d.protocol.world.Tile;
 
 @Singleton
-public final class ChunkLightManager {
+public class ChunkLightManager {
 
   private Map<ChunkPosition, ChunkLighting> chunkLights = new ConcurrentHashMap<>();
   
@@ -49,6 +50,7 @@ public final class ChunkLightManager {
     return getLight(chunkCoordinateSystem.getChunkPosition(worldPosition), chunkCoordinateSystem.getPositionWithinChunk(worldPosition));
   }
   
+  @Profiled
   public void calculateChunkLighting(Chunk chunk) {
     if (chunk.hasLight()) {
       Set<TilePosition> sunned = calculateDirectSunLight(chunk);
