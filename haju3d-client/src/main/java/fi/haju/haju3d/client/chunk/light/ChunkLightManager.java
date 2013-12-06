@@ -57,12 +57,28 @@ public final class ChunkLightManager {
     }
   }
   
-  public void removeOpaqueBlock(TilePosition position) {
+  /**
+   * @return set of chunks affected by this operation
+   */
+  public Set<ChunkPosition> removeOpaqueBlock(TilePosition position) {
     if(isSunLight(position.add(LocalTilePosition.UP, chunkCoordinateSystem.getChunkSize()))) {
       addSunlightFrom(position);
     }
     updateLightFromNeighbours(position);
-    calculateReflectedLight(Sets.newHashSet(position));
+    return calculateReflectedLight(Sets.newHashSet(position));
+  }
+
+  /**
+   * @return set of chunks affected by this operation
+   */
+  public Set<ChunkPosition> addOpaqueBlock(TilePosition position) {
+    Set<TilePosition> edge = null;
+    if(isSunLight(position)) {
+      edge = blockSunLight(position, TileLight.MAX_DISTANCE);
+    } else {
+      edge = updateDarkness(position, TileLight.MAX_DISTANCE);
+    }
+    return calculateReflectedLight(edge);
   }
   
   private void addSunlightFrom(TilePosition position) {
@@ -73,16 +89,6 @@ public final class ChunkLightManager {
     if(!isOpaque(getTileAt(next))) {
       addSunlightFrom(next);
     }
-  }
-
-  public void addOpaqueBlock(TilePosition position) {
-    Set<TilePosition> edge = null;
-    if(isSunLight(position)) {
-      edge = blockSunLight(position, TileLight.MAX_DISTANCE);
-    } else {
-      edge = updateDarkness(position, TileLight.MAX_DISTANCE);
-    }
-    calculateReflectedLight(edge);
   }
   
   private Set<TilePosition> blockSunLight(TilePosition position, int maxDist) {
@@ -126,7 +132,7 @@ public final class ChunkLightManager {
     }
   }
 
-  private void calculateLightFromNeighbours(Chunk chunk) {
+  private Set<ChunkPosition> calculateLightFromNeighbours(Chunk chunk) {
     Set<TilePosition> edge = chunk.getPosition().getEdgeTilePositions(chunkCoordinateSystem.getChunkSize());
     Set<TilePosition> updated = Sets.newHashSet();
     for(TilePosition pos : edge) {
@@ -135,7 +141,7 @@ public final class ChunkLightManager {
         updated.add(pos);
       }
     }
-    calculateReflectedLight(updated);
+    return calculateReflectedLight(updated);
   }
 
   private Set<TilePosition> calculateDirectSunLight(Chunk chunk) {
@@ -226,7 +232,8 @@ public final class ChunkLightManager {
     return updated;
   }
   
-  private void calculateReflectedLight(Set<TilePosition> updateStarters) {
+  private Set<ChunkPosition> calculateReflectedLight(Set<TilePosition> updateStarters) {
+    Set<ChunkPosition> affectedChunks = Sets.newHashSet();
     Queue<TilePosition> tbp = Queues.newArrayDeque(updateStarters);
     while(!tbp.isEmpty()) {
       TilePosition pos = tbp.remove();
@@ -239,11 +246,13 @@ public final class ChunkLightManager {
           TileLight val = getLight(nPos);
           if(nv.hasBrighter(val)) {
             setLight(nPos, val.combineBrightest(nv));
+            affectedChunks.add(nPos.getChunkPosition());
             tbp.add(nPos);
           }
         }
       }
     }
+    return affectedChunks;
   }
   
   private boolean isOpaque(Tile t) {

@@ -217,14 +217,14 @@ public class WorldManager {
       int z = tile.getTileWithinChunk().z;
       
       chunk.set(x, y, z, edit.getNewTile());
+      Set<ChunkPosition> toBeUpdated = Sets.newHashSet(tile.getChunkPosition());
       
       if (edit.getNewTile() == Tile.AIR) {
-        lightingManager.removeOpaqueBlock(new TilePosition(chunk.getPosition(), new LocalTilePosition(x, y, z)));
+        toBeUpdated.addAll(lightingManager.removeOpaqueBlock(new TilePosition(chunk.getPosition(), new LocalTilePosition(x, y, z))));
       } else if (edit.getNewTile() != Tile.AIR) {
-        lightingManager.addOpaqueBlock(new TilePosition(chunk.getPosition(), new LocalTilePosition(x, y, z)));
+        toBeUpdated.addAll(lightingManager.addOpaqueBlock(new TilePosition(chunk.getPosition(), new LocalTilePosition(x, y, z))));
       }
-      
-      spatialsToUpdate.add(tile.getChunkPosition());
+      spatialsToUpdate.addAll(toBeUpdated);
 
       // Update also the bordering chunks if necessary
       if (x < ChunkSpatialBuilder.SMOOTH_BUFFER) {
