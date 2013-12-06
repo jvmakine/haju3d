@@ -44,6 +44,12 @@ public final class TileLight {
     return data;
   }
   
+  public void setDimmer() {
+    red = (red > 0 ? red - 1 : 0); 
+    green = (green > 0 ? green - 1 : 0);
+    blue = (blue > 0 ? blue - 1 : 0);
+  }
+  
   public TileLight getDimmer() {
     return new TileLight(
         (red > 0 ? red - 1 : 0), 

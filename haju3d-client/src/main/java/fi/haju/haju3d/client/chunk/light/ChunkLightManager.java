@@ -275,14 +275,15 @@ public class ChunkLightManager {
   
   @Profiled
   protected Set<ChunkPosition> calculateReflectedLight(Set<TilePosition> updateStarters) {
+    int chunkSize = chunkCoordinateSystem.getChunkSize();
     LightAccessor accessor = new LightAccessor();
     Set<ChunkPosition> affectedChunks = Sets.newHashSet();
     Queue<TilePosition> tbp = Queues.newArrayDeque(updateStarters);
     while(!tbp.isEmpty()) {
       TilePosition pos = tbp.remove();
-      List<TilePosition> positions = pos.getDirectNeighbourTiles(chunkCoordinateSystem.getChunkSize());
-      TileLight light = accessor.getLight(pos);
-      TileLight nv = light.getDimmer();
+      List<TilePosition> positions = pos.getDirectNeighbourTiles(chunkSize);
+      TileLight nv = accessor.getLight(pos);
+      nv.setDimmer();
       if(nv.hasLight()) {
         for(TilePosition nPos : positions) {
           if(isOpaque(getTileAt(nPos))) continue;

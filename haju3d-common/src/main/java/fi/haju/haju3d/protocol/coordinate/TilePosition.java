@@ -6,8 +6,8 @@ import com.jme3.math.Vector3f;
 import java.io.Serializable;
 import java.util.List;
 
-public class TilePosition implements Serializable {
-  private static final long serialVersionUID = 1L;
+public final class TilePosition implements Serializable {
+  private static final long serialVersionUID = 2L;
 
   private final ChunkPosition chunkPosition;
   private final LocalTilePosition tileWithinChunk;
