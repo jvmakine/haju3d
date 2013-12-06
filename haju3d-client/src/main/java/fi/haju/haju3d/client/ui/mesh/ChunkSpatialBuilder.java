@@ -18,15 +18,18 @@ import com.jme3.texture.Texture.MinFilter;
 import com.jme3.texture.Texture.WrapMode;
 import com.jme3.texture.TextureArray;
 import com.jme3.util.BufferUtils;
+
 import fi.haju.haju3d.client.chunk.light.ChunkLightManager;
 import fi.haju.haju3d.client.ui.ChunkRenderer;
 import fi.haju.haju3d.client.ui.ChunkSpatial;
 import fi.haju.haju3d.client.ui.mesh.MyMesh.MyFaceAndIndex;
 import fi.haju.haju3d.client.ui.mesh.TileRenderPropertyProvider.TileProperties;
+import fi.haju.haju3d.client.util.Profiled;
 import fi.haju.haju3d.protocol.coordinate.ChunkPosition;
 import fi.haju.haju3d.protocol.coordinate.GlobalTilePosition;
 import fi.haju.haju3d.protocol.world.Tile;
 import fi.haju.haju3d.protocol.world.World;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -93,7 +96,6 @@ public class ChunkSpatialBuilder {
   }
 
   public void rebuildChunkSpatial(World world, ChunkSpatial chunkSpatial) {
-    LOGGER.info("Updating chunk spatial at " + chunkSpatial.chunk.getPosition());
     MyMesh myMesh = makeCubeMesh(world, chunkSpatial.chunk.getPosition(), lightingManager);
     chunkSpatial.cubes = makeCubeSpatial(myMesh);
 
@@ -103,7 +105,6 @@ public class ChunkSpatialBuilder {
 
     chunkSpatial.lowDetail = makeSpatial(true, myMesh);
     chunkSpatial.highDetail = makeSpatial(false, myMesh);
-    LOGGER.info("Done");
   }
 
   public static void prepareMesh(MyMesh myMesh) {
@@ -137,8 +138,8 @@ public class ChunkSpatialBuilder {
     return geom;
   }
 
+  @Profiled
   public ChunkSpatial makeChunkSpatial(World world, ChunkPosition chunkPosition) {
-    LOGGER.info("Making chunk spatial at " + chunkPosition);
     ChunkSpatial chunkSpatial = new ChunkSpatial();
     chunkSpatial.chunk = world.getChunk(chunkPosition);
     rebuildChunkSpatial(world, chunkSpatial);

@@ -39,7 +39,6 @@ public class ChunkProvider {
       }
     });
     if (!newPositions.isEmpty()) {
-      LOGGER.info("Requested " + newPositions);
       List<Chunk> chunks = server.getChunks(Lists.newArrayList(newPositions));
       for (Chunk c : chunks) {
         chunkCache.put(c.getPosition(), c);

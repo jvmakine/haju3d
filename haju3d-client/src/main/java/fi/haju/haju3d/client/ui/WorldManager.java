@@ -167,7 +167,7 @@ public class WorldManager {
     // need 3x3 chunks around meshing area so that mesh borders can be handled correctly
     List<Chunk> chunks = chunkProvider.getChunks(chunkPosition.getSurroundingPositions());
     for (Chunk c : chunks) {
-      lightingManager.calculateChunkLighting(c);
+      lightingManager.updateChunkLigh(c);
       world.setChunk(c.getPosition(), c);
     }
     ChunkSpatial spatial = builder.makeChunkSpatial(world, chunkPosition);

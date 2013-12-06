@@ -50,18 +50,23 @@ public class ChunkLightManager {
     return getLight(chunkCoordinateSystem.getChunkPosition(worldPosition), chunkCoordinateSystem.getPositionWithinChunk(worldPosition));
   }
   
-  @Profiled
-  public void calculateChunkLighting(Chunk chunk) {
+  public void updateChunkLigh(Chunk chunk) {
     if (chunk.hasLight()) {
-      Set<TilePosition> sunned = calculateDirectSunLight(chunk);
-      calculateReflectedLight(sunned);
-      calculateLightFromNeighbours(chunk);
+      calculateChunkLight(chunk);
     }
+  }
+  
+  @Profiled
+  protected void calculateChunkLight(Chunk chunk) {
+    Set<TilePosition> sunned = calculateDirectSunLight(chunk);
+    calculateReflectedLight(sunned);
+    calculateLightFromNeighbours(chunk);
   }
   
   /**
    * @return set of chunks affected by this operation
    */
+  @Profiled
   public Set<ChunkPosition> removeOpaqueBlock(TilePosition position) {
     if(isSunLight(position.add(LocalTilePosition.UP, chunkCoordinateSystem.getChunkSize()))) {
       addSunlightFrom(position);
@@ -73,6 +78,7 @@ public class ChunkLightManager {
   /**
    * @return set of chunks affected by this operation
    */
+  @Profiled
   public Set<ChunkPosition> addOpaqueBlock(TilePosition position) {
     Set<TilePosition> edge = null;
     if(isSunLight(position)) {
