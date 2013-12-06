@@ -81,12 +81,17 @@ public class ChunkLightManager {
   @Profiled
   public Set<ChunkPosition> addOpaqueBlock(TilePosition position) {
     Set<TilePosition> edge = null;
+    Set<ChunkPosition> result = Sets.newHashSet();
     if(isSunLight(position)) {
       edge = blockSunLight(position, TileLight.MAX_DISTANCE);
     } else {
       edge = updateDarkness(position, TileLight.MAX_DISTANCE);
     }
-    return calculateReflectedLight(edge);
+    for(TilePosition p : edge) {
+      result.add(p.getChunkPosition());
+    }
+    result.addAll(calculateReflectedLight(edge));
+    return result;
   }
   
   private void addSunlightFrom(TilePosition position) {

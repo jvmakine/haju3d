@@ -6,7 +6,6 @@ import java.util.Map;
 
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
-import org.apache.log4j.Logger;
 
 import com.google.common.collect.Maps;
 
