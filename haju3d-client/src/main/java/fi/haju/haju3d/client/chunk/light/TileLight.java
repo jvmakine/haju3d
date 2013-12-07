@@ -7,18 +7,18 @@ public final class TileLight {
   
   public static final int MAX_DISTANCE = 15; 
   
-  public int red;
-  public int green;
-  public int blue;
-  public boolean source;
-  public boolean inSun;
+  public final int red;
+  public final int green;
+  public final int blue;
+  public final boolean source;
+  public final boolean inSun;
   
   public TileLight(short data) {
     red   = data & 0b1111;
     green = (data & 0b11110000) >> 4;
     blue  = (data & 0b111100000000) >> 8;
-    source = (data & SOURCE_MASK) == 1;
-    inSun = (data & SUN_MASK) == 1;
+    source = (data & SOURCE_MASK) != 0;
+    inSun = (data & SUN_MASK) != 0;    
   }
   
   public TileLight() {
@@ -43,13 +43,7 @@ public final class TileLight {
     if(inSun) data |= SUN_MASK;
     return data;
   }
-  
-  public void setDimmer() {
-    red = (red > 0 ? red - 1 : 0); 
-    green = (green > 0 ? green - 1 : 0);
-    blue = (blue > 0 ? blue - 1 : 0);
-  }
-  
+    
   public TileLight getDimmer() {
     return new TileLight(
         (red > 0 ? red - 1 : 0), 
