@@ -58,9 +58,9 @@ public class ChunkLightManager {
   
   @Profiled
   protected void calculateChunkLight(Chunk chunk) {
-    Set<TilePosition> sunned = calculateDirectSunLight(chunk);
-    calculateReflectedLight(sunned);
-    calculateLightFromNeighbours(chunk);
+    Set<TilePosition> lit = calculateDirectSunLight(chunk);
+    lit.addAll(calculateLightFromNeighbours(chunk));
+    calculateReflectedLight(lit);
   }
   
   /**
@@ -68,7 +68,7 @@ public class ChunkLightManager {
    */
   @Profiled
   public Set<ChunkPosition> removeOpaqueBlock(TilePosition position) {
-    if(isSunLight(position.add(LocalTilePosition.UP, chunkCoordinateSystem.getChunkSize()))) {
+    if(new LightAccessor().isSunLight(position.add(LocalTilePosition.UP, chunkCoordinateSystem.getChunkSize()))) {
       addSunlightFrom(position);
     }
     updateLightFromNeighbours(position);
@@ -82,7 +82,7 @@ public class ChunkLightManager {
   public Set<ChunkPosition> addOpaqueBlock(TilePosition position) {
     Set<TilePosition> edge = null;
     Set<ChunkPosition> result = Sets.newHashSet();
-    if(isSunLight(position)) {
+    if(new LightAccessor().isSunLight(position)) {
       edge = blockSunLight(position, TileLight.MAX_DISTANCE);
     } else {
       edge = updateDarkness(position, TileLight.MAX_DISTANCE);
@@ -95,71 +95,47 @@ public class ChunkLightManager {
   }
   
   private void addSunlightFrom(TilePosition position) {
-    setLight(position, DAY_LIGHT);
-    setSunLight(position, true);
-    calculateReflectedLight(Sets.newHashSet(position));
-    TilePosition next = position.add(LocalTilePosition.DOWN, chunkCoordinateSystem.getChunkSize()); 
-    if(!isOpaque(getTileAt(next))) {
-      addSunlightFrom(next);
+    Queue<TilePosition> workQueue = Queues.newArrayDeque();
+    workQueue.add(position);
+    LightAccessor accessor = new LightAccessor();
+    while(!workQueue.isEmpty()) {
+      TilePosition pos = workQueue.remove();
+      accessor.setLight(pos, DAY_LIGHT);
+      accessor.setSunLight(pos, true);
+      calculateReflectedLight(Sets.newHashSet(pos));
+      TilePosition next = pos.add(LocalTilePosition.DOWN, chunkCoordinateSystem.getChunkSize());
+      if(!isOpaque(accessor.getTileAt(next))) {
+        workQueue.add(next);
+      }
     }
   }
   
   private Set<TilePosition> blockSunLight(TilePosition position, int maxDist) {
-    setSunLight(position, false);
+    LightAccessor accessor = new LightAccessor();
+    accessor.setSunLight(position, false);
     TilePosition down = position.add(LocalTilePosition.DOWN, chunkCoordinateSystem.getChunkSize());
     Set<TilePosition> edge = Sets.newHashSet();
-    if(isSunLight(down)) {
+    if(accessor.isSunLight(down)) {
       edge.addAll(blockSunLight(down, maxDist));
     }
     edge.addAll(updateDarkness(position, maxDist));
     return edge;
   }
-
-  private boolean isSunLight(TilePosition pos) {
-    ChunkLighting light = chunkLights.get(pos.getChunkPosition());
-    if(light == null) return false;
-    return light.getLight(pos.getTileWithinChunk()).inSun;
-  }
   
-  private void setSunLight(TilePosition pos, boolean sun) {
-    ChunkLighting light = chunkLights.get(pos.getChunkPosition());
-    if(light == null) return;
-    TileLight val = light.getLight(pos.getTileWithinChunk());
-    val.inSun = sun;
-    val.source = sun;
-    light.setLight(pos.getTileWithinChunk(), val);
-  }
-  
-  private void setLight(TilePosition pos, TileLight val) {
-    ChunkLighting light = chunkLights.get(pos.getChunkPosition());
-    if(light == null) return;
-    light.setLight(pos.getTileWithinChunk(), val);
-  }
-  
-  private Optional<Tile> getTileAt(TilePosition p) {
-    Optional<Chunk> c = chunkProvider.getChunkIfLoaded(p.getChunkPosition());
-    if(!c.isPresent()) {
-      return Optional.absent();
-    } else {
-      return Optional.of(c.get().get(p.getTileWithinChunk()));
-    }
-  }
-
-  @Profiled
-  protected Set<ChunkPosition> calculateLightFromNeighbours(Chunk chunk) {
+  private Set<TilePosition> calculateLightFromNeighbours(Chunk chunk) {
     Set<TilePosition> edge = chunk.getPosition().getEdgeTilePositions(chunkCoordinateSystem.getChunkSize());
     Set<TilePosition> updated = Sets.newHashSet();
+    LightAccessor accessor = new LightAccessor();
     for(TilePosition pos : edge) {
-      if(isOpaque(getTileAt(pos))) continue;
+      if(isOpaque(accessor.getTileAt(pos))) continue;
       if(updateLightFromNeighbours(pos)) {
         updated.add(pos);
       }
     }
-    return calculateReflectedLight(updated);
+    return updated;
   }
 
-  @Profiled
-  protected Set<TilePosition> calculateDirectSunLight(Chunk chunk) {
+  private Set<TilePosition> calculateDirectSunLight(Chunk chunk) {
     Set<TilePosition> res = Sets.newHashSet();
     ChunkPosition pos = chunk.getPosition();
     ChunkLighting lighting = chunkLights.get(pos);
@@ -210,7 +186,7 @@ public class ChunkLightManager {
       }
       List<TilePosition> neighs = current.pos.getDirectNeighbourTiles(chunkCoordinateSystem.getChunkSize());
       for(TilePosition n : neighs) {
-        Optional<Tile> optTile = getTileAt(n);
+        Optional<Tile> optTile = accessor.getTileAt(n);
         if(!optTile.isPresent() || isOpaque(optTile.get())) {
           continue;
         }
@@ -233,15 +209,16 @@ public class ChunkLightManager {
     List<TilePosition> neighbours = position.getDirectNeighbourTiles(chunkCoordinateSystem.getChunkSize());
     TileLight light = getLight(position);
     boolean updated = false;
+    LightAccessor accessor = new LightAccessor();
     for(TilePosition nPos : neighbours) {
-      Optional<Tile> optTile = getTileAt(nPos);
+      Optional<Tile> optTile = accessor.getTileAt(nPos);
       if(!optTile.isPresent() || isOpaque(optTile.get())) continue;
-      TileLight nLight = getLight(nPos);
+      TileLight nLight = accessor.getLight(nPos);
       TileLight rLight = nLight.getDimmer(); 
       if(rLight.hasBrighter(light)) {
         updated = true;
         light = rLight;
-        setLight(position, rLight);
+        accessor.setLight(position, rLight);
       }
     }
     return updated;
@@ -254,22 +231,52 @@ public class ChunkLightManager {
   private final class LightAccessor {
     private ChunkLighting lastLighting;
     private ChunkPosition lastPosition;
+    private Chunk lastChunk;
+    
+    private void updatePos(ChunkPosition pos) {
+      if(!pos.equals(lastPosition)) {
+        lastPosition = pos;
+        lastLighting = chunkLights.get(lastPosition);
+        Optional<Chunk> c = chunkProvider.getChunkIfLoaded(lastPosition);
+        if(c.isPresent()) lastChunk = c.get();
+        else lastChunk = null;
+      }
+    }
     
     public void setLight(TilePosition pos, TileLight light) {
-      if(!pos.getChunkPosition().equals(lastPosition)) {
-        lastPosition = pos.getChunkPosition();
-        lastLighting = chunkLights.get(lastPosition);
-      }
+      updatePos(pos.getChunkPosition());
       if(lastLighting != null) lastLighting.setLight(pos.getTileWithinChunk(), light);
     }
     
     public TileLight getLight(TilePosition pos) {
-      if(!pos.getChunkPosition().equals(lastPosition)) {
-        lastPosition = pos.getChunkPosition();
-        lastLighting = chunkLights.get(lastPosition);
-      }
+      updatePos(pos.getChunkPosition());
       return lastLighting == null ? new TileLight() : lastLighting.getLight(pos.getTileWithinChunk());
     }
+    
+    public Optional<Tile> getTileAt(TilePosition pos) {
+      updatePos(pos.getChunkPosition());
+      if(lastChunk == null) {
+        return Optional.absent();
+      } else {
+        return Optional.of(lastChunk.get(pos.getTileWithinChunk()));
+      }
+    }
+    
+    public void setSunLight(TilePosition pos, boolean sun) {
+      updatePos(pos.getChunkPosition());
+      if(lastLighting == null) return;
+      TileLight val = lastLighting.getLight(pos.getTileWithinChunk());
+      val.inSun = sun;
+      val.source = sun;
+      lastLighting.setLight(pos.getTileWithinChunk(), val);
+    }
+    
+    public boolean isSunLight(TilePosition pos) {
+      updatePos(pos.getChunkPosition());
+      if(lastLighting == null) return false;
+      return lastLighting.getLight(pos.getTileWithinChunk()).inSun;
+    }
+    
   }
   
   @Profiled
@@ -285,7 +292,7 @@ public class ChunkLightManager {
       if(nv.hasLight()) {
         List<TilePosition> positions = pos.getDirectNeighbourTiles(chunkSize);
         for(TilePosition nPos : positions) {
-          if(isOpaque(getTileAt(nPos))) continue;
+          if(isOpaque(accessor.getTileAt(nPos))) continue;
           TileLight val = accessor.getLight(nPos);
           if(nv.hasBrighter(val)) {
             accessor.setLight(nPos, val.combineBrightest(nv));
