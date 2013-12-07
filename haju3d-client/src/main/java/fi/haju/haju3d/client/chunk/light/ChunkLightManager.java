@@ -170,13 +170,12 @@ public class ChunkLightManager {
     }
     for (int x = 0; x < cs; x++) {
       for (int z = 0; z < cs; z++) {
-        TileLight light = DAY_LIGHT;
         for (int y = cs - 1; y >= 0; y--) {
           if (isOpaque(chunk.get(x, y, z))) {
             break;
           }
           LocalTilePosition p = new LocalTilePosition(x, y, z); 
-          lighting.setLight(p, light);
+          lighting.setLight(p, DAY_LIGHT);
           res.add(new TilePosition(pos, p));
         }
       }
@@ -281,10 +280,10 @@ public class ChunkLightManager {
     Queue<TilePosition> tbp = Queues.newArrayDeque(updateStarters);
     while(!tbp.isEmpty()) {
       TilePosition pos = tbp.remove();
-      List<TilePosition> positions = pos.getDirectNeighbourTiles(chunkSize);
       TileLight nv = accessor.getLight(pos);
       nv.setDimmer();
       if(nv.hasLight()) {
+        List<TilePosition> positions = pos.getDirectNeighbourTiles(chunkSize);
         for(TilePosition nPos : positions) {
           if(isOpaque(getTileAt(nPos))) continue;
           TileLight val = accessor.getLight(nPos);

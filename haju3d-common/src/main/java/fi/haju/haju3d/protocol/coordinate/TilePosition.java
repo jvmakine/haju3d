@@ -107,5 +107,20 @@ public final class TilePosition implements Serializable {
     );
   }
 
+  @Override
+  public boolean equals(Object obj) {
+    if(obj == this) return true;
+    if(!(obj instanceof TilePosition)) return false;
+    TilePosition p = (TilePosition)obj;
+    return p.chunkPosition.equals(chunkPosition) && p.tileWithinChunk.equals(tileWithinChunk);
+  }
+  
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = 31 + chunkPosition.hashCode();
+    return prime * result + tileWithinChunk.hashCode();
+  }
+
 }
 
