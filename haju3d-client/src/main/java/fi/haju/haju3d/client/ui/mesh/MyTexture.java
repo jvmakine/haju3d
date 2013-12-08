@@ -7,7 +7,8 @@ public enum MyTexture {
   ROCK("new-rock.png"), ROCK2("new-rock2.png"),
   BRICK("new-brick.png"),
   WOOD1("wood1.png"), WOOD2("wood2.png"),
-  COBBLESTONE1("cobblestone1.png"), COBBLESTONE2("cobblestone2.png");
+  COBBLESTONE1("cobblestone1.png"), COBBLESTONE2("cobblestone2.png"),
+  SNOW1("snow1.png"), SNOW2("snow2.png");
 
   private final String texturefileName;
 

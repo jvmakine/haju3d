@@ -26,6 +26,9 @@ public final class TileRenderPropertyProvider {
       .put(Tile.COBBLESTONE, new TileProperties(
           1,
           Lists.newArrayList(MyTexture.COBBLESTONE1, MyTexture.COBBLESTONE2)))
+       .put(Tile.SNOW, new TileProperties(
+          2,
+          Lists.newArrayList(MyTexture.SNOW1, MyTexture.SNOW2)))
       .build();
 
   public static TileProperties getProperties(Tile tile) {
