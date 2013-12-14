@@ -152,7 +152,7 @@ public class ChunkRenderer extends SimpleApplication {
 
   private void setupCharacter() {
     character = new Character();
-    character.setPosition(worldManager.getGlobalPosition(new GlobalTilePosition(20, 64, 25)));
+    character.setPosition(worldManager.getGlobalPosition(new GlobalTilePosition(20, 256, 25)));
 
     Geometry characterBody = makeSimpleMesh(
         new Box(0.3f, 0.4f, 0.2f),

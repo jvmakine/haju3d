@@ -2,12 +2,15 @@ package fi.haju.haju3d.server.world;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
+
 import fi.haju.haju3d.protocol.coordinate.ChunkPosition;
 import fi.haju.haju3d.protocol.coordinate.LocalTilePosition;
+import fi.haju.haju3d.protocol.coordinate.Vector3i;
 import fi.haju.haju3d.protocol.world.Chunk;
 import fi.haju.haju3d.protocol.world.FloatArray3d;
 import fi.haju.haju3d.protocol.world.Tile;
 import fi.haju.haju3d.server.world.utils.FloodFiller;
+import fi.haju.haju3d.server.world.utils.PerlinNoiseGenerator;
 import fi.haju.haju3d.server.world.utils.WorldGenerationUtils;
 import fi.haju.haju3d.util.noise.InterpolationUtil;
 
@@ -16,18 +19,19 @@ import java.util.Map;
 import java.util.Random;
 
 public class PerlinNoiseWorldGenerator implements WorldGenerator {
+  
   private int seed;
-
+  private PerlinNoiseGenerator generator;
   private Map<ChunkPosition, PerlinNoiseScales> perlinNoises = Maps.newHashMap();
 
   @Override
   public Chunk generateChunk(ChunkPosition position, int size) {
     int realseed = seed ^ (position.x + position.y * 123 + position.z * 12347);
-    if (position.y < 0) {
+    /*if (position.y < 0) {
       return new Chunk(size, realseed, position, Tile.GROUND);
     } else if (position.y > 0) {
       return new Chunk(size, realseed, position, Tile.AIR);
-    }
+    }*/
     Chunk chunk = new Chunk(size, realseed, position);
     return makeChunk(chunk, realseed, position);
   }
@@ -35,6 +39,8 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
   @Override
   public void setSeed(int seed) {
     this.seed = seed;
+    //TODO : Proper initialization
+    this.generator = new PerlinNoiseGenerator(5, 8, new Random(seed));
   }
 
   private static final class PerlinNoiseScales {
@@ -149,35 +155,38 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
   private Chunk makeChunk(Chunk chunk, int seed, ChunkPosition position) {
     int size = chunk.getSize();
 
-    FloatArray3d noise = make3dPerlinNoise(seed, size, size, size, position);
+    //FloatArray3d noise = make3dPerlinNoise(seed, size, size, size, position);
     float thres = size / 3;
     for (int x = 0; x < size; x++) {
       for (int y = 0; y < size; y++) {
         for (int z = 0; z < size; z++) {
-          float v = Math.abs(y);
-          if (y < size / 5) {
-            v += InterpolationUtil.interpolateLinear(y / (float) (size / 5), -80, 0);
-          }
+          int rx = x + position.x*size;
+          int ry = y + position.y*size;
+          int rz = z + position.z*size;
+          float v = Math.abs(ry);
+          //if (ry < 128) {
+            v += InterpolationUtil.interpolateLinear(ry / (float) (128), -50, 0);
+          //}
           // create a platform at h/4:
-          if (y < size / 4) {
+          /*if (y < size / 4) {
             v -= 5;
-          }
-          v += noise.get(x, y, z) * 4;
-          Tile terrain = noise.get(x, size - 1 - y, z) < 0 ? Tile.GROUND : Tile.ROCK;
+          }*/
+          v += generator.getValueAt(new Vector3i(rx, ry, rz)) * 4;
+          Tile terrain = Tile.GROUND; //generator.getValueAt(new Vector3i(rx, size - 1 - ry, rz)) < 0 ? Tile.GROUND : Tile.ROCK;
           chunk.set(x, y, z, v < thres ? terrain : Tile.AIR);
-          float col = 0.75f + noise.get(size - 1 - x, y, z) * 0.1f;
+          float col = 1.0f; /*0.75f + generator.getValueAt(new Vector3i(size - 1 - rx, ry, rz)) * 0.1f;
           if (col < 0.5f) {
             col = 0.5f;
           } else if (col > 1.0f) {
             col = 1.0f;
-          }
+          }*/
           chunk.setColor(x, y, z, col);
         }
       }
     }
     Random r = new Random(seed);
     // add a "building" in the chunk
-    int midX = r.nextInt(size - 10);
+    /*int midX = r.nextInt(size - 10);
     int midZ = r.nextInt(size - 10);
     int groundY = WorldGenerationUtils.findGround(chunk, size, midX, midZ);
     if (groundY >= 0 && groundY < size - 10) {
@@ -188,7 +197,7 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
           }
         }
       }
-    }
+    }*/
 
     // add trees
     generateTrees(chunk, r);
