@@ -14,7 +14,7 @@ import java.util.Random;
 
 public class PerlinNoiseWorldGenerator implements WorldGenerator {
   
-  private static final int TERRAIN_FEATURE_SIZE = 5;
+  private static final int TERRAIN_FEATURE_SIZE = 6;
   private static final int TERRAIN_SMOOTHNESS = 8;
   private static final int TERRAIN_THRESHOLD = 32;
   
@@ -25,8 +25,7 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
   @Profiled
   public Chunk generateChunk(ChunkPosition position, int size) {
     int realseed = seed ^ (position.x + position.y * 123 + position.z * 12347);
-    Chunk chunk = new Chunk(size, realseed, position);
-    return makeChunk(chunk, realseed, position);
+    return makeChunk(size, realseed, position);
   }
 
   @Override
@@ -42,20 +41,19 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
     return ground;
   }
 
-  private Chunk makeChunk(Chunk chunk, int seed, ChunkPosition position) {
-    int size = chunk.getSize();
+  private Chunk makeChunk(int size, int seed, ChunkPosition position) {
     boolean onlyAir = true;
     if(generator.getMinValue() + position.y*size > TERRAIN_THRESHOLD) {
       return new Chunk(size, seed, position, Tile.AIR);
     }
+    Chunk chunk = new Chunk(size, seed, position);
     for (int x = 0; x < size; x++) {
       for (int y = 0; y < size; y++) {
         for (int z = 0; z < size; z++) {
           int rx = x + position.x*size;
           int ry = y + position.y*size;
           int rz = z + position.z*size;
-          float v = ry;
-          v += generator.getValueAt(new Vector3i(rx, ry, rz));
+          float v = ry + generator.getValueAt(new Vector3i(rx, ry, rz));
           // TODO Type from noise
           Tile tile = v < TERRAIN_THRESHOLD ? Tile.GROUND : Tile.AIR;
           if(tile != Tile.AIR) {
