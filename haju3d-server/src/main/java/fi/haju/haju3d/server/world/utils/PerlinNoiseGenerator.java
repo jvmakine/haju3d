@@ -51,12 +51,7 @@ public final class PerlinNoiseGenerator {
     
     private void makeIfDoesNotExist(Vector3i pos) {
       if(data.containsKey(pos)) return;
-      data.put(pos, new FloatArray3d(size, size, size, new FloatArray3d.Initializer() {        
-        @Override
-        public float getValue(int x, int y, int z) {
-          return random.nextFloat() * 2.0f - 1.0f;
-        }
-      }));
+      data.put(pos, new FloatArray3d(size, size, size, random));
     }
     
   }
@@ -77,7 +72,7 @@ public final class PerlinNoiseGenerator {
     for(int level = 1; level <= numberOfLevels; ++level) {
       NoiseLevel noise = levels.get(level);
       if(noise == null) {
-        noise = new NoiseLevel(2, level*LEVEL_AMPLITUDE_MULTIPLIER, random);
+        noise = new NoiseLevel(8, level*LEVEL_AMPLITUDE_MULTIPLIER, random);
         levels.put(level, noise);
       }
       value += noise.getValueAt(div(pos, size));

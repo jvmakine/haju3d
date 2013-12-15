@@ -3,6 +3,7 @@ package fi.haju.haju3d.protocol.world;
 import fi.haju.haju3d.util.noise.InterpolationUtil;
 
 import java.io.Serializable;
+import java.util.Random;
 
 public final class FloatArray3d implements Serializable {
   private static final long serialVersionUID = 1L;
@@ -32,6 +33,20 @@ public final class FloatArray3d implements Serializable {
       for (int y = 0; y < height; ++y) {
         for (int z = 0; z < depth; ++z) {
           set(x, y, z, initializer.getValue(x, y, z));
+        }
+      }
+    }
+  }
+  
+  public FloatArray3d(int width, int height, int depth, Random random) {
+    this.width = width;
+    this.height = height;
+    this.depth = depth;
+    this.data = new float[width * height * depth];
+    for (int x = 0; x < width; ++x) {
+      for (int y = 0; y < height; ++y) {
+        for (int z = 0; z < depth; ++z) {
+          set(x, y, z, 2.0f * random.nextFloat() - 1.0f);
         }
       }
     }
