@@ -22,6 +22,28 @@ import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * TODO:
+ * - RMB to create, LMB to edit
+ * - LMB on empty to rotate
+ * - symmetrical editing (forced?)
+ * - create bone endpoint inside mesh, not on surface (try to snap to a "good" location..)
+ * - the bigger bone is, the deeper inside its endpoint needs to be; how to make it so that endpoint location
+ * is fixed regardless of bone size?
+ * - snap dragPlane to x/y/z axes
+ * <p/>
+ * Backlog:
+ * - save/load bones
+ * - create a voxel representation out of bones, make solid mesh
+ * - apply perlin noise to voxel mesh
+ * - ability to select bone mesh
+ * - ability to quickly edit bone mesh
+ * - skin/bones animatable mesh
+ * - ability to set constraints on mesh joints
+ * - IK animation on bones
+ * - quick way to create a leg or an arm (both consist of 3 bones)
+ * - texturing
+ */
 public class CharacterBoneApp extends SimpleApplication {
 
   public static final float MINIMUM_BONE_THICKNESS = 0.05f;
@@ -318,7 +340,7 @@ public class CharacterBoneApp extends SimpleApplication {
   private BitmapText makeCircle(Vector3f screenPos) {
     BitmapText text = new BitmapText(guiFont, false);
     text.setSize(guiFont.getCharSet().getRenderedSize() * 2);
-    text.setText("O");
+    text.setText("i");
     text.setLocalTranslation(screenPos.add(-text.getLineWidth() / 2, text.getLineHeight() / 2, 0));
     return text;
   }
