@@ -1,4 +1,4 @@
-package fi.haju.haju3d.client.util;
+package fi.haju.haju3d.util;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

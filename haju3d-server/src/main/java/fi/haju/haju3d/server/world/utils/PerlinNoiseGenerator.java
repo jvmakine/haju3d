@@ -11,6 +11,7 @@ import fi.haju.haju3d.protocol.world.FloatArray3d;
 import fi.haju.haju3d.util.noise.InterpolationUtil;
 
 public class PerlinNoiseGenerator {
+  private static final float LEVEL_AMPLITUDE_MULTIPLIER = 5.0f;
   private final int numberOfLevels;
   private final int baseMapSize;
   private final Random random;
@@ -67,20 +68,28 @@ public class PerlinNoiseGenerator {
   private Vector3f div(Vector3i v, float divisor) {
     return new Vector3f(v.x / divisor, v.y/divisor, v.z/divisor);
   }
-  
+    
   public float getValueAt(Vector3i pos) {
     float value = 0.0f;
     int size = baseMapSize;
     for(int level = 1; level <= numberOfLevels; ++level) {
       NoiseLevel noise = levels.get(level);
       if(noise == null) {
-        noise = new NoiseLevel(2, level*5.0f);
+        noise = new NoiseLevel(2, level*LEVEL_AMPLITUDE_MULTIPLIER);
         levels.put(level, noise);
       }
       value += noise.getValueAt(div(pos, size));
       size *= 2;
     }
     return value;
+  }
+  
+  public float getMaxValue() {
+    return (float)Math.pow(LEVEL_AMPLITUDE_MULTIPLIER, numberOfLevels);
+  }
+  
+  public float getMinValue() {
+    return getMaxValue() * -1;
   }
   
 }

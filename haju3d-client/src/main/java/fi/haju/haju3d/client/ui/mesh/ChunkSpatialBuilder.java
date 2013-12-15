@@ -24,11 +24,11 @@ import fi.haju.haju3d.client.ui.ChunkRenderer;
 import fi.haju.haju3d.client.ui.ChunkSpatial;
 import fi.haju.haju3d.client.ui.mesh.MyMesh.MyFaceAndIndex;
 import fi.haju.haju3d.client.ui.mesh.TileRenderPropertyProvider.TileProperties;
-import fi.haju.haju3d.client.util.Profiled;
 import fi.haju.haju3d.protocol.coordinate.ChunkPosition;
 import fi.haju.haju3d.protocol.coordinate.GlobalTilePosition;
 import fi.haju.haju3d.protocol.world.Tile;
 import fi.haju.haju3d.protocol.world.World;
+import fi.haju.haju3d.util.Profiled;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

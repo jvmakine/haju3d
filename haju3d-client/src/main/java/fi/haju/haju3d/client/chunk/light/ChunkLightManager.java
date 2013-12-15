@@ -13,7 +13,6 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
 import fi.haju.haju3d.client.chunk.ChunkProvider;
-import fi.haju.haju3d.client.util.Profiled;
 import fi.haju.haju3d.protocol.coordinate.ChunkPosition;
 import fi.haju.haju3d.protocol.coordinate.GlobalTilePosition;
 import fi.haju.haju3d.protocol.coordinate.LocalTilePosition;
@@ -21,6 +20,7 @@ import fi.haju.haju3d.protocol.coordinate.TilePosition;
 import fi.haju.haju3d.protocol.world.Chunk;
 import fi.haju.haju3d.protocol.world.ChunkCoordinateSystem;
 import fi.haju.haju3d.protocol.world.Tile;
+import fi.haju.haju3d.util.Profiled;
 
 @Singleton
 public class ChunkLightManager {
