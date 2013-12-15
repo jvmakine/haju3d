@@ -10,7 +10,7 @@ import fi.haju.haju3d.protocol.coordinate.Vector3i;
 import fi.haju.haju3d.protocol.world.FloatArray3d;
 import fi.haju.haju3d.util.noise.InterpolationUtil;
 
-public class PerlinNoiseGenerator {
+public final class PerlinNoiseGenerator {
   private static final float LEVEL_AMPLITUDE_MULTIPLIER = 5.0f;
   private final int numberOfLevels;
   private final int baseMapSize;
@@ -27,7 +27,7 @@ public class PerlinNoiseGenerator {
       this.amplitude = amplitude;
     }
     
-    public final float getValueAt(Vector3f pos) {
+    public float getValueAt(Vector3f pos) {
       Vector3i posi = new Vector3i((int)Math.floor(pos.x), (int)Math.floor(pos.y), (int)Math.floor(pos.z));
       return InterpolationUtil.interpolateLinear3d(pos.x - posi.x, pos.y - posi.y, pos.z - posi.z,
           getValueAt(posi),
