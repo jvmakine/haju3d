@@ -17,14 +17,16 @@ public final class PerlinNoiseGenerator {
   private final Random random;
   private final Map<Integer, NoiseLevel> levels = Maps.newHashMap(); 
   
-  private final class NoiseLevel {
+  private final static class NoiseLevel {
     public final int size;
     public final float amplitude;
     public final Map<Vector3i, FloatArray3d> data = Maps.newHashMap();
+    public final Random random;
     
-    public NoiseLevel(int size, float amplitude) {
+    public NoiseLevel(int size, float amplitude, Random random) {
       this.size = size;
       this.amplitude = amplitude;
+      this.random = random;
     }
     
     public float getValueAt(Vector3f pos) {
@@ -41,10 +43,10 @@ public final class PerlinNoiseGenerator {
       );
     }
     
-    private float getValueAt(Vector3i pos) {
-      Vector3i mapPos = new Vector3i((int)Math.floor(pos.x/(float)size), (int)Math.floor(pos.y/(float)size), (int)Math.floor(pos.z/(float)size));
-      makeIfDoesNotExist(mapPos);
-      return amplitude * data.get(mapPos).get(pos.x - mapPos.x*size, pos.y - mapPos.y*size, pos.z - mapPos.z*size);
+    private float getValueAt(Vector3i globalPos) {
+      Vector3i localPos = new Vector3i((int)Math.floor(globalPos.x/(float)size), (int)Math.floor(globalPos.y/(float)size), (int)Math.floor(globalPos.z/(float)size));
+      makeIfDoesNotExist(localPos);
+      return amplitude * data.get(localPos).get(globalPos.x - localPos.x*size, globalPos.y - localPos.y*size, globalPos.z - localPos.z*size);
     }
     
     private void makeIfDoesNotExist(Vector3i pos) {
@@ -75,7 +77,7 @@ public final class PerlinNoiseGenerator {
     for(int level = 1; level <= numberOfLevels; ++level) {
       NoiseLevel noise = levels.get(level);
       if(noise == null) {
-        noise = new NoiseLevel(2, level*LEVEL_AMPLITUDE_MULTIPLIER);
+        noise = new NoiseLevel(2, level*LEVEL_AMPLITUDE_MULTIPLIER, random);
         levels.put(level, noise);
       }
       value += noise.getValueAt(div(pos, size));
