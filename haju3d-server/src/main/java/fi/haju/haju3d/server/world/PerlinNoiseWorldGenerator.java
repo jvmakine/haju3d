@@ -14,6 +14,10 @@ import java.util.Random;
 
 public class PerlinNoiseWorldGenerator implements WorldGenerator {
   
+  private static final int TERRAIN_FEATURE_SIZE = 5;
+  private static final int TERRAIN_SMOOTHNESS = 8;
+  private static final int TERRAIN_THRESHOLD = 32;
+  
   private int seed;
   private PerlinNoiseGenerator generator;
 
@@ -29,7 +33,7 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
   public void setSeed(int seed) {
     this.seed = seed;
     //TODO : Proper initialization
-    this.generator = new PerlinNoiseGenerator(5, 8, new Random(seed));
+    this.generator = new PerlinNoiseGenerator(TERRAIN_FEATURE_SIZE, TERRAIN_SMOOTHNESS, new Random(seed));
   }
 
   private static Chunk filterFloaters(Chunk chunk) {
@@ -40,9 +44,8 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
 
   private Chunk makeChunk(Chunk chunk, int seed, ChunkPosition position) {
     int size = chunk.getSize();
-    float thres = 32;
     boolean onlyAir = true;
-    if(generator.getMinValue() + position.y*size > thres) {
+    if(generator.getMinValue() + position.y*size > TERRAIN_THRESHOLD) {
       return new Chunk(size, seed, position, Tile.AIR);
     }
     for (int x = 0; x < size; x++) {
@@ -54,7 +57,7 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
           float v = ry;
           v += generator.getValueAt(new Vector3i(rx, ry, rz));
           // TODO Type from noise
-          Tile tile = v < thres ? Tile.GROUND : Tile.AIR;
+          Tile tile = v < TERRAIN_THRESHOLD ? Tile.GROUND : Tile.AIR;
           if(tile != Tile.AIR) {
             onlyAir = false;
           }
