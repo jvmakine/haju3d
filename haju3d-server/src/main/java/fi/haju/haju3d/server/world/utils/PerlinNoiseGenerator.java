@@ -114,10 +114,7 @@ public final class PerlinNoiseGenerator {
   }
   
   public float getMinValue(Vector3i corner, int edge) {
-    List<Vector3i> corners = Lists.newArrayList(
-        corner, corner.add(0,edge,0), corner.add(edge,edge,0), corner.add(edge,0,0),
-        corner.add(0,0,edge), corner.add(edge,0,edge), corner.add(0,edge,edge), corner.add(edge,edge,edge)
-    );
+    List<Vector3i> corners = getCorners(corner, edge);
     float sum = 0;
     Vector3i localPos = null;
     int size = baseMapSize;
@@ -146,6 +143,46 @@ public final class PerlinNoiseGenerator {
       size *= 2;
     }
     return sum;
+  }
+  
+  public float getMaxValue(Vector3i corner, int edge) {
+    List<Vector3i> corners = getCorners(corner, edge);
+    float sum = 0;
+    Vector3i localPos = null;
+    int size = baseMapSize;
+    for(int i = 1; i <= numberOfLevels; ++i) {
+      float max = Float.MIN_VALUE;
+      NoiseLevel level = levels[i-1];
+      if(level == null) {
+        level = new NoiseLevel(16, i*LEVEL_AMPLITUDE_MULTIPLIER, random);
+        levels[i-1] = level;
+      }
+      for(Vector3i v : corners) {
+        int gx = v.x >= 0 ? v.x/size : ~(~v.x / size);
+        int gy = v.y >= 0 ? v.y/size : ~(~v.y / size);
+        int gz = v.z >= 0 ? v.z/size : ~(~v.z / size);
+        Vector3i lp = new Vector3i(gx, gy, gz);
+        if(localPos == null) {
+          localPos = lp;
+        }
+        if(!lp.equals(localPos)) {
+          max = LEVEL_AMPLITUDE_MULTIPLIER*i;
+          break;
+        }
+        max = Math.max(max, level.getValueAt(v.x/(float)size, v.y/(float)size, v.z/(float)size));
+      }
+      sum += max;
+      size *= 2;
+    }
+    return sum;
+  }
+
+  private List<Vector3i> getCorners(Vector3i corner, int edge) {
+    List<Vector3i> corners = Lists.newArrayList(
+        corner, corner.add(0,edge,0), corner.add(edge,edge,0), corner.add(edge,0,0),
+        corner.add(0,0,edge), corner.add(edge,0,edge), corner.add(0,edge,edge), corner.add(edge,edge,edge)
+    );
+    return corners;
   }
   
 }

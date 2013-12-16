@@ -48,6 +48,10 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
     if(minVal + position.y*(size + 1) > TERRAIN_THRESHOLD) {
       return new Chunk(size, seed, position, Tile.AIR);
     }
+    float maxVal = generator.getMaxValue(wp, size);
+    if(maxVal + position.y*(size) < TERRAIN_THRESHOLD) {
+      return new Chunk(size, seed, position, Tile.GROUND);
+    }
     Chunk chunk = new Chunk(size, seed, position);
     for (int x = 0; x < size; x++) {
       for (int y = 0; y < size; y++) {
