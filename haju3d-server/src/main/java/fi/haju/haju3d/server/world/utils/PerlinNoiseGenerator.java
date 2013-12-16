@@ -28,6 +28,9 @@ public final class PerlinNoiseGenerator {
       this.random = random;
     }
     
+    /**
+     * Speed optimizer, refetch array from map only when needed
+     */
     private final class DataAccessor {
       private int lastx = Integer.MIN_VALUE;
       private int lasty = Integer.MIN_VALUE;
@@ -35,11 +38,12 @@ public final class PerlinNoiseGenerator {
       private FloatArray3d array = null;
       
       public float getValueAt(int x, int y, int z) {
-        int gx = (int)Math.floor(x/(float)size);
-        int gy = (int)Math.floor(y/(float)size);
-        int gz = (int)Math.floor(z/(float)size);
-        Vector3i pos = new Vector3i(gx, gy, gz);
+        // efficient integer division with rounding towards -inf
+        int gx = x >= 0 ? x/size : ~(~x / size);
+        int gy = y >= 0 ? y/size : ~(~y / size);
+        int gz = z >= 0 ? z/size : ~(~z / size);
         if(gx != lastx || gy != lasty || gz != lastz) {
+          Vector3i pos = new Vector3i(gx, gy, gz);
           makeIfDoesNotExist(pos);
           array = data.get(pos); 
           lastx = gx;
