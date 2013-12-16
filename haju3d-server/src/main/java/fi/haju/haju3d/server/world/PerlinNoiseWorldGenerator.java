@@ -43,7 +43,9 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
 
   private Chunk makeChunk(int size, int seed, ChunkPosition position) {
     boolean onlyAir = true;
-    if(generator.getMinValue() + position.y*size > TERRAIN_THRESHOLD) {
+    Vector3i wp = position.mult(size);
+    float minVal = generator.getMinValue(wp, size); 
+    if(minVal + position.y*(size + 1) > TERRAIN_THRESHOLD) {
       return new Chunk(size, seed, position, Tile.AIR);
     }
     Chunk chunk = new Chunk(size, seed, position);

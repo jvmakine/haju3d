@@ -67,5 +67,9 @@ public class Vector3i implements Serializable {
   public Vector3i add(Vector3i v) {
     return add(v.x, v.y, v.z);
   }
+  
+  public Vector3i mult(int multiplier) {
+    return new Vector3i(x*multiplier, y*multiplier, z*multiplier);
+  }
 
 }
