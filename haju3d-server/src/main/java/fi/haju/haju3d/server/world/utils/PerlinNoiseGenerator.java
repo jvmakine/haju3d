@@ -4,7 +4,6 @@ import java.util.Map;
 import java.util.Random;
 
 import com.google.common.collect.Maps;
-import com.jme3.math.Vector3f;
 
 import fi.haju.haju3d.protocol.coordinate.Vector3i;
 import fi.haju.haju3d.protocol.world.FloatArray3d;
@@ -15,7 +14,7 @@ public final class PerlinNoiseGenerator {
   private final int numberOfLevels;
   private final int baseMapSize;
   private final Random random;
-  private final Map<Integer, NoiseLevel> levels = Maps.newHashMap(); 
+  private final NoiseLevel[] levels; 
   
   private final static class NoiseLevel {
     public final int size;
@@ -29,24 +28,44 @@ public final class PerlinNoiseGenerator {
       this.random = random;
     }
     
-    public float getValueAt(Vector3f pos) {
-      Vector3i posi = new Vector3i((int)Math.floor(pos.x), (int)Math.floor(pos.y), (int)Math.floor(pos.z));
-      return InterpolationUtil.interpolateLinear3d(pos.x - posi.x, pos.y - posi.y, pos.z - posi.z,
-          getValueAt(posi),
-          getValueAt(posi.add(1,0,0)),
-          getValueAt(posi.add(0,1,0)),
-          getValueAt(posi.add(1,1,0)),
-          getValueAt(posi.add(0,0,1)),
-          getValueAt(posi.add(1,0,1)),
-          getValueAt(posi.add(0,1,1)),
-          getValueAt(posi.add(1,1,1))
-      );
+    private final class DataAccessor {
+      private int lastx = Integer.MIN_VALUE;
+      private int lasty = Integer.MIN_VALUE;
+      private int lastz = Integer.MIN_VALUE;
+      private FloatArray3d array = null;
+      
+      public float getValueAt(int x, int y, int z) {
+        int gx = (int)Math.floor(x/(float)size);
+        int gy = (int)Math.floor(y/(float)size);
+        int gz = (int)Math.floor(z/(float)size);
+        Vector3i pos = new Vector3i(gx, gy, gz);
+        if(gx != lastx || gy != lasty || gz != lastz) {
+          makeIfDoesNotExist(pos);
+          array = data.get(pos); 
+          lastx = gx;
+          lasty = gy;
+          lastz = gz;
+        }
+        return amplitude * array.get(x - gx*size, y - gy*size, z - gz*size);
+      }
+      
     }
     
-    private float getValueAt(Vector3i globalPos) {
-      Vector3i localPos = new Vector3i((int)Math.floor(globalPos.x/(float)size), (int)Math.floor(globalPos.y/(float)size), (int)Math.floor(globalPos.z/(float)size));
-      makeIfDoesNotExist(localPos);
-      return amplitude * data.get(localPos).get(globalPos.x - localPos.x*size, globalPos.y - localPos.y*size, globalPos.z - localPos.z*size);
+    public float getValueAt(float x, float y, float z) {
+      int xi = (int)Math.floor(x);
+      int yi = (int)Math.floor(y);
+      int zi = (int)Math.floor(z);
+      DataAccessor accessor = new DataAccessor();
+      return InterpolationUtil.interpolateLinear3d(x - xi, y - yi, z - zi,
+          accessor.getValueAt(xi, yi, zi),
+          accessor.getValueAt(xi + 1, yi, zi),
+          accessor.getValueAt(xi, yi + 1, zi),
+          accessor.getValueAt(xi + 1, yi + 1, zi),
+          accessor.getValueAt(xi, yi, zi + 1),
+          accessor.getValueAt(xi + 1, yi, zi + 1),
+          accessor.getValueAt(xi, yi + 1, zi + 1),
+          accessor.getValueAt(xi + 1, yi + 1, zi + 1)
+      );
     }
     
     private void makeIfDoesNotExist(Vector3i pos) {
@@ -60,22 +79,19 @@ public final class PerlinNoiseGenerator {
     this.numberOfLevels = levels;
     this.baseMapSize = baseMapSize;
     this.random = random;
+    this.levels = new NoiseLevel[levels];
   }
   
-  private Vector3f div(Vector3i v, float divisor) {
-    return new Vector3f(v.x / divisor, v.y/divisor, v.z/divisor);
-  }
-    
-  public float getValueAt(Vector3i pos) {
+  public float getValueAt(int x, int y, int z) {
     float value = 0.0f;
     int size = baseMapSize;
     for(int level = 1; level <= numberOfLevels; ++level) {
-      NoiseLevel noise = levels.get(level);
+      NoiseLevel noise = levels[level-1];
       if(noise == null) {
-        noise = new NoiseLevel(8, level*LEVEL_AMPLITUDE_MULTIPLIER, random);
-        levels.put(level, noise);
+        noise = new NoiseLevel(16, level*LEVEL_AMPLITUDE_MULTIPLIER, random);
+        levels[level-1] = noise;
       }
-      value += noise.getValueAt(div(pos, size));
+      value += noise.getValueAt(x/(float)size, y/(float)size, z/(float)size);
       size *= 2;
     }
     return value;

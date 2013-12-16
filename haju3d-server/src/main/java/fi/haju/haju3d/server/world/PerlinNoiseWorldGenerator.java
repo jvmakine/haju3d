@@ -53,7 +53,7 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
           int rx = x + position.x*size;
           int ry = y + position.y*size;
           int rz = z + position.z*size;
-          float v = ry + generator.getValueAt(new Vector3i(rx, ry, rz));
+          float v = ry + generator.getValueAt(rx, ry, rz);
           // TODO Type from noise
           Tile tile = v < TERRAIN_THRESHOLD ? Tile.GROUND : Tile.AIR;
           if(tile != Tile.AIR) {
