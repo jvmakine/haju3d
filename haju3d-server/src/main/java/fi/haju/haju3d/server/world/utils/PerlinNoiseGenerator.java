@@ -100,7 +100,7 @@ public final class PerlinNoiseGenerator {
         levels[level-1] = noise;
       }
       value += noise.getValueAt(x/(float)size, y/(float)size, z/(float)size);
-      size *= 2;
+      size <<= 1;
     }
     return value;
   }
@@ -140,7 +140,7 @@ public final class PerlinNoiseGenerator {
         min = Math.min(min, level.getValueAt(v.x/(float)size, v.y/(float)size, v.z/(float)size));
       }
       sum += min;
-      size *= 2;
+      size <<= 1;
     }
     return sum;
   }
@@ -172,7 +172,7 @@ public final class PerlinNoiseGenerator {
         max = Math.max(max, level.getValueAt(v.x/(float)size, v.y/(float)size, v.z/(float)size));
       }
       sum += max;
-      size *= 2;
+      size <<= 1;
     }
     return sum;
   }
