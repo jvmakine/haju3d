@@ -60,10 +60,6 @@ public class CharacterBoneApp extends SimpleApplication {
   public static final float MINIMUM_BONE_THICKNESS = 0.05f;
 
   private static class Actions {
-    public static final String ROTATE_LEFT = "RotateLeft";
-    public static final String ROTATE_RIGHT = "RotateRight";
-    public static final String ROTATE_UP = "RotateUp";
-    public static final String ROTATE_DOWN = "RotateDown";
     public static final String ROTATE_LEFT_MOUSE = "RotateLeftMouse";
     public static final String ROTATE_RIGHT_MOUSE = "RotateRightMouse";
     public static final String ROTATE_UP_MOUSE = "RotateUpMouse";
@@ -79,7 +75,7 @@ public class CharacterBoneApp extends SimpleApplication {
     private Vector3f start;
     private Vector3f end;
     private float thickness = 1.0f;
-    private float rotation;
+    //private float rotation;
     private Spatial spatial;
     private Spatial guiSpatial;
     private MyBone mirrorBone;
@@ -160,6 +156,7 @@ public class CharacterBoneApp extends SimpleApplication {
   private float camElevation = 0;
   private float camAzimuth = 0;
   private List<MyBone> bones = new ArrayList<>();
+  private Node allBones = new Node();
 
   private DragTarget dragTarget;
   private Spatial dragPlane;
@@ -173,6 +170,7 @@ public class CharacterBoneApp extends SimpleApplication {
     SimpleApplicationUtils.addCartoonEdges(this);
     rootNode.attachChild(makeFloor());
     rootNode.attachChild(makeAxisIndicators());
+    rootNode.attachChild(allBones);
 
     MyBone bone = new MyBone();
     bone.start = new Vector3f(0, 2, 0);
@@ -196,51 +194,28 @@ public class CharacterBoneApp extends SimpleApplication {
           return;
         }
         float v = value * ROTATE_SPEED;
-        if (name.equals(Actions.ROTATE_LEFT_MOUSE)) {
+        switch (name) {
+        case Actions.ROTATE_LEFT_MOUSE:
           camAzimuth -= v;
-        } else if (name.equals(Actions.ROTATE_RIGHT_MOUSE)) {
+          break;
+        case Actions.ROTATE_RIGHT_MOUSE:
           camAzimuth += v;
-        } else if (name.equals(Actions.ROTATE_DOWN_MOUSE)) {
+          break;
+        case Actions.ROTATE_DOWN_MOUSE:
           camElevation -= v;
           if (camElevation < -FastMath.PI / 2) {
             camElevation = -FastMath.PI / 2;
           }
-        } else if (name.equals(Actions.ROTATE_UP_MOUSE)) {
+          break;
+        case Actions.ROTATE_UP_MOUSE:
           camElevation += v;
           if (camElevation > FastMath.PI / 2) {
             camElevation = FastMath.PI / 2;
           }
+          break;
         }
       }
     }, Actions.ROTATE_LEFT_MOUSE, Actions.ROTATE_RIGHT_MOUSE, Actions.ROTATE_UP_MOUSE, Actions.ROTATE_DOWN_MOUSE);
-
-    inputManager.addMapping(Actions.ROTATE_LEFT, new KeyTrigger(KeyInput.KEY_LEFT));
-    inputManager.addMapping(Actions.ROTATE_RIGHT, new KeyTrigger(KeyInput.KEY_RIGHT));
-    inputManager.addMapping(Actions.ROTATE_UP, new KeyTrigger(KeyInput.KEY_UP));
-    inputManager.addMapping(Actions.ROTATE_DOWN, new KeyTrigger(KeyInput.KEY_DOWN));
-    inputManager.addListener(new AnalogListener() {
-      public static final float ROTATE_SPEED = 3;
-
-      @Override
-      public void onAnalog(String name, float value, float tpf) {
-        float v = value * ROTATE_SPEED;
-        if (name.equals(Actions.ROTATE_LEFT)) {
-          camAzimuth -= v;
-        } else if (name.equals(Actions.ROTATE_RIGHT)) {
-          camAzimuth += v;
-        } else if (name.equals(Actions.ROTATE_DOWN)) {
-          camElevation -= v;
-          if (camElevation < -FastMath.PI / 2) {
-            camElevation = -FastMath.PI / 2;
-          }
-        } else if (name.equals(Actions.ROTATE_UP)) {
-          camElevation += v;
-          if (camElevation > FastMath.PI / 2) {
-            camElevation = FastMath.PI / 2;
-          }
-        }
-      }
-    }, Actions.ROTATE_LEFT, Actions.ROTATE_RIGHT, Actions.ROTATE_UP, Actions.ROTATE_DOWN);
 
     inputManager.addMapping(Actions.RESIZE_DOWN, new MouseAxisTrigger(MouseInput.AXIS_WHEEL, true));
     inputManager.addMapping(Actions.RESIZE_UP, new MouseAxisTrigger(MouseInput.AXIS_WHEEL, false));
@@ -342,7 +317,7 @@ public class CharacterBoneApp extends SimpleApplication {
 
   public void removeBone(MyBone bone) {
     bone.setMirrorBone(null);
-    rootNode.detachChild(bone.spatial);
+    allBones.detachChild(bone.spatial);
     guiNode.detachChild(bone.guiSpatial);
     bones.remove(bone);
   }
@@ -369,7 +344,6 @@ public class CharacterBoneApp extends SimpleApplication {
   }
 
   private CollisionResult findBoneCollision() {
-    Node allBones = new Node();
     for (MyBone bone : bones) {
       allBones.attachChild(bone.spatial);
     }
@@ -495,28 +469,36 @@ public class CharacterBoneApp extends SimpleApplication {
       Transform t = transformBetween(b.start, b.end, Vector3f.UNIT_Z, b.thickness);
       if (Vector3f.isValidVector(t.getTranslation())) {
         b.spatial.setLocalTransform(t);
-        rootNode.attachChild(b.spatial);
+        allBones.attachChild(b.spatial);
       }
 
       if (b.guiSpatial != null) {
         guiNode.detachChild(b.guiSpatial);
         b.guiSpatial = null;
       }
+    }
 
-      if (showGuides) {
-        Node gui = new Node();
+    CollisionResult boneCollision = findBoneCollision();
+    if (boneCollision != null) {
+      Geometry geom = boneCollision.getGeometry();
+      for (MyBone b : bones) {
+        if (b.spatial == geom) {
+          Node gui = new Node();
 
-        Vector3f screenStart = cam.getScreenCoordinates(b.start);
-        gui.attachChild(makeCircle(screenStart));
+          Vector3f screenStart = cam.getScreenCoordinates(b.start);
+          gui.attachChild(makeCircle(screenStart));
 
-        Vector3f screenEnd = cam.getScreenCoordinates(b.end);
-        gui.attachChild(makeCircle(screenEnd));
-        gui.attachChild(makeLine(screenStart, screenEnd, ColorRGBA.Green));
+          Vector3f screenEnd = cam.getScreenCoordinates(b.end);
+          gui.attachChild(makeCircle(screenEnd));
+          gui.attachChild(makeLine(screenStart, screenEnd, ColorRGBA.Green));
 
-        b.guiSpatial = gui;
-        guiNode.attachChild(b.guiSpatial);
+          b.guiSpatial = gui;
+          guiNode.attachChild(b.guiSpatial);
+          break;
+        }
       }
     }
+
   }
 
   private BitmapText makeCircle(Vector3f screenPos) {
