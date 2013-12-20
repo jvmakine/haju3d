@@ -1,4 +1,4 @@
-package fi.haju.haju3d.client;
+package fi.haju.haju3d.client.bones;
 
 import com.jme3.app.SimpleApplication;
 import com.jme3.collision.CollisionResult;
@@ -17,9 +17,17 @@ import com.jme3.scene.shape.Line;
 import com.jme3.scene.shape.Quad;
 import com.jme3.scene.shape.Sphere;
 import com.jme3.util.BufferUtils;
+import fi.haju.haju3d.client.SimpleApplicationUtils;
+import org.apache.commons.io.FileUtils;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.type.TypeReference;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.Serializable;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -58,6 +66,8 @@ import static fi.haju.haju3d.client.SimpleApplicationUtils.makeLineMaterial;
 public class CharacterBoneApp extends SimpleApplication {
 
   public static final float MINIMUM_BONE_THICKNESS = 0.05f;
+  public static final File BONE_FILE = new File("bones.json");
+  public static final Charset BONE_FILE_ENCODING = Charset.forName("UTF-8");
 
   private static class Actions {
     public static final String ROTATE_LEFT_MOUSE = "RotateLeftMouse";
@@ -69,6 +79,63 @@ public class CharacterBoneApp extends SimpleApplication {
     public static final String RESIZE_DOWN = "ResizeDown";
     public static final String RESIZE_UP = "ResizeUp";
     public static final String SHOW_GUIDES = "ShowGuides";
+  }
+
+  private static class MyBoneStruct implements Serializable {
+    public float[] start;
+    public float[] end;
+    public float thickness = 1.0f;
+    public int mirrorBoneIndex;
+  }
+
+  public static String saveBones(List<MyBone> bones) {
+    List<MyBoneStruct> boneStructs = new ArrayList<>();
+    for (MyBone bone : bones) {
+      MyBoneStruct bs = new MyBoneStruct();
+      bs.start = bone.start.toArray(null);
+      bs.end = bone.end.toArray(null);
+      bs.thickness = bone.thickness;
+      if (bone.mirrorBone != null) {
+        bs.mirrorBoneIndex = bones.indexOf(bone.mirrorBone);
+      } else {
+        bs.mirrorBoneIndex = -1;
+      }
+      boneStructs.add(bs);
+    }
+    ObjectMapper objectMapper = new ObjectMapper();
+    try {
+      return objectMapper.writeValueAsString(boneStructs);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public List<MyBone> readBones(String json) {
+    ObjectMapper objectMapper = new ObjectMapper();
+    List<MyBoneStruct> boneStructs;
+    try {
+      boneStructs = objectMapper.readValue(json, new TypeReference<List<MyBoneStruct>>() {
+      });
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+    List<MyBone> bones = new ArrayList<>();
+    for (MyBoneStruct bs : boneStructs) {
+      MyBone bone = new MyBone();
+      bone.start = new Vector3f(bs.start[0], bs.start[1], bs.start[2]);
+      bone.end = new Vector3f(bs.end[0], bs.end[1], bs.end[2]);
+      bone.thickness = bs.thickness;
+      bone.spatial = makeSphere();
+      bones.add(bone);
+    }
+    int i = 0;
+    for (MyBoneStruct bs : boneStructs) {
+      if (bs.mirrorBoneIndex >= 0) {
+        bones.get(i).setMirrorBone(bones.get(bs.mirrorBoneIndex));
+      }
+      i++;
+    }
+    return bones;
   }
 
   private static class MyBone {
@@ -172,14 +239,23 @@ public class CharacterBoneApp extends SimpleApplication {
     rootNode.attachChild(makeAxisIndicators());
     rootNode.attachChild(allBones);
 
-    MyBone bone = new MyBone();
-    bone.start = new Vector3f(0, 2, 0);
-    bone.end = new Vector3f(0, -1, 2);
-    bone.thickness = 0.2f;
-    bone.spatial = makeSphere();
-    bones.add(bone);
+    try {
+      bones = readBones(FileUtils.readFileToString(BONE_FILE, BONE_FILE_ENCODING));
+    } catch (IOException e) {
+      e.printStackTrace();
 
-    camTarget = bone.spatial;
+      System.err.println("Could not read bone file. Create default bone.");
+      MyBone bone = new MyBone();
+      bone.start = new Vector3f(0, 2, 0);
+      bone.end = new Vector3f(0, -1, 2);
+      bone.thickness = 0.2f;
+      bone.spatial = makeSphere();
+      bones.add(bone);
+    }
+
+    saveBones(bones);
+
+    camTarget = bones.get(0).spatial;
 
     inputManager.addMapping(Actions.ROTATE_LEFT_MOUSE, new MouseAxisTrigger(MouseInput.AXIS_X, true));
     inputManager.addMapping(Actions.ROTATE_RIGHT_MOUSE, new MouseAxisTrigger(MouseInput.AXIS_X, false));
@@ -581,7 +657,7 @@ public class CharacterBoneApp extends SimpleApplication {
     return geom;
   }
 
-  public Mesh makeGridMesh(float width, float height, int xsteps, int ysteps) {
+  public static Mesh makeGridMesh(float width, float height, int xsteps, int ysteps) {
     Mesh mesh = new Mesh();
     mesh.setMode(Mesh.Mode.Lines);
     int lines = (xsteps + 1) + (ysteps + 1);
@@ -612,4 +688,13 @@ public class CharacterBoneApp extends SimpleApplication {
     return mesh;
   }
 
+  @Override
+  public void destroy() {
+    super.destroy();
+    try {
+      FileUtils.writeStringToFile(BONE_FILE, saveBones(bones), BONE_FILE_ENCODING);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
 }
