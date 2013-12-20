@@ -10,9 +10,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class BoneSaveUtils {
-
   private BoneSaveUtils() {
+    assert false;
   }
+
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   private static class MyBoneStruct implements Serializable {
     public float[] start;
@@ -37,19 +39,17 @@ public final class BoneSaveUtils {
       bs.meshName = bone.getMeshName();
       boneStructs.add(bs);
     }
-    ObjectMapper objectMapper = new ObjectMapper();
     try {
-      return objectMapper.writeValueAsString(boneStructs);
+      return OBJECT_MAPPER.writeValueAsString(boneStructs);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
   }
 
   public static List<MyBone> readBones(String json) {
-    ObjectMapper objectMapper = new ObjectMapper();
     List<MyBoneStruct> boneStructs;
     try {
-      boneStructs = objectMapper.readValue(json, new TypeReference<List<MyBoneStruct>>() {
+      boneStructs = OBJECT_MAPPER.readValue(json, new TypeReference<List<MyBoneStruct>>() {
       });
     } catch (IOException e) {
       throw new RuntimeException(e);

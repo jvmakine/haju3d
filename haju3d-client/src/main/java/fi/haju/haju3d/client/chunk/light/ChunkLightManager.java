@@ -1,17 +1,10 @@
 package fi.haju.haju3d.client.chunk.light;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-
 import com.google.common.base.Optional;
 import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-
 import fi.haju.haju3d.client.chunk.ChunkProvider;
 import fi.haju.haju3d.client.util.Profiled;
 import fi.haju.haju3d.protocol.coordinate.ChunkPosition;
@@ -22,11 +15,17 @@ import fi.haju.haju3d.protocol.world.Chunk;
 import fi.haju.haju3d.protocol.world.ChunkCoordinateSystem;
 import fi.haju.haju3d.protocol.world.Tile;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
 @Singleton
 public class ChunkLightManager {
-
   private Map<ChunkPosition, ChunkLighting> chunkLights = new ConcurrentHashMap<>();
-  
+
+  public static final TileLight NO_LIGHT = new TileLight();
   public static final TileLight AMBIENT = new TileLight(0, 0, 0, false, false);
   public static final TileLight DAY_LIGHT = new TileLight(14, 14, 14, true, true);
 
@@ -38,7 +37,9 @@ public class ChunkLightManager {
     
   public TileLight getLight(ChunkPosition chunkPosition, LocalTilePosition position) {
     ChunkLighting light = chunkLights.get(chunkPosition);
-    if(light == null) return new TileLight();
+    if (light == null) {
+      return NO_LIGHT;
+    }
     return light.getLight(position);
   }
     

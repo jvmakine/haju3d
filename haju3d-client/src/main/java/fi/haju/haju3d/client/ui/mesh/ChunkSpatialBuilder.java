@@ -18,7 +18,6 @@ import com.jme3.texture.Texture.MinFilter;
 import com.jme3.texture.Texture.WrapMode;
 import com.jme3.texture.TextureArray;
 import com.jme3.util.BufferUtils;
-
 import fi.haju.haju3d.client.chunk.light.ChunkLightManager;
 import fi.haju.haju3d.client.ui.ChunkRenderer;
 import fi.haju.haju3d.client.ui.ChunkSpatial;
@@ -29,7 +28,6 @@ import fi.haju.haju3d.protocol.coordinate.ChunkPosition;
 import fi.haju.haju3d.protocol.coordinate.GlobalTilePosition;
 import fi.haju.haju3d.protocol.world.Tile;
 import fi.haju.haju3d.protocol.world.World;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -428,9 +426,17 @@ public class ChunkSpatialBuilder {
 
   public static class SimpleMeshBuilder {
     private MyMesh mesh;
+    private Vector3f translate;
+    private float scale;
 
     public SimpleMeshBuilder(MyMesh myMesh) {
+      this(myMesh, Vector3f.ZERO, 1.0f);
+    }
+
+    public SimpleMeshBuilder(MyMesh myMesh, Vector3f translate, float scale) {
       this.mesh = myMesh;
+      this.translate = translate;
+      this.scale = scale;
     }
 
     public Mesh build() {
@@ -449,10 +455,10 @@ public class ChunkSpatialBuilder {
         putColor(colors, mesh.vertexToLight.get(face.v3));
         putColor(colors, mesh.vertexToLight.get(face.v4));
 
-        putVector(vertexes, face.v1.v);
-        putVector(vertexes, face.v2.v);
-        putVector(vertexes, face.v3.v);
-        putVector(vertexes, face.v4.v);
+        putVector(vertexes, face.v1.v.add(translate).multLocal(scale));
+        putVector(vertexes, face.v2.v.add(translate).multLocal(scale));
+        putVector(vertexes, face.v3.v.add(translate).multLocal(scale));
+        putVector(vertexes, face.v4.v.add(translate).multLocal(scale));
 
         if (TileRenderPropertyProvider.getProperties(face.tile).getMaxSmooths() == 0) {
           putVector(vertexNormals, face.normal);

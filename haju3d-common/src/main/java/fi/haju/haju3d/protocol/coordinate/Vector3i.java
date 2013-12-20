@@ -55,6 +55,10 @@ public class Vector3i implements Serializable {
     return new Vector3i(this.x + x, this.y + y, this.z + z);
   }
 
+  public Vector3i subtract(int x, int y, int z) {
+    return new Vector3i(this.x - x, this.y - y, this.z - z);
+  }
+
   public int distanceTo(Vector3i other) {
     return Math.abs(other.x - x) + Math.abs(other.y - y) + Math.abs(other.z - z);
   }
@@ -66,6 +70,10 @@ public class Vector3i implements Serializable {
 
   public Vector3i add(Vector3i v) {
     return add(v.x, v.y, v.z);
+  }
+
+  public Vector3i subtract(Vector3i v) {
+    return subtract(v.x, v.y, v.z);
   }
 
 }

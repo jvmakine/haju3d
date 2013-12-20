@@ -18,6 +18,8 @@ import com.jme3.scene.shape.Quad;
 import com.jme3.scene.shape.Sphere;
 import fi.haju.haju3d.client.SimpleApplicationUtils;
 import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -60,6 +62,7 @@ import static fi.haju.haju3d.client.SimpleApplicationUtils.makeLineMaterial;
  * - snap dragPlane to x/y/z axes
  */
 public class CharacterBoneApp extends SimpleApplication {
+  private static final Logger LOGGER = LoggerFactory.getLogger(CharacterBoneApp.class);
 
   public static final float MINIMUM_BONE_THICKNESS = 0.05f;
   public static final File BONE_FILE = new File("bones2.json");
@@ -76,6 +79,7 @@ public class CharacterBoneApp extends SimpleApplication {
     public static final String RESIZE_UP = "ResizeUp";
     public static final String SHOW_GUIDES = "ShowGuides";
     public static final String DELETE_BONE = "DeleteBone";
+    public static final String SHOW_MESH = "ShowMesh";
   }
 
 
@@ -128,6 +132,8 @@ public class CharacterBoneApp extends SimpleApplication {
   private Spatial dragPlane;
   private Spatial dragPlanePreview;
   private boolean showGuides = true;
+  private boolean showMesh = false;
+  private Spatial meshSpatial = null;
 
   @Override
   public void simpleInitApp() {
@@ -143,7 +149,8 @@ public class CharacterBoneApp extends SimpleApplication {
     } catch (Exception e) {
       e.printStackTrace();
       bones = new ArrayList<>();
-      System.err.println("Could not read bone file. Create default bone.");
+
+      LOGGER.warn("Could not read bone file. Create default bone.");
       MyBone bone = new MyBone(new Vector3f(0, 2, 0), new Vector3f(0, -1, 2), 0.2f, SPHERE);
       bones.add(bone);
     }
@@ -244,7 +251,7 @@ public class CharacterBoneApp extends SimpleApplication {
       }
     }, Actions.CLICK, Actions.CLICK_RMB);
 
-    inputManager.addMapping(Actions.SHOW_GUIDES, new KeyTrigger(KeyInput.KEY_SPACE));
+    inputManager.addMapping(Actions.SHOW_GUIDES, new KeyTrigger(KeyInput.KEY_RETURN));
     inputManager.addListener(new ActionListener() {
       @Override
       public void onAction(String name, boolean isPressed, float tpf) {
@@ -253,6 +260,31 @@ public class CharacterBoneApp extends SimpleApplication {
         }
       }
     }, Actions.SHOW_GUIDES);
+
+    inputManager.addMapping(Actions.SHOW_MESH, new KeyTrigger(KeyInput.KEY_SPACE));
+    inputManager.addListener(new ActionListener() {
+      @Override
+      public void onAction(String name, boolean isPressed, float tpf) {
+        if (isPressed) {
+          showMesh = !showMesh;
+          if (showMesh) {
+            LOGGER.info("Show mesh");
+            Geometry geom = new Geometry("BoneMesh", BoneMeshUtils.buildMesh(bones));
+            geom.setMaterial(SimpleApplicationUtils.makeColorMaterial(assetManager, ColorRGBA.White));
+            geom.setShadowMode(RenderQueue.ShadowMode.CastAndReceive);
+            meshSpatial = geom;
+            rootNode.attachChild(meshSpatial);
+          } else {
+            LOGGER.info("Hide mesh");
+            if (meshSpatial != null) {
+              rootNode.detachChild(meshSpatial);
+              meshSpatial = null;
+            }
+          }
+
+        }
+      }
+    }, Actions.SHOW_MESH);
 
     inputManager.addMapping(Actions.DELETE_BONE, new KeyTrigger(KeyInput.KEY_DELETE));
     inputManager.addListener(new ActionListener() {
