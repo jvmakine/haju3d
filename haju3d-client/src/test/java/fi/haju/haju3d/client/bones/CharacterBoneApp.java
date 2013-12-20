@@ -32,11 +32,9 @@ import static fi.haju.haju3d.client.SimpleApplicationUtils.makeLineMaterial;
 
 /**
  * TODO:
- * - ability to delete nodes
+ * - create a voxel representation out of bones, make solid mesh
  * <p/>
  * Backlog:
- * - save/load bones
- * - create a voxel representation out of bones, make solid mesh
  * - apply perlin noise to voxel mesh
  * - ability to select bone mesh
  * - ability to quickly edit bone mesh
@@ -54,6 +52,8 @@ import static fi.haju.haju3d.client.SimpleApplicationUtils.makeLineMaterial;
  * - maybe endpoint should always be forced on surface, no free movement allowed?
  *
  * Done
+ * - ability to delete bones
+ * - save/load bones
  * - RMB to create, LMB to edit
  * - symmetrical editing (forced?)
  * - LMB on empty to rotate
@@ -75,6 +75,7 @@ public class CharacterBoneApp extends SimpleApplication {
     public static final String RESIZE_DOWN = "ResizeDown";
     public static final String RESIZE_UP = "ResizeUp";
     public static final String SHOW_GUIDES = "ShowGuides";
+    public static final String DELETE_BONE = "DeleteBone";
   }
 
 
@@ -252,6 +253,19 @@ public class CharacterBoneApp extends SimpleApplication {
         }
       }
     }, Actions.SHOW_GUIDES);
+
+    inputManager.addMapping(Actions.DELETE_BONE, new KeyTrigger(KeyInput.KEY_DELETE));
+    inputManager.addListener(new ActionListener() {
+      @Override
+      public void onAction(String name, boolean isPressed, float tpf) {
+        if (isPressed) {
+          MyBone bone = findCurrentBone();
+          if (bone != null && bones.indexOf(bone) != 0) {
+            removeBoneAndMirror(bone);
+          }
+        }
+      }
+    }, Actions.DELETE_BONE);
   }
 
   private void addBoneSpatial(MyBone bone) {
@@ -287,6 +301,13 @@ public class CharacterBoneApp extends SimpleApplication {
     dragPlane = null;
     dragPlanePreview = null;
     dragTarget = null;
+  }
+
+  public void removeBoneAndMirror(MyBone bone) {
+    if (bone.getMirrorBone() != null) {
+      removeBone(bone.getMirrorBone());
+    }
+    removeBone(bone);
   }
 
   public void removeBone(MyBone bone) {
