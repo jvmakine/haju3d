@@ -3,33 +3,29 @@ package fi.haju.haju3d.client.bones;
 import com.jme3.app.SimpleApplication;
 import com.jme3.collision.CollisionResult;
 import com.jme3.collision.CollisionResults;
-import com.jme3.font.BitmapText;
 import com.jme3.input.KeyInput;
 import com.jme3.input.MouseInput;
 import com.jme3.input.controls.*;
 import com.jme3.material.Material;
 import com.jme3.math.*;
 import com.jme3.renderer.queue.RenderQueue;
-import com.jme3.scene.*;
-import com.jme3.scene.debug.Arrow;
+import com.jme3.scene.Geometry;
+import com.jme3.scene.Mesh;
+import com.jme3.scene.Node;
+import com.jme3.scene.Spatial;
 import com.jme3.scene.shape.Box;
-import com.jme3.scene.shape.Line;
 import com.jme3.scene.shape.Quad;
 import com.jme3.scene.shape.Sphere;
-import com.jme3.util.BufferUtils;
 import fi.haju.haju3d.client.SimpleApplicationUtils;
 import org.apache.commons.io.FileUtils;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.type.TypeReference;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.Serializable;
-import java.nio.FloatBuffer;
-import java.nio.IntBuffer;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static fi.haju.haju3d.client.SimpleApplicationUtils.makeColorMaterial;
 import static fi.haju.haju3d.client.SimpleApplicationUtils.makeLineMaterial;
@@ -66,7 +62,7 @@ import static fi.haju.haju3d.client.SimpleApplicationUtils.makeLineMaterial;
 public class CharacterBoneApp extends SimpleApplication {
 
   public static final float MINIMUM_BONE_THICKNESS = 0.05f;
-  public static final File BONE_FILE = new File("bones.json");
+  public static final File BONE_FILE = new File("bones2.json");
   public static final Charset BONE_FILE_ENCODING = Charset.forName("UTF-8");
 
   private static class Actions {
@@ -81,112 +77,14 @@ public class CharacterBoneApp extends SimpleApplication {
     public static final String SHOW_GUIDES = "ShowGuides";
   }
 
-  private static class MyBoneStruct implements Serializable {
-    public float[] start;
-    public float[] end;
-    public float thickness = 1.0f;
-    public int mirrorBoneIndex;
-  }
 
-  public static String saveBones(List<MyBone> bones) {
-    List<MyBoneStruct> boneStructs = new ArrayList<>();
-    for (MyBone bone : bones) {
-      MyBoneStruct bs = new MyBoneStruct();
-      bs.start = bone.start.toArray(null);
-      bs.end = bone.end.toArray(null);
-      bs.thickness = bone.thickness;
-      if (bone.mirrorBone != null) {
-        bs.mirrorBoneIndex = bones.indexOf(bone.mirrorBone);
-      } else {
-        bs.mirrorBoneIndex = -1;
-      }
-      boneStructs.add(bs);
-    }
-    ObjectMapper objectMapper = new ObjectMapper();
-    try {
-      return objectMapper.writeValueAsString(boneStructs);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-  }
+  private Map<String, Mesh> meshMap = new HashMap<>();
+  private static final String SPHERE = "SPHERE";
+  private static final String BOX = "BOX";
 
-  public List<MyBone> readBones(String json) {
-    ObjectMapper objectMapper = new ObjectMapper();
-    List<MyBoneStruct> boneStructs;
-    try {
-      boneStructs = objectMapper.readValue(json, new TypeReference<List<MyBoneStruct>>() {
-      });
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-    List<MyBone> bones = new ArrayList<>();
-    for (MyBoneStruct bs : boneStructs) {
-      MyBone bone = new MyBone();
-      bone.start = new Vector3f(bs.start[0], bs.start[1], bs.start[2]);
-      bone.end = new Vector3f(bs.end[0], bs.end[1], bs.end[2]);
-      bone.thickness = bs.thickness;
-      bone.spatial = makeSphere();
-      bones.add(bone);
-    }
-    int i = 0;
-    for (MyBoneStruct bs : boneStructs) {
-      if (bs.mirrorBoneIndex >= 0) {
-        bones.get(i).setMirrorBone(bones.get(bs.mirrorBoneIndex));
-      }
-      i++;
-    }
-    return bones;
-  }
-
-  private static class MyBone {
-    private Vector3f start;
-    private Vector3f end;
-    private float thickness = 1.0f;
-    //private float rotation;
-    private Spatial spatial;
-    private Spatial guiSpatial;
-    private MyBone mirrorBone;
-
-    public void setMirrorBone(MyBone mirrorBone) {
-      // detach from old mirror:
-      if (this.mirrorBone != null) {
-        this.mirrorBone.mirrorBone = null;
-      }
-      // set up new mirror link:
-      this.mirrorBone = mirrorBone;
-      if (mirrorBone != null) {
-        mirrorBone.mirrorBone = this;
-      }
-    }
-
-    public void addThickness(float value) {
-      addThicknessSelf(value);
-      if (mirrorBone != null) {
-        mirrorBone.addThicknessSelf(value);
-      }
-    }
-
-    public void addThicknessSelf(float value) {
-      this.thickness += value * 0.05f;
-      if (this.thickness < MINIMUM_BONE_THICKNESS) {
-        this.thickness = MINIMUM_BONE_THICKNESS;
-      }
-    }
-
-    public void setPosition(Vector3f p, boolean start) {
-      setPositionSelf(p, start);
-      if (mirrorBone != null) {
-        mirrorBone.setPositionSelf(getMirroredVector(p), start);
-      }
-    }
-
-    public void setPositionSelf(Vector3f p, boolean start) {
-      if (start) {
-        this.start = p;
-      } else {
-        this.end = p;
-      }
-    }
+  {
+    meshMap.put(SPHERE, new Sphere(20, 20, 0.7f));
+    meshMap.put(BOX, new Box(0.2f, 0.2f, 0.5f));
   }
 
   private static class DragTarget {
@@ -199,7 +97,7 @@ public class CharacterBoneApp extends SimpleApplication {
     }
 
     public Vector3f getPosition() {
-      return isStart ? bone.start : bone.end;
+      return isStart ? bone.getStart() : bone.getEnd();
     }
 
     public void setPosition(Vector3f p) {
@@ -217,13 +115,13 @@ public class CharacterBoneApp extends SimpleApplication {
     app.start();
   }
 
-  private Spatial camTarget;
+  private MyBone camTarget;
   private boolean cameraDragging;
   private float camDistance = 10;
   private float camElevation = 0;
   private float camAzimuth = 0;
-  private List<MyBone> bones = new ArrayList<>();
-  private Node allBones = new Node();
+  private List<MyBone> bones;
+  private Node boneSpatials = new Node();
 
   private DragTarget dragTarget;
   private Spatial dragPlane;
@@ -235,27 +133,25 @@ public class CharacterBoneApp extends SimpleApplication {
     flyCam.setEnabled(false);
     SimpleApplicationUtils.addLights(this);
     SimpleApplicationUtils.addCartoonEdges(this);
-    rootNode.attachChild(makeFloor());
+    rootNode.attachChild(BoneMeshUtils.makeFloor(makeColorMaterial(assetManager, ColorRGBA.Blue)));
     rootNode.attachChild(makeAxisIndicators());
-    rootNode.attachChild(allBones);
+    rootNode.attachChild(boneSpatials);
 
     try {
-      bones = readBones(FileUtils.readFileToString(BONE_FILE, BONE_FILE_ENCODING));
-    } catch (IOException e) {
+      bones = BoneSaveUtils.readBones(FileUtils.readFileToString(BONE_FILE, BONE_FILE_ENCODING));
+    } catch (Exception e) {
       e.printStackTrace();
-
+      bones = new ArrayList<>();
       System.err.println("Could not read bone file. Create default bone.");
-      MyBone bone = new MyBone();
-      bone.start = new Vector3f(0, 2, 0);
-      bone.end = new Vector3f(0, -1, 2);
-      bone.thickness = 0.2f;
-      bone.spatial = makeSphere();
+      MyBone bone = new MyBone(new Vector3f(0, 2, 0), new Vector3f(0, -1, 2), 0.2f, SPHERE);
       bones.add(bone);
     }
 
-    saveBones(bones);
+    camTarget = bones.get(0);
 
-    camTarget = bones.get(0).spatial;
+    for (MyBone bone : bones) {
+      addBoneSpatial(bone);
+    }
 
     inputManager.addMapping(Actions.ROTATE_LEFT_MOUSE, new MouseAxisTrigger(MouseInput.AXIS_X, true));
     inputManager.addMapping(Actions.ROTATE_RIGHT_MOUSE, new MouseAxisTrigger(MouseInput.AXIS_X, false));
@@ -321,20 +217,14 @@ public class CharacterBoneApp extends SimpleApplication {
             Vector3f attachPoint = findBoneCollisionPoint();
             if (attachPoint != null) {
               // create new bone
-              MyBone bone = new MyBone();
-              bone.start = attachPoint.clone();
-              bone.end = attachPoint.clone();
-              bone.thickness = 0.2f;
-              bone.spatial = makeSphere();
+              MyBone bone = new MyBone(attachPoint.clone(), attachPoint.clone(), 0.2f, SPHERE);
               bones.add(bone);
+              addBoneSpatial(bone);
               dragTarget = new DragTarget(bone, false);
 
-              MyBone bone2 = new MyBone();
-              bone2.start = getMirroredVector(attachPoint);
-              bone2.end = getMirroredVector(attachPoint);
-              bone2.thickness = 0.2f;
-              bone2.spatial = makeSphere();
+              MyBone bone2 = new MyBone(getMirroredVector(attachPoint), getMirroredVector(attachPoint), 0.2f, SPHERE);
               bones.add(bone2);
+              addBoneSpatial(bone2);
 
               bone.setMirrorBone(bone2);
               startDragging();
@@ -364,6 +254,14 @@ public class CharacterBoneApp extends SimpleApplication {
     }, Actions.SHOW_GUIDES);
   }
 
+  private void addBoneSpatial(MyBone bone) {
+    Mesh mesh = meshMap.get(bone.getMeshName());
+    final Geometry geom = new Geometry("ColoredMesh", mesh);
+    geom.setMaterial(makeColorMaterial(assetManager, ColorRGBA.White));
+    geom.setShadowMode(RenderQueue.ShadowMode.CastAndReceive);
+    boneSpatials.attachChild(geom);
+  }
+
 
   private void startDragging() {
     // start dragging
@@ -378,12 +276,12 @@ public class CharacterBoneApp extends SimpleApplication {
       rootNode.detachChild(dragPlanePreview);
     }
     // possibly remove mirror buddy if bones lie along X plane
-    if (dragTarget != null && dragTarget.bone.mirrorBone != null) {
+    if (dragTarget != null && dragTarget.bone.getMirrorBone() != null) {
       final float snapToXDistance = 0.3f;
-      if (FastMath.abs(dragTarget.bone.start.x) < snapToXDistance && FastMath.abs(dragTarget.bone.end.x) < snapToXDistance) {
-        removeBone(dragTarget.bone.mirrorBone);
-        dragTarget.bone.start.x = 0;
-        dragTarget.bone.end.x = 0;
+      if (FastMath.abs(dragTarget.bone.getStart().x) < snapToXDistance && FastMath.abs(dragTarget.bone.getEnd().x) < snapToXDistance) {
+        removeBone(dragTarget.bone.getMirrorBone());
+        dragTarget.bone.getStart().x = 0;
+        dragTarget.bone.getEnd().x = 0;
       }
     }
     dragPlane = null;
@@ -393,8 +291,7 @@ public class CharacterBoneApp extends SimpleApplication {
 
   public void removeBone(MyBone bone) {
     bone.setMirrorBone(null);
-    allBones.detachChild(bone.spatial);
-    guiNode.detachChild(bone.guiSpatial);
+    boneSpatials.detachChildAt(bones.indexOf(bone));
     bones.remove(bone);
   }
 
@@ -410,9 +307,9 @@ public class CharacterBoneApp extends SimpleApplication {
     CollisionResult collision = findBoneCollision();
     if (collision != null) {
       Geometry geom = collision.getGeometry();
-      for (MyBone bone : bones) {
-        if (bone.spatial == geom) {
-          return bone;
+      for (Spatial s : boneSpatials.getChildren()) {
+        if (s == geom) {
+          return bones.get(boneSpatials.getChildIndex(s));
         }
       }
     }
@@ -420,11 +317,8 @@ public class CharacterBoneApp extends SimpleApplication {
   }
 
   private CollisionResult findBoneCollision() {
-    for (MyBone bone : bones) {
-      allBones.attachChild(bone.spatial);
-    }
     CollisionResults results = new CollisionResults();
-    int i = allBones.collideWith(getCursorRay(), results);
+    int i = boneSpatials.collideWith(getCursorRay(), results);
     if (i > 0) {
       return results.getClosestCollision();
     }
@@ -435,12 +329,12 @@ public class CharacterBoneApp extends SimpleApplication {
     DragTarget best = null;
     float bestDist = 20;
     for (MyBone bone : bones) {
-      float distance = cursorDistanceTo(bone.start);
+      float distance = cursorDistanceTo(bone.getStart());
       if (distance < bestDist) {
         bestDist = distance;
         best = new DragTarget(bone, true);
       }
-      distance = cursorDistanceTo(bone.end);
+      distance = cursorDistanceTo(bone.getEnd());
       if (distance < bestDist) {
         bestDist = distance;
         best = new DragTarget(bone, false);
@@ -457,16 +351,16 @@ public class CharacterBoneApp extends SimpleApplication {
   private Spatial makeAxisIndicators() {
     Node n = new Node("AxisIndicators");
     float sz = 20;
-    Mesh m = makeGridMesh(sz, sz, 20, 20);
+    Mesh m = BoneMeshUtils.makeGridMesh(sz, sz, 20, 20);
     //n.attachChild(makeDragPlane(sz, m, makeLineMaterial(assetManager, ColorRGBA.Red), Vector3f.UNIT_Z, Vector3f.UNIT_X, Vector3f.ZERO));
     ColorRGBA color = new ColorRGBA(0.5f, 0.5f, 0, 0.2f);
-    n.attachChild(makeDragPlane(sz, m, makeLineMaterial(assetManager, color), Vector3f.UNIT_X, Vector3f.UNIT_Z, Vector3f.ZERO));
+    n.attachChild(BoneMeshUtils.makeDragPlane(sz, m, makeLineMaterial(assetManager, color), Vector3f.UNIT_X, Vector3f.UNIT_Z, Vector3f.ZERO));
     return n;
   }
 
   private Spatial makeDragPlanePreview() {
     float sz = 20;
-    Mesh m = makeGridMesh(sz, sz, 50, 50);
+    Mesh m = BoneMeshUtils.makeGridMesh(sz, sz, 50, 50);
     return makeDragPlane(sz, m, makeLineMaterial(assetManager, ColorRGBA.Red));
   }
 
@@ -478,42 +372,17 @@ public class CharacterBoneApp extends SimpleApplication {
 
   private Spatial makeDragPlane(float sz, Mesh mesh, Material material) {
     // mesh should be a plane [x=[0..sz],y=[0..sz],z=0]
-    Vector3f direction = getSnappedVector(cam.getDirection());
-    Vector3f left = getSnappedVector(cam.getLeft());
+    Vector3f direction = BoneMeshUtils.getAxisSnappedVector(cam.getDirection());
+    Vector3f left = BoneMeshUtils.getAxisSnappedVector(cam.getLeft());
     Vector3f center = dragTarget.getPosition();
 
     // non-mirrored bones only dragged along X-plane
-    if (dragTarget.bone.mirrorBone == null) {
+    if (dragTarget.bone.getMirrorBone() == null) {
       direction = Vector3f.UNIT_X;
       left = Vector3f.UNIT_Z;
     }
 
-    return makeDragPlane(sz, mesh, material, direction, left, center);
-  }
-
-  public static Vector3f[] AXES = new Vector3f[] {
-      Vector3f.UNIT_X, Vector3f.UNIT_Y, Vector3f.UNIT_Z,
-      Vector3f.UNIT_X.negate(), Vector3f.UNIT_Y.negate(), Vector3f.UNIT_Z.negate()};
-
-  public static Vector3f getSnappedVector(Vector3f v) {
-    double snapDist = 0.4;
-    for (Vector3f axis : AXES) {
-      if (v.distanceSquared(axis) < snapDist) {
-        return axis;
-      }
-    }
-    return v;
-  }
-
-  private static Spatial makeDragPlane(float sz, Mesh mesh, Material material, Vector3f direction, Vector3f left, Vector3f center) {
-    final Geometry geom = new Geometry("DragPlane", mesh);
-    geom.setMaterial(material);
-    geom.setLocalTranslation(-sz / 2, -sz / 2, 0);
-    Node node = new Node("DragPlane2");
-    node.attachChild(geom);
-    node.lookAt(direction.negate(), left);
-    node.setLocalTranslation(center);
-    return node;
+    return BoneMeshUtils.makeDragPlane(sz, mesh, material, direction, left, center);
   }
 
   @Override
@@ -541,83 +410,36 @@ public class CharacterBoneApp extends SimpleApplication {
   }
 
   private void updateBoneSpatials() {
+    guiNode.detachAllChildren();
+
+    int i = 0;
     for (MyBone b : bones) {
-      Transform t = transformBetween(b.start, b.end, Vector3f.UNIT_Z, b.thickness);
+      Transform t = BoneMeshUtils.transformBetween(b.getStart(), b.getEnd(), Vector3f.UNIT_Z, b.getThickness());
       if (Vector3f.isValidVector(t.getTranslation())) {
-        b.spatial.setLocalTransform(t);
-        allBones.attachChild(b.spatial);
+        boneSpatials.getChild(i).setLocalTransform(t);
       }
-
-      if (b.guiSpatial != null) {
-        guiNode.detachChild(b.guiSpatial);
-        b.guiSpatial = null;
-      }
+      i++;
     }
 
-    CollisionResult boneCollision = findBoneCollision();
-    if (boneCollision != null) {
-      Geometry geom = boneCollision.getGeometry();
-      for (MyBone b : bones) {
-        if (b.spatial == geom) {
-          Node gui = new Node();
+    MyBone b = findCurrentBone();
+    if (b != null) {
+      Node gui = new Node();
 
-          Vector3f screenStart = cam.getScreenCoordinates(b.start);
-          gui.attachChild(makeCircle(screenStart));
+      Vector3f screenStart = cam.getScreenCoordinates(b.getStart());
+      gui.attachChild(BoneMeshUtils.makeCircle(screenStart, guiFont));
 
-          Vector3f screenEnd = cam.getScreenCoordinates(b.end);
-          gui.attachChild(makeCircle(screenEnd));
-          gui.attachChild(makeLine(screenStart, screenEnd, ColorRGBA.Green));
-
-          b.guiSpatial = gui;
-          guiNode.attachChild(b.guiSpatial);
-          break;
-        }
-      }
+      Vector3f screenEnd = cam.getScreenCoordinates(b.getEnd());
+      gui.attachChild(BoneMeshUtils.makeCircle(screenEnd, guiFont));
+      gui.attachChild(BoneMeshUtils.makeLine(screenStart, screenEnd, makeLineMaterial(assetManager, ColorRGBA.Green)));
+      guiNode.attachChild(gui);
     }
 
-  }
-
-  private BitmapText makeCircle(Vector3f screenPos) {
-    BitmapText text = new BitmapText(guiFont, false);
-    text.setSize(guiFont.getCharSet().getRenderedSize() * 2);
-    text.setText("O");
-    text.setLocalTranslation(screenPos.add(-text.getLineWidth() / 2, text.getLineHeight() / 2, 0));
-    return text;
-  }
-
-  private Geometry makeLine(Vector3f screenStart, Vector3f screenEnd, ColorRGBA color) {
-    Line lineMesh = new Line(screenStart, screenEnd);
-    lineMesh.setLineWidth(2);
-    Geometry line = new Geometry("line", lineMesh);
-    line.setMaterial(makeLineMaterial(assetManager, color));
-    return line;
-  }
-
-  private Geometry makeArrow(Vector3f screenStart, Vector3f screenEnd, ColorRGBA color) {
-    Arrow lineMesh = new Arrow(screenEnd.subtract(screenStart));
-    lineMesh.setLineWidth(2);
-    Geometry line = new Geometry("line", lineMesh);
-    line.setLocalTranslation(screenStart);
-    line.setMaterial(makeLineMaterial(assetManager, color));
-    return line;
-  }
-
-  private Transform transformBetween(Vector3f start, Vector3f end, Vector3f front, float scale) {
-    Vector3f dir = start.subtract(end);
-    Vector3f left = dir.normalize().cross(front.normalize());
-    Vector3f ahead = dir.normalize().cross(left.normalize());
-
-    Quaternion q = new Quaternion();
-    q.fromAxes(left.normalize(), ahead.normalize(), dir.normalize());
-    return new Transform(
-        start.add(end).multLocal(0.5f), q,
-        new Vector3f(dir.length() * scale, dir.length() * scale, dir.length()));
   }
 
   private void setCameraPosition() {
     Quaternion quat = getCameraQuaternion();
     cam.setRotation(quat);
-    Vector3f camPos = camTarget.getWorldTranslation().clone();
+    Vector3f camPos = camTarget.getStart().add(camTarget.getEnd()).divideLocal(2);
     Vector3f lookDir = quat.mult(Vector3f.UNIT_Z);
     camPos.addLocal(lookDir.mult(-camDistance));
     cam.setLocation(camPos);
@@ -629,72 +451,15 @@ public class CharacterBoneApp extends SimpleApplication {
     return quat;
   }
 
-  public Spatial makeBox() {
-    Mesh m = new Box(0.2f, 0.2f, 0.5f);
-    final Geometry geom = new Geometry("ColoredMesh", m);
-    geom.setMaterial(makeColorMaterial(assetManager, ColorRGBA.White));
-    geom.setShadowMode(RenderQueue.ShadowMode.CastAndReceive);
-    return geom;
-  }
-
-  public Spatial makeSphere() {
-    Mesh m = new Sphere(20, 20, 0.7f);
-    final Geometry geom = new Geometry("ColoredMesh", m);
-    geom.setMaterial(makeColorMaterial(assetManager, ColorRGBA.White));
-    geom.setShadowMode(RenderQueue.ShadowMode.CastAndReceive);
-    return geom;
-  }
-
-  public Spatial makeFloor() {
-    Mesh m = new Quad(100, 100);
-    final Geometry geom = new Geometry("Floor", m);
-    geom.setMaterial(makeColorMaterial(assetManager, ColorRGBA.Blue));
-    geom.setShadowMode(RenderQueue.ShadowMode.Receive);
-    Matrix3f rot = new Matrix3f();
-    rot.fromAngleNormalAxis(3 * FastMath.PI / 2, Vector3f.UNIT_X);
-    geom.setLocalRotation(rot);
-    geom.setLocalTranslation(-50, -3, 50);
-    return geom;
-  }
-
-  public static Mesh makeGridMesh(float width, float height, int xsteps, int ysteps) {
-    Mesh mesh = new Mesh();
-    mesh.setMode(Mesh.Mode.Lines);
-    int lines = (xsteps + 1) + (ysteps + 1);
-    IntBuffer indexes = BufferUtils.createIntBuffer(lines * 2);
-    FloatBuffer vertexes = BufferUtils.createFloatBuffer(lines * 2 * 3);
-
-    int i = 0;
-    for (int x = 0; x <= xsteps; x++) {
-      float xpos = x * width / xsteps;
-      vertexes.put(xpos).put(0).put(0);
-      vertexes.put(xpos).put(height).put(0);
-      indexes.put(i).put(i + 1);
-      i += 2;
-    }
-    for (int y = 0; y <= ysteps; y++) {
-      float ypos = y * height / ysteps;
-      vertexes.put(0).put(ypos).put(0);
-      vertexes.put(width).put(ypos).put(0);
-      indexes.put(i).put(i + 1);
-      i += 2;
-    }
-
-    mesh.setBuffer(VertexBuffer.Type.Index, 2, indexes);
-    mesh.setBuffer(VertexBuffer.Type.Position, 3, vertexes);
-
-    mesh.updateBound();
-    mesh.setStatic();
-    return mesh;
-  }
-
   @Override
   public void destroy() {
     super.destroy();
-    try {
-      FileUtils.writeStringToFile(BONE_FILE, saveBones(bones), BONE_FILE_ENCODING);
-    } catch (IOException e) {
-      e.printStackTrace();
+    if (bones != null) {
+      try {
+        FileUtils.writeStringToFile(BONE_FILE, BoneSaveUtils.saveBones(bones), BONE_FILE_ENCODING);
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
     }
   }
 }
