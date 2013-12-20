@@ -7,10 +7,11 @@ import com.jme3.font.BitmapText;
 import com.jme3.input.KeyInput;
 import com.jme3.input.MouseInput;
 import com.jme3.input.controls.*;
+import com.jme3.material.Material;
 import com.jme3.math.*;
 import com.jme3.renderer.queue.RenderQueue;
 import com.jme3.scene.*;
-import com.jme3.scene.debug.WireBox;
+import com.jme3.scene.debug.Arrow;
 import com.jme3.scene.shape.Box;
 import com.jme3.scene.shape.Line;
 import com.jme3.scene.shape.Quad;
@@ -22,10 +23,13 @@ import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
+import static fi.haju.haju3d.client.SimpleApplicationUtils.makeColorMaterial;
+import static fi.haju.haju3d.client.SimpleApplicationUtils.makeLineMaterial;
+
 /**
  * TODO:
  * - RMB to create, LMB to edit
- * - LMB on empty to rotate
+ * X LMB on empty to rotate
  * - symmetrical editing (forced?)
  * - create bone endpoint inside mesh, not on surface (try to snap to a "good" location..)
  * - the bigger bone is, the deeper inside its endpoint needs to be; how to make it so that endpoint location
@@ -53,6 +57,10 @@ public class CharacterBoneApp extends SimpleApplication {
     public static final String ROTATE_RIGHT = "RotateRight";
     public static final String ROTATE_UP = "RotateUp";
     public static final String ROTATE_DOWN = "RotateDown";
+    public static final String ROTATE_LEFT_MOUSE = "RotateLeftMouse";
+    public static final String ROTATE_RIGHT_MOUSE = "RotateRightMouse";
+    public static final String ROTATE_UP_MOUSE = "RotateUpMouse";
+    public static final String ROTATE_DOWN_MOUSE = "RotateDownMouse";
     public static final String CLICK = "Click";
     public static final String RESIZE_DOWN = "ResizeDown";
     public static final String RESIZE_UP = "ResizeUp";
@@ -75,6 +83,7 @@ public class CharacterBoneApp extends SimpleApplication {
   }
 
   private Spatial camTarget;
+  private boolean cameraDragging;
   private float camDistance = 10;
   private float camElevation = 0;
   private float camAzimuth = 0;
@@ -91,15 +100,47 @@ public class CharacterBoneApp extends SimpleApplication {
     SimpleApplicationUtils.addLights(this);
     SimpleApplicationUtils.addCartoonEdges(this);
     rootNode.attachChild(makeFloor());
+    rootNode.attachChild(makeAxisIndicators());
 
     MyBone bone = new MyBone();
     bone.start = new Vector3f(0, 2, 0);
-    bone.end = new Vector3f(1, -1, 2);
+    bone.end = new Vector3f(0, -1, 2);
     bone.thickness = 0.2f;
     bone.spatial = makeSphere();
     bones.add(bone);
 
     camTarget = bone.spatial;
+
+    inputManager.addMapping(Actions.ROTATE_LEFT_MOUSE, new MouseAxisTrigger(MouseInput.AXIS_X, true));
+    inputManager.addMapping(Actions.ROTATE_RIGHT_MOUSE, new MouseAxisTrigger(MouseInput.AXIS_X, false));
+    inputManager.addMapping(Actions.ROTATE_UP_MOUSE, new MouseAxisTrigger(MouseInput.AXIS_Y, false));
+    inputManager.addMapping(Actions.ROTATE_DOWN_MOUSE, new MouseAxisTrigger(MouseInput.AXIS_Y, true));
+    inputManager.addListener(new AnalogListener() {
+      public static final float ROTATE_SPEED = 5;
+
+      @Override
+      public void onAnalog(String name, float value, float tpf) {
+        if (!cameraDragging) {
+          return;
+        }
+        float v = value * ROTATE_SPEED;
+        if (name.equals(Actions.ROTATE_LEFT_MOUSE)) {
+          camAzimuth -= v;
+        } else if (name.equals(Actions.ROTATE_RIGHT_MOUSE)) {
+          camAzimuth += v;
+        } else if (name.equals(Actions.ROTATE_DOWN_MOUSE)) {
+          camElevation -= v;
+          if (camElevation < -FastMath.PI / 2) {
+            camElevation = -FastMath.PI / 2;
+          }
+        } else if (name.equals(Actions.ROTATE_UP_MOUSE)) {
+          camElevation += v;
+          if (camElevation > FastMath.PI / 2) {
+            camElevation = FastMath.PI / 2;
+          }
+        }
+      }
+    }, Actions.ROTATE_LEFT_MOUSE, Actions.ROTATE_RIGHT_MOUSE, Actions.ROTATE_UP_MOUSE, Actions.ROTATE_DOWN_MOUSE);
 
     inputManager.addMapping(Actions.ROTATE_LEFT, new KeyTrigger(KeyInput.KEY_LEFT));
     inputManager.addMapping(Actions.ROTATE_RIGHT, new KeyTrigger(KeyInput.KEY_RIGHT));
@@ -110,17 +151,18 @@ public class CharacterBoneApp extends SimpleApplication {
 
       @Override
       public void onAnalog(String name, float value, float tpf) {
+        float v = value * ROTATE_SPEED;
         if (name.equals(Actions.ROTATE_LEFT)) {
-          camAzimuth -= value * ROTATE_SPEED;
+          camAzimuth -= v;
         } else if (name.equals(Actions.ROTATE_RIGHT)) {
-          camAzimuth += value * ROTATE_SPEED;
+          camAzimuth += v;
         } else if (name.equals(Actions.ROTATE_DOWN)) {
-          camElevation -= value * ROTATE_SPEED;
+          camElevation -= v;
           if (camElevation < -FastMath.PI / 2) {
             camElevation = -FastMath.PI / 2;
           }
         } else if (name.equals(Actions.ROTATE_UP)) {
-          camElevation += value * ROTATE_SPEED;
+          camElevation += v;
           if (camElevation > FastMath.PI / 2) {
             camElevation = FastMath.PI / 2;
           }
@@ -156,9 +198,9 @@ public class CharacterBoneApp extends SimpleApplication {
           if (dragTarget != null) {
             startDragging();
           } else {
-            // create new bone
             Vector3f attachPoint = findBoneAttachPoint();
             if (attachPoint != null) {
+              // create new bone
               MyBone bone = new MyBone();
               bone.start = attachPoint.clone();
               bone.end = attachPoint.clone();
@@ -167,14 +209,17 @@ public class CharacterBoneApp extends SimpleApplication {
               bones.add(bone);
               dragTarget = bone.end;
               startDragging();
+            } else {
+              // start moving camera
+              cameraDragging = true;
             }
           }
         } else {
           stopDragging();
+          cameraDragging = false;
         }
       }
     }, Actions.CLICK);
-
 
     inputManager.addMapping(Actions.SHOW_GUIDES, new KeyTrigger(KeyInput.KEY_SPACE));
     inputManager.addListener(new ActionListener() {
@@ -187,11 +232,12 @@ public class CharacterBoneApp extends SimpleApplication {
     }, Actions.SHOW_GUIDES);
   }
 
+
   private void startDragging() {
     // start dragging
     dragPlane = makeDragPlane();
-    //dragPlanePreview = makeDragPlanePreview();
-    //rootNode.attachChild(dragPlanePreview);
+//    dragPlanePreview = makeDragPlanePreview();
+//    rootNode.attachChild(dragPlanePreview);
   }
 
   private void stopDragging() {
@@ -261,27 +307,59 @@ public class CharacterBoneApp extends SimpleApplication {
     return new Vector2f(sc.x, sc.y).distance(inputManager.getCursorPosition());
   }
 
+  private Spatial makeAxisIndicators() {
+    Node n = new Node("AxisIndicators");
+    float sz = 20;
+    Mesh m = makeGridMesh(sz, sz, 20, 20);
+    //n.attachChild(makeDragPlane(sz, m, makeLineMaterial(assetManager, ColorRGBA.Red), Vector3f.UNIT_Z, Vector3f.UNIT_X, Vector3f.ZERO));
+    ColorRGBA color = new ColorRGBA(0.5f, 0.5f, 0, 0.2f);
+    n.attachChild(makeDragPlane(sz, m, makeLineMaterial(assetManager, color), Vector3f.UNIT_X, Vector3f.UNIT_Z, Vector3f.ZERO));
+    return n;
+  }
+
   private Spatial makeDragPlanePreview() {
     float sz = 20;
     Mesh m = makeGridMesh(sz, sz, 50, 50);
-    final Geometry geom = new Geometry("DragPlane", m);
-    geom.setMaterial(SimpleApplicationUtils.makeLineMaterial(assetManager, ColorRGBA.Red));
-    setDragPlaneTransform(sz, geom);
-    return geom;
+    return makeDragPlane(sz, m, makeLineMaterial(assetManager, ColorRGBA.Red));
   }
 
   private Spatial makeDragPlane() {
     float sz = 100;
     Mesh m = new Quad(sz, sz);
-    final Geometry geom = new Geometry("DragPlane", m);
-    geom.setMaterial(SimpleApplicationUtils.makeColorMaterial(assetManager, ColorRGBA.Red));
-    setDragPlaneTransform(sz, geom);
-    return geom;
+    return makeDragPlane(sz, m, makeColorMaterial(assetManager, ColorRGBA.Red));
   }
 
-  private void setDragPlaneTransform(float sz, Geometry geom) {
-    geom.lookAt(cam.getDirection().negate(), cam.getLeft());
-    geom.setLocalTranslation(dragTarget.add(cam.getLeft().multLocal(-sz / 2)).add(cam.getUp().multLocal(-sz / 2)));
+  private Spatial makeDragPlane(float sz, Mesh mesh, Material material) {
+    // mesh should be a plane [x=[0..sz],y=[0..sz],z=0]
+    Vector3f direction = getSnappedVector(cam.getDirection());
+    Vector3f left = getSnappedVector(cam.getLeft());
+    Vector3f center = dragTarget;
+    return makeDragPlane(sz, mesh, material, direction, left, center);
+  }
+
+  public static Vector3f[] AXES = new Vector3f[] {
+      Vector3f.UNIT_X, Vector3f.UNIT_Y, Vector3f.UNIT_Z,
+      Vector3f.UNIT_X.negate(), Vector3f.UNIT_Y.negate(), Vector3f.UNIT_Z.negate()};
+
+  public static Vector3f getSnappedVector(Vector3f v) {
+    double snapDist = 0.4;
+    for (Vector3f axis : AXES) {
+      if (v.distanceSquared(axis) < snapDist) {
+        return axis;
+      }
+    }
+    return v;
+  }
+
+  private static Spatial makeDragPlane(float sz, Mesh mesh, Material material, Vector3f direction, Vector3f left, Vector3f center) {
+    final Geometry geom = new Geometry("DragPlane", mesh);
+    geom.setMaterial(material);
+    geom.setLocalTranslation(-sz / 2, -sz / 2, 0);
+    Node node = new Node("DragPlane2");
+    node.attachChild(geom);
+    node.lookAt(direction.negate(), left);
+    node.setLocalTranslation(center);
+    return node;
   }
 
   @Override
@@ -340,7 +418,7 @@ public class CharacterBoneApp extends SimpleApplication {
   private BitmapText makeCircle(Vector3f screenPos) {
     BitmapText text = new BitmapText(guiFont, false);
     text.setSize(guiFont.getCharSet().getRenderedSize() * 2);
-    text.setText("i");
+    text.setText("O");
     text.setLocalTranslation(screenPos.add(-text.getLineWidth() / 2, text.getLineHeight() / 2, 0));
     return text;
   }
@@ -349,7 +427,16 @@ public class CharacterBoneApp extends SimpleApplication {
     Line lineMesh = new Line(screenStart, screenEnd);
     lineMesh.setLineWidth(2);
     Geometry line = new Geometry("line", lineMesh);
-    line.setMaterial(SimpleApplicationUtils.makeLineMaterial(assetManager, color));
+    line.setMaterial(makeLineMaterial(assetManager, color));
+    return line;
+  }
+
+  private Geometry makeArrow(Vector3f screenStart, Vector3f screenEnd, ColorRGBA color) {
+    Arrow lineMesh = new Arrow(screenEnd.subtract(screenStart));
+    lineMesh.setLineWidth(2);
+    Geometry line = new Geometry("line", lineMesh);
+    line.setLocalTranslation(screenStart);
+    line.setMaterial(makeLineMaterial(assetManager, color));
     return line;
   }
 
@@ -383,7 +470,7 @@ public class CharacterBoneApp extends SimpleApplication {
   public Spatial makeBox() {
     Mesh m = new Box(0.2f, 0.2f, 0.5f);
     final Geometry geom = new Geometry("ColoredMesh", m);
-    geom.setMaterial(SimpleApplicationUtils.makeColorMaterial(assetManager, ColorRGBA.White));
+    geom.setMaterial(makeColorMaterial(assetManager, ColorRGBA.White));
     geom.setShadowMode(RenderQueue.ShadowMode.CastAndReceive);
     return geom;
   }
@@ -391,7 +478,7 @@ public class CharacterBoneApp extends SimpleApplication {
   public Spatial makeSphere() {
     Mesh m = new Sphere(20, 20, 0.6f);
     final Geometry geom = new Geometry("ColoredMesh", m);
-    geom.setMaterial(SimpleApplicationUtils.makeColorMaterial(assetManager, ColorRGBA.White));
+    geom.setMaterial(makeColorMaterial(assetManager, ColorRGBA.White));
     geom.setShadowMode(RenderQueue.ShadowMode.CastAndReceive);
     return geom;
   }
@@ -399,7 +486,7 @@ public class CharacterBoneApp extends SimpleApplication {
   public Spatial makeFloor() {
     Mesh m = new Quad(100, 100);
     final Geometry geom = new Geometry("Floor", m);
-    geom.setMaterial(SimpleApplicationUtils.makeColorMaterial(assetManager, ColorRGBA.Blue));
+    geom.setMaterial(makeColorMaterial(assetManager, ColorRGBA.Blue));
     geom.setShadowMode(RenderQueue.ShadowMode.Receive);
     Matrix3f rot = new Matrix3f();
     rot.fromAngleNormalAxis(3 * FastMath.PI / 2, Vector3f.UNIT_X);
@@ -409,7 +496,6 @@ public class CharacterBoneApp extends SimpleApplication {
   }
 
   public Mesh makeGridMesh(float width, float height, int xsteps, int ysteps) {
-    Mesh m = new WireBox(5, 5, 5);
     Mesh mesh = new Mesh();
     mesh.setMode(Mesh.Mode.Lines);
     int lines = (xsteps + 1) + (ysteps + 1);
