@@ -67,6 +67,10 @@ public final class BoneMeshUtils {
     return line;
   }
 
+  public static Transform boneTransform(MyBone b) {
+    return transformBetween(b.getStart(), b.getEnd(), Vector3f.UNIT_Z, b.getThickness());
+  }
+
   public static Transform transformBetween(Vector3f start, Vector3f end, Vector3f front, float scale) {
     Vector3f dir = start.subtract(end);
     Vector3f left = dir.normalize().cross(front.normalize());
@@ -133,7 +137,7 @@ public final class BoneMeshUtils {
   }
 
 
-  private static class BoneGrid {
+  private static class BoneWorldGrid {
     private ByteArray3d grid;
     private Vector3i location;
   }
@@ -150,54 +154,97 @@ public final class BoneMeshUtils {
     //-each bone's world grid representation should be copied to single world grid that has simple binary value
     // for each cell
 
+    ByteArray3d boneMeshGrid = makeBoneMeshGrid();
 
-    //ByteArray3d boneGrid = new ByteArray3d(64, 64, 64);
+    float scale = 11;
+    System.out.println("buildMesh");
+    System.out.println("========================");
 
-    float scale = 5;
-
-    Vector3i minLocation = new Vector3i(Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE);
-    Vector3i maxLocation = new Vector3i(Integer.MIN_VALUE, Integer.MIN_VALUE, Integer.MIN_VALUE);
-
-    List<BoneGrid> boneGrids = new ArrayList<>();
+    List<BoneWorldGrid> boneWorldGrids = new ArrayList<>();
     for (MyBone bone : bones) {
-      Vector3f end = bone.getEnd().mult(scale);
-      Vector3f start = bone.getStart().mult(scale);
-      final int sz = (int) (end.distance(start));
-      BoneGrid bg = new BoneGrid();
-      bg.grid = new ByteArray3d(sz, sz, sz);
-      bg.location = new Vector3i(
-          (int) ((end.x + start.x) / 2 - sz / 2),
-          (int) ((end.y + start.y) / 2 - sz / 2),
-          (int) ((end.z + start.z) / 2 - sz / 2));
-      //System.out.println("grid: " + bg.grid.getWidth() + ", location:" + bg.location);
-      ByteArray3d grid = bg.grid;
+      System.out.println("bone: " + bone);
+      Transform transform = boneTransform(bone);
+      //bounding box needed for boneMeshGrid in world grid:
+      float bs = 0.7f;
+      Vector3f c1 = transform.transformVector(new Vector3f(-bs, -bs, -bs), null).multLocal(scale);
+      Vector3f c2 = transform.transformVector(new Vector3f(+bs, -bs, -bs), null).multLocal(scale);
+      Vector3f c3 = transform.transformVector(new Vector3f(-bs, +bs, -bs), null).multLocal(scale);
+      Vector3f c4 = transform.transformVector(new Vector3f(-bs, -bs, +bs), null).multLocal(scale);
+      Vector3f c5 = transform.transformVector(new Vector3f(+bs, +bs, -bs), null).multLocal(scale);
+      Vector3f c6 = transform.transformVector(new Vector3f(-bs, +bs, +bs), null).multLocal(scale);
+      Vector3f c7 = transform.transformVector(new Vector3f(+bs, -bs, +bs), null).multLocal(scale);
+      Vector3f c8 = transform.transformVector(new Vector3f(+bs, +bs, +bs), null).multLocal(scale);
+
+      Vector3f cmin = c1.clone();
+      cmin.minLocal(c2);
+      cmin.minLocal(c3);
+      cmin.minLocal(c4);
+      cmin.minLocal(c5);
+      cmin.minLocal(c6);
+      cmin.minLocal(c7);
+      cmin.minLocal(c8);
+      Vector3f cmax = c1.clone();
+      cmax.maxLocal(c2);
+      cmax.maxLocal(c3);
+      cmax.maxLocal(c4);
+      cmax.maxLocal(c5);
+      cmax.maxLocal(c6);
+      cmax.maxLocal(c7);
+      cmax.maxLocal(c8);
+
+      int xsize = (int) FastMath.ceil(cmax.x - cmin.x);
+      int ysize = (int) FastMath.ceil(cmax.y - cmin.y);
+      int zsize = (int) FastMath.ceil(cmax.z - cmin.z);
+      System.out.println("xsize = " + xsize);
+      System.out.println("ysize = " + ysize);
+      System.out.println("zsize = " + zsize);
+
+      BoneWorldGrid bwg2 = new BoneWorldGrid();
+      bwg2.grid = new ByteArray3d(xsize, ysize, zsize);
+      bwg2.location = new Vector3i(Math.round(cmin.x), Math.round(cmin.y), Math.round(cmin.z));
+
+      ByteArray3d grid = bwg2.grid;
       int w = grid.getWidth();
       int h = grid.getHeight();
       int d = grid.getDepth();
       for (int x = 0; x < w; x++) {
         for (int y = 0; y < h; y++) {
           for (int z = 0; z < d; z++) {
-            int xd = x - sz / 2;
-            int yd = y - sz / 2;
-            int zd = z - sz / 2;
-            int bsz = sz / 2;
-            byte v = xd * xd + yd * yd + zd * zd < bsz * bsz ? (byte) 1 : 0;
-            grid.set(x, y, z, v);
+            Vector3f v = new Vector3f(x, y, z).add(cmin).divide(scale);
+            Vector3f inv = transform.transformInverseVector(v, null);
+            if (inv.x > -bs && inv.x < bs &&
+                inv.y > -bs && inv.y < bs &&
+                inv.z > -bs && inv.z < bs) {
+
+              int bx = (int) ((inv.x - (-bs)) / (bs - (-bs)) * boneMeshGrid.getWidth());
+              int by = (int) ((inv.y - (-bs)) / (bs - (-bs)) * boneMeshGrid.getHeight());
+              int bz = (int) ((inv.z - (-bs)) / (bs - (-bs)) * boneMeshGrid.getDepth());
+
+              grid.set(x, y, z, boneMeshGrid.get(bx, by, bz));
+            }
           }
         }
       }
-      minLocation.x = Math.min(minLocation.x, bg.location.x);
-      minLocation.y = Math.min(minLocation.y, bg.location.y);
-      minLocation.z = Math.min(minLocation.z, bg.location.z);
-
-      maxLocation.x = Math.max(maxLocation.x, bg.location.x + bg.grid.getWidth());
-      maxLocation.y = Math.max(maxLocation.y, bg.location.y + bg.grid.getHeight());
-      maxLocation.z = Math.max(maxLocation.z, bg.location.z + bg.grid.getDepth());
-
-      boneGrids.add(bg);
+      boneWorldGrids.add(bwg2);
     }
 
-    ChunkCoordinateSystem chunkCoordinateSystem = new ChunkCoordinateSystem(64);
+    // find min and max location for all BoneWorldGrids
+    Vector3i minLocation = new Vector3i(Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE);
+    Vector3i maxLocation = new Vector3i(Integer.MIN_VALUE, Integer.MIN_VALUE, Integer.MIN_VALUE);
+    for (BoneWorldGrid bwg : boneWorldGrids) {
+      minLocation.x = Math.min(minLocation.x, bwg.location.x);
+      minLocation.y = Math.min(minLocation.y, bwg.location.y);
+      minLocation.z = Math.min(minLocation.z, bwg.location.z);
+
+      maxLocation.x = Math.max(maxLocation.x, bwg.location.x + bwg.grid.getWidth());
+      maxLocation.y = Math.max(maxLocation.y, bwg.location.y + bwg.grid.getHeight());
+      maxLocation.z = Math.max(maxLocation.z, bwg.location.z + bwg.grid.getDepth());
+    }
+
+    int requiredSize = Math.max(Math.max(maxLocation.x - minLocation.x, maxLocation.y - minLocation.y), maxLocation.z - minLocation.z);
+    System.out.println("requiredSize = " + requiredSize);
+
+    ChunkCoordinateSystem chunkCoordinateSystem = new ChunkCoordinateSystem(requiredSize);
     World world = new World(chunkCoordinateSystem);
     final int sz = chunkCoordinateSystem.getChunkSize();
 
@@ -213,12 +260,12 @@ public final class BoneMeshUtils {
     ChunkPosition cp = new ChunkPosition(0, 0, 0);
     Chunk chunk = new Chunk(sz, 0, cp);
 
-    for (BoneGrid bg : boneGrids) {
-      ByteArray3d grid = bg.grid;
+    for (BoneWorldGrid bwg : boneWorldGrids) {
+      ByteArray3d grid = bwg.grid;
       int w = grid.getWidth();
       int h = grid.getHeight();
       int d = grid.getDepth();
-      Vector3i offset = bg.location.subtract(minLocation);
+      Vector3i offset = bwg.location.subtract(minLocation);
       for (int x = 0; x < w; x++) {
         for (int y = 0; y < h; y++) {
           for (int z = 0; z < d; z++) {
@@ -235,6 +282,27 @@ public final class BoneMeshUtils {
     MyMesh myMesh = ChunkSpatialBuilder.makeCubeMesh(world, cp, light);
     ChunkSpatialBuilder.smoothMesh(myMesh);
     ChunkSpatialBuilder.prepareMesh(myMesh);
-    return new ChunkSpatialBuilder.SimpleMeshBuilder(myMesh, new Vector3f(-sz / 2, -sz / 2, -sz / 2), 0.1f).build();
+    return new ChunkSpatialBuilder.SimpleMeshBuilder(myMesh, new Vector3f(-sz / 2, -sz / 2, 0), 0.1f).build();
+  }
+
+  private static ByteArray3d makeBoneMeshGrid() {
+    int sz = 128;
+    ByteArray3d grid = new ByteArray3d(sz, sz, sz);
+    int w = grid.getWidth();
+    int h = grid.getHeight();
+    int d = grid.getDepth();
+    for (int x = 0; x < w; x++) {
+      for (int y = 0; y < h; y++) {
+        for (int z = 0; z < d; z++) {
+          int xd = x - sz / 2;
+          int yd = y - sz / 2;
+          int zd = z - sz / 2;
+          int bsz = sz / 2;
+          byte v = xd * xd + yd * yd + zd * zd < bsz * bsz ? (byte) 1 : 0;
+          grid.set(x, y, z, v);
+        }
+      }
+    }
+    return grid;
   }
 }

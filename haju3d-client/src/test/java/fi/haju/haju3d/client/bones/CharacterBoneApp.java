@@ -85,12 +85,12 @@ public class CharacterBoneApp extends SimpleApplication {
 
 
   private Map<String, Mesh> meshMap = new HashMap<>();
-  private static final String SPHERE = "SPHERE";
-  private static final String BOX = "BOX";
+  private static final String SPHERE_MESH = "SPHERE";
+  private static final String BOX_MESH = "BOX";
 
   {
-    meshMap.put(SPHERE, new Sphere(20, 20, 0.7f));
-    meshMap.put(BOX, new Box(0.2f, 0.2f, 0.5f));
+    meshMap.put(SPHERE_MESH, new Sphere(20, 20, 0.7f));
+    meshMap.put(BOX_MESH, new Box(0.2f, 0.2f, 0.5f));
   }
 
   private static class DragTarget {
@@ -123,7 +123,7 @@ public class CharacterBoneApp extends SimpleApplication {
 
   private MyBone camTarget;
   private boolean cameraDragging;
-  private float camDistance = 10;
+  private float camDistance = 15;
   private float camElevation = 0;
   private float camAzimuth = 0;
   private List<MyBone> bones;
@@ -155,7 +155,7 @@ public class CharacterBoneApp extends SimpleApplication {
       bones = new ArrayList<>();
 
       LOGGER.warn("Could not read bone file. Create default bone.");
-      MyBone bone = new MyBone(new Vector3f(0, 2, 0), new Vector3f(0, -1, 2), 0.2f, SPHERE);
+      MyBone bone = new MyBone(new Vector3f(0, 2, 0), new Vector3f(0, -1, 2), 0.2f, SPHERE_MESH);
       bones.add(bone);
     }
 
@@ -229,12 +229,12 @@ public class CharacterBoneApp extends SimpleApplication {
             Vector3f attachPoint = findBoneCollisionPoint();
             if (attachPoint != null) {
               // create new bone
-              MyBone bone = new MyBone(attachPoint.clone(), attachPoint.clone(), 0.2f, SPHERE);
+              MyBone bone = new MyBone(attachPoint.clone(), attachPoint.clone(), 0.2f, SPHERE_MESH);
               bones.add(bone);
               addBoneSpatial(bone);
               dragTarget = new DragTarget(bone, false);
 
-              MyBone bone2 = new MyBone(getMirroredVector(attachPoint), getMirroredVector(attachPoint), 0.2f, SPHERE);
+              MyBone bone2 = new MyBone(getMirroredVector(attachPoint), getMirroredVector(attachPoint), 0.2f, SPHERE_MESH);
               bones.add(bone2);
               addBoneSpatial(bone2);
 
@@ -283,12 +283,14 @@ public class CharacterBoneApp extends SimpleApplication {
             geom.setShadowMode(RenderQueue.ShadowMode.CastAndReceive);
             meshSpatial = geom;
             rootNode.attachChild(meshSpatial);
+            rootNode.detachChild(boneSpatials);
           } else {
             LOGGER.info("Hide mesh");
             if (meshSpatial != null) {
               rootNode.detachChild(meshSpatial);
               meshSpatial = null;
             }
+            rootNode.attachChild(boneSpatials);
           }
 
         }
@@ -476,7 +478,7 @@ public class CharacterBoneApp extends SimpleApplication {
 
     int i = 0;
     for (MyBone b : bones) {
-      Transform t = BoneMeshUtils.transformBetween(b.getStart(), b.getEnd(), Vector3f.UNIT_Z, b.getThickness());
+      Transform t = BoneMeshUtils.boneTransform(b);
       if (Vector3f.isValidVector(t.getTranslation())) {
         boneSpatials.getChild(i).setLocalTransform(t);
       }
