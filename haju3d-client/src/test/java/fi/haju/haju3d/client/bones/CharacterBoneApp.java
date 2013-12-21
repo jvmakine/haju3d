@@ -67,6 +67,7 @@ public class CharacterBoneApp extends SimpleApplication {
   public static final float MINIMUM_BONE_THICKNESS = 0.05f;
   public static final File BONE_FILE = new File("bones2.json");
   public static final Charset BONE_FILE_ENCODING = Charset.forName("UTF-8");
+  private Spatial axisIndicators;
 
   private static class Actions {
     public static final String ROTATE_LEFT_MOUSE = "RotateLeftMouse";
@@ -141,7 +142,10 @@ public class CharacterBoneApp extends SimpleApplication {
     SimpleApplicationUtils.addLights(this);
     SimpleApplicationUtils.addCartoonEdges(this);
     rootNode.attachChild(BoneMeshUtils.makeFloor(makeColorMaterial(assetManager, ColorRGBA.Blue)));
-    rootNode.attachChild(makeAxisIndicators());
+    axisIndicators = makeAxisIndicators();
+    if (showGuides) {
+      rootNode.attachChild(axisIndicators);
+    }
     rootNode.attachChild(boneSpatials);
 
     try {
@@ -257,6 +261,11 @@ public class CharacterBoneApp extends SimpleApplication {
       public void onAction(String name, boolean isPressed, float tpf) {
         if (isPressed) {
           showGuides = !showGuides;
+          if (showGuides) {
+            rootNode.attachChild(axisIndicators);
+          } else {
+            rootNode.detachChild(axisIndicators);
+          }
         }
       }
     }, Actions.SHOW_GUIDES);
