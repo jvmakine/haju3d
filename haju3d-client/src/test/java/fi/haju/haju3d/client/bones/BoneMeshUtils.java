@@ -16,11 +16,13 @@ import fi.haju.haju3d.client.ui.mesh.MyMesh;
 import fi.haju.haju3d.protocol.coordinate.ChunkPosition;
 import fi.haju.haju3d.protocol.coordinate.Vector3i;
 import fi.haju.haju3d.protocol.world.*;
+import fi.haju.haju3d.util.noise.InterpolationUtil;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 public final class BoneMeshUtils {
   private BoneMeshUtils() {
@@ -155,73 +157,16 @@ public final class BoneMeshUtils {
     // for each cell
 
     ByteArray3d boneMeshGrid = makeBoneMeshGrid();
-
-    float scale = 10;
-
+    float worldScale = 10;
     List<BoneWorldGrid> boneWorldGrids = new ArrayList<>();
     for (MyBone bone : bones) {
-      Transform transform = boneTransform(bone);
-      //bounding box needed for boneMeshGrid in world grid:
-      float bs = 0.7f;
-      Vector3f c1 = transform.transformVector(new Vector3f(-bs, -bs, -bs), null).multLocal(scale);
-      Vector3f c2 = transform.transformVector(new Vector3f(+bs, -bs, -bs), null).multLocal(scale);
-      Vector3f c3 = transform.transformVector(new Vector3f(-bs, +bs, -bs), null).multLocal(scale);
-      Vector3f c4 = transform.transformVector(new Vector3f(-bs, -bs, +bs), null).multLocal(scale);
-      Vector3f c5 = transform.transformVector(new Vector3f(+bs, +bs, -bs), null).multLocal(scale);
-      Vector3f c6 = transform.transformVector(new Vector3f(-bs, +bs, +bs), null).multLocal(scale);
-      Vector3f c7 = transform.transformVector(new Vector3f(+bs, -bs, +bs), null).multLocal(scale);
-      Vector3f c8 = transform.transformVector(new Vector3f(+bs, +bs, +bs), null).multLocal(scale);
-
-      Vector3f cmin = c1.clone();
-      cmin.minLocal(c2);
-      cmin.minLocal(c3);
-      cmin.minLocal(c4);
-      cmin.minLocal(c5);
-      cmin.minLocal(c6);
-      cmin.minLocal(c7);
-      cmin.minLocal(c8);
-      Vector3f cmax = c1.clone();
-      cmax.maxLocal(c2);
-      cmax.maxLocal(c3);
-      cmax.maxLocal(c4);
-      cmax.maxLocal(c5);
-      cmax.maxLocal(c6);
-      cmax.maxLocal(c7);
-      cmax.maxLocal(c8);
-
-      int xsize = (int) FastMath.ceil(cmax.x - cmin.x);
-      int ysize = (int) FastMath.ceil(cmax.y - cmin.y);
-      int zsize = (int) FastMath.ceil(cmax.z - cmin.z);
-
-      BoneWorldGrid bwg2 = new BoneWorldGrid();
-      bwg2.grid = new ByteArray3d(xsize, ysize, zsize);
-      bwg2.location = new Vector3i(Math.round(cmin.x), Math.round(cmin.y), Math.round(cmin.z));
-
-      ByteArray3d grid = bwg2.grid;
-      int w = grid.getWidth();
-      int h = grid.getHeight();
-      int d = grid.getDepth();
-      for (int x = 0; x < w; x++) {
-        for (int y = 0; y < h; y++) {
-          for (int z = 0; z < d; z++) {
-            Vector3f v = new Vector3f(x, y, z).add(cmin).divide(scale);
-            Vector3f inv = transform.transformInverseVector(v, null);
-            if (inv.x > -bs && inv.x < bs &&
-                inv.y > -bs && inv.y < bs &&
-                inv.z > -bs && inv.z < bs) {
-
-              int bx = (int) ((inv.x - (-bs)) / (bs - (-bs)) * boneMeshGrid.getWidth());
-              int by = (int) ((inv.y - (-bs)) / (bs - (-bs)) * boneMeshGrid.getHeight());
-              int bz = (int) ((inv.z - (-bs)) / (bs - (-bs)) * boneMeshGrid.getDepth());
-
-              grid.set(x, y, z, boneMeshGrid.get(bx, by, bz));
-            }
-          }
-        }
-      }
-      boneWorldGrids.add(bwg2);
+      boneWorldGrids.add(makeBoneWorldGrid(boneMeshGrid, worldScale, bone));
     }
+    final ByteArray3d resultGrid = makeResultGrid(boneWorldGrids);
+    return getMeshFromGrid(resultGrid, worldScale);
+  }
 
+  private static ByteArray3d makeResultGrid(List<BoneWorldGrid> boneWorldGrids) {
     // find min and max location for all BoneWorldGrids
     Vector3i minLocation = new Vector3i(Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE);
     Vector3i maxLocation = new Vector3i(Integer.MIN_VALUE, Integer.MIN_VALUE, Integer.MIN_VALUE);
@@ -238,21 +183,7 @@ public final class BoneMeshUtils {
     int requiredSize = Math.max(Math.max(maxLocation.x - minLocation.x, maxLocation.y - minLocation.y), maxLocation.z - minLocation.z);
     System.out.println("required grid size = " + requiredSize);
 
-    ChunkCoordinateSystem chunkCoordinateSystem = new ChunkCoordinateSystem(requiredSize);
-    World world = new World(chunkCoordinateSystem);
-    final int sz = chunkCoordinateSystem.getChunkSize();
-
-    for (int x = 0; x < 3; x++) {
-      for (int y = 0; y < 3; y++) {
-        for (int z = 0; z < 3; z++) {
-          ChunkPosition pos = new ChunkPosition(x - 1, y - 1, z - 1);
-          world.setChunk(pos, new Chunk(sz, 0, pos, Tile.AIR));
-        }
-      }
-    }
-
-    ChunkPosition cp = new ChunkPosition(0, 0, 0);
-    Chunk chunk = new Chunk(sz, 0, cp);
+    final ByteArray3d resultGrid = new ByteArray3d(requiredSize, requiredSize, requiredSize);
 
     for (BoneWorldGrid bwg : boneWorldGrids) {
       ByteArray3d grid = bwg.grid;
@@ -263,10 +194,38 @@ public final class BoneMeshUtils {
       for (int x = 0; x < w; x++) {
         for (int y = 0; y < h; y++) {
           for (int z = 0; z < d; z++) {
-            if (grid.get(x, y, z) > 0) {
-              chunk.set(x + offset.x, y + offset.y, z + offset.z, Tile.GROUND);
+            byte add = grid.get(x, y, z);
+            byte old = resultGrid.get(x + offset.x, y + offset.y, z + offset.z);
+            int newValue = (int) old + (int) add;
+            if (newValue > 63) {
+              newValue = 63;
             }
+            resultGrid.set(x + offset.x, y + offset.y, z + offset.z, (byte) newValue);
           }
+        }
+      }
+    }
+    return resultGrid;
+  }
+
+  private static Mesh getMeshFromGrid(final ByteArray3d resultGrid, float worldScale) {
+    final int sz = resultGrid.getWidth();
+    ChunkPosition cp = new ChunkPosition(0, 0, 0);
+    Chunk chunk = new Chunk(sz, 0, cp);
+    chunk.set(new Chunk.GetValue() {
+      @Override
+      public Tile getValue(int x, int y, int z) {
+        return resultGrid.get(x, y, z) > 32 ? Tile.GROUND : Tile.AIR;
+      }
+    });
+
+    ChunkCoordinateSystem chunkCoordinateSystem = new ChunkCoordinateSystem(sz);
+    World world = new World(chunkCoordinateSystem);
+    for (int x = 0; x < 3; x++) {
+      for (int y = 0; y < 3; y++) {
+        for (int z = 0; z < 3; z++) {
+          ChunkPosition pos = new ChunkPosition(x - 1, y - 1, z - 1);
+          world.setChunk(pos, new Chunk(sz, 0, pos, Tile.AIR));
         }
       }
     }
@@ -276,7 +235,71 @@ public final class BoneMeshUtils {
     MyMesh myMesh = ChunkSpatialBuilder.makeCubeMesh(world, cp, light);
     ChunkSpatialBuilder.smoothMesh(myMesh, 8);
     ChunkSpatialBuilder.prepareMesh(myMesh);
-    return new ChunkSpatialBuilder.SimpleMeshBuilder(myMesh, new Vector3f(-sz / 2, -sz / 2, 0), 1.0f / scale).build();
+    return new ChunkSpatialBuilder.SimpleMeshBuilder(myMesh, new Vector3f(-sz / 2, -sz / 2, 0), 1.0f / worldScale).build();
+  }
+
+  private static BoneWorldGrid makeBoneWorldGrid(ByteArray3d boneMeshGrid, float worldScale, MyBone bone) {
+    Transform transform = boneTransform(bone);
+    //bounding box needed for boneMeshGrid in world grid:
+    float bs = 1.0f;
+    Vector3f c1 = transform.transformVector(new Vector3f(-bs, -bs, -bs), null).multLocal(worldScale);
+    Vector3f c2 = transform.transformVector(new Vector3f(+bs, -bs, -bs), null).multLocal(worldScale);
+    Vector3f c3 = transform.transformVector(new Vector3f(-bs, +bs, -bs), null).multLocal(worldScale);
+    Vector3f c4 = transform.transformVector(new Vector3f(-bs, -bs, +bs), null).multLocal(worldScale);
+    Vector3f c5 = transform.transformVector(new Vector3f(+bs, +bs, -bs), null).multLocal(worldScale);
+    Vector3f c6 = transform.transformVector(new Vector3f(-bs, +bs, +bs), null).multLocal(worldScale);
+    Vector3f c7 = transform.transformVector(new Vector3f(+bs, -bs, +bs), null).multLocal(worldScale);
+    Vector3f c8 = transform.transformVector(new Vector3f(+bs, +bs, +bs), null).multLocal(worldScale);
+
+    Vector3f cmin = c1.clone();
+    cmin.minLocal(c2);
+    cmin.minLocal(c3);
+    cmin.minLocal(c4);
+    cmin.minLocal(c5);
+    cmin.minLocal(c6);
+    cmin.minLocal(c7);
+    cmin.minLocal(c8);
+    Vector3f cmax = c1.clone();
+    cmax.maxLocal(c2);
+    cmax.maxLocal(c3);
+    cmax.maxLocal(c4);
+    cmax.maxLocal(c5);
+    cmax.maxLocal(c6);
+    cmax.maxLocal(c7);
+    cmax.maxLocal(c8);
+
+    int xsize = (int) FastMath.ceil(cmax.x - cmin.x);
+    int ysize = (int) FastMath.ceil(cmax.y - cmin.y);
+    int zsize = (int) FastMath.ceil(cmax.z - cmin.z);
+
+    BoneWorldGrid bwg2 = new BoneWorldGrid();
+    bwg2.grid = new ByteArray3d(xsize, ysize, zsize);
+    bwg2.location = new Vector3i(Math.round(cmin.x), Math.round(cmin.y), Math.round(cmin.z));
+
+    ByteArray3d grid = bwg2.grid;
+    int w = grid.getWidth();
+    int h = grid.getHeight();
+    int d = grid.getDepth();
+    for (int x = 0; x < w; x++) {
+      for (int y = 0; y < h; y++) {
+        for (int z = 0; z < d; z++) {
+          Vector3f v = new Vector3f(x, y, z).add(cmin).divide(worldScale);
+          Vector3f inv = transform.transformInverseVector(v, null);
+          float eps = 0.001f;
+          if (inv.x > -bs + eps && inv.x < bs - eps &&
+              inv.y > -bs + eps && inv.y < bs - eps &&
+              inv.z > -bs + eps && inv.z < bs - eps) {
+
+            int bx = (int) ((inv.x - (-bs)) / (bs - (-bs)) * boneMeshGrid.getWidth());
+            int by = (int) ((inv.y - (-bs)) / (bs - (-bs)) * boneMeshGrid.getHeight());
+            int bz = (int) ((inv.z - (-bs)) / (bs - (-bs)) * boneMeshGrid.getDepth());
+
+            grid.set(x, y, z, boneMeshGrid.get(bx, by, bz));
+          }
+        }
+      }
+    }
+    return bwg2;
   }
 
   private static ByteArray3d makeBoneMeshGrid() {
@@ -285,18 +308,81 @@ public final class BoneMeshUtils {
     int w = grid.getWidth();
     int h = grid.getHeight();
     int d = grid.getDepth();
+
+    FloatArray3d noise = make3dPerlinNoise(0, sz, sz, sz);
+
     for (int x = 0; x < w; x++) {
       for (int y = 0; y < h; y++) {
         for (int z = 0; z < d; z++) {
           int xd = x - sz / 2;
           int yd = y - sz / 2;
           int zd = z - sz / 2;
-          int bsz = sz / 2;
-          byte v = xd * xd + yd * yd + zd * zd < bsz * bsz ? (byte) 1 : 0;
-          grid.set(x, y, z, v);
+          int bsz = sz / 3;
+          int value = bsz - (int) FastMath.sqrt(xd * xd + yd * yd + zd * zd);
+
+          value = (value * 2) + 32;
+
+          //x-symmetric noise
+          value += noise.get(Math.abs(sz / 2 - x), y, z) * 3;
+          if (value < 0) value = 0;
+          if (value > 63) value = 63;
+
+          grid.set(x, y, z, (byte) value);
         }
       }
     }
     return grid;
+  }
+
+
+  private static FloatArray3d make3dPerlinNoise(long seed, int w, int h, int d) {
+    Random random = new Random(seed);
+    FloatArray3d data = new FloatArray3d(w, h, d);
+    for (int scale = 4; scale != 128; scale *= 2) {
+      add3dNoise(random, data, scale, (float) Math.pow(0.5f * scale * 1.0f, 1.0f));
+    }
+    return data;
+  }
+
+  private static void add3dNoise(final Random random, FloatArray3d data, int scale, final float amp) {
+    int w = data.getWidth();
+    int h = data.getHeight();
+    int d = data.getDepth();
+
+    int nw = w / scale + 2;
+    int nh = h / scale + 2;
+    int nd = d / scale + 2;
+
+    FloatArray3d noise = new FloatArray3d(nw, nh, nd, new FloatArray3d.Initializer() {
+      @Override
+      public float getValue(int x, int y, int z) {
+        return (float) ((random.nextDouble() - 0.5) * amp);
+      }
+    });
+
+    for (int z = 0; z < d; z++) {
+      float zt = (float) (z % scale) / scale;
+      int zs = z / scale;
+      for (int y = 0; y < h; y++) {
+        float yt = (float) (y % scale) / scale;
+        int ys = y / scale;
+        for (int x = 0; x < w; x++) {
+          float xt = (float) (x % scale) / scale;
+          int xs = x / scale;
+
+          float n1 = noise.get(xs, ys, zs);
+          float n2 = noise.get(xs + 1, ys, zs);
+          float n3 = noise.get(xs, ys + 1, zs);
+          float n4 = noise.get(xs + 1, ys + 1, zs);
+
+          float n5 = noise.get(xs, ys, zs + 1);
+          float n6 = noise.get(xs + 1, ys, zs + 1);
+          float n7 = noise.get(xs, ys + 1, zs + 1);
+          float n8 = noise.get(xs + 1, ys + 1, zs + 1);
+
+          data.add(x, y, z, InterpolationUtil.interpolateLinear3d(xt, yt, zt, n1, n2, n3, n4, n5, n6, n7, n8));
+        }
+      }
+    }
   }
 }
