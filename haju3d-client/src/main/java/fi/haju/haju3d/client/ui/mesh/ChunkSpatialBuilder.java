@@ -37,7 +37,7 @@ import java.util.*;
 
 @Singleton
 public class ChunkSpatialBuilder {
-  public static final int SMOOTH_BUFFER = 2;
+  public static final int SMOOTH_STEPS = 2;
   private static final Logger LOGGER = LoggerFactory.getLogger(ChunkSpatialBuilder.class);
   private Material lowMaterial;
   private Material highMaterial;
@@ -515,8 +515,8 @@ public class ChunkSpatialBuilder {
       GlobalTilePosition w1o = world.getChunkCoordinateSystem().getWorldPosition(chunkPosition);
       GlobalTilePosition w2o = world.getChunkCoordinateSystem().getWorldPosition(chunkPosition.add(1, 1, 1));
 
-      GlobalTilePosition w1 = w1o.add(-SMOOTH_BUFFER, -SMOOTH_BUFFER, -SMOOTH_BUFFER);
-      GlobalTilePosition w2 = w2o.add(SMOOTH_BUFFER, SMOOTH_BUFFER, SMOOTH_BUFFER);
+      GlobalTilePosition w1 = w1o.add(-SMOOTH_STEPS, -SMOOTH_STEPS, -SMOOTH_STEPS);
+      GlobalTilePosition w2 = w2o.add(SMOOTH_STEPS, SMOOTH_STEPS, SMOOTH_STEPS);
 
       for (int z = w1.z; z < w2.z; z++) {
         for (int y = w1.y; y < w2.y; y++) {
@@ -620,7 +620,11 @@ public class ChunkSpatialBuilder {
   }
 
   public static void smoothMesh(MyMesh myMesh) {
-    for (int i = 0; i < SMOOTH_BUFFER; i++) {
+    smoothMesh(myMesh, SMOOTH_STEPS);
+  }
+
+  public static void smoothMesh(MyMesh myMesh, int smoothSteps) {
+    for (int i = 0; i < smoothSteps; i++) {
       List<PositionChange> newPos = new ArrayList<>(myMesh.vertexFaces.size());
       for (MyFace f : myMesh.faces) {
         f.calcCenter();
@@ -629,7 +633,7 @@ public class ChunkSpatialBuilder {
         MyVertex vertex = e.getKey();
         Vector3f sum = Vector3f.ZERO.clone();
         List<MyFaceAndIndex> faces = e.getValue();
-        int maxSmooths = SMOOTH_BUFFER;
+        int maxSmooths = smoothSteps;
         for (MyFaceAndIndex f : faces) {
           sum.addLocal(f.face.center);
           maxSmooths = Math.min(TileRenderPropertyProvider.getProperties(f.face.tile).getMaxSmooths(), maxSmooths);

@@ -14,7 +14,7 @@ public final class TileRenderPropertyProvider {
           0,
           Lists.newArrayList(MyTexture.BRICK)))
       .put(Tile.GROUND, new TileProperties(
-          3,
+          10,
           Lists.newArrayList(MyTexture.GRASS, MyTexture.GRASS2),
           Lists.newArrayList(MyTexture.DIRT)))
       .put(Tile.ROCK, new TileProperties(

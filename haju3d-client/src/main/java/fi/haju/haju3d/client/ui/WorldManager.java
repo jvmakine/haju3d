@@ -7,7 +7,6 @@ import com.jme3.collision.CollisionResults;
 import com.jme3.math.Ray;
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Spatial;
-
 import fi.haju.haju3d.client.ClientSettings;
 import fi.haju.haju3d.client.chunk.ChunkProvider;
 import fi.haju.haju3d.client.chunk.light.ChunkLightManager;
@@ -215,10 +214,10 @@ public class WorldManager {
       int x = tile.getTileWithinChunk().x;
       int y = tile.getTileWithinChunk().y;
       int z = tile.getTileWithinChunk().z;
-      
+
       chunk.set(x, y, z, edit.getNewTile());
       Set<ChunkPosition> toBeUpdated = Sets.newHashSet(tile.getChunkPosition());
-      
+
       if (edit.getNewTile() == Tile.AIR) {
         toBeUpdated.addAll(lightingManager.removeOpaqueBlock(new TilePosition(chunk.getPosition(), new LocalTilePosition(x, y, z))));
       } else if (edit.getNewTile() != Tile.AIR) {
@@ -227,22 +226,22 @@ public class WorldManager {
       spatialsToUpdate.addAll(toBeUpdated);
 
       // Update also the bordering chunks if necessary
-      if (x < ChunkSpatialBuilder.SMOOTH_BUFFER) {
+      if (x < ChunkSpatialBuilder.SMOOTH_STEPS) {
         spatialsToUpdate.add(tile.getChunkPosition().add(-1, 0, 0));
       }
-      if (x >= chunkCoordinateSystem.getChunkSize() - ChunkSpatialBuilder.SMOOTH_BUFFER) {
+      if (x >= chunkCoordinateSystem.getChunkSize() - ChunkSpatialBuilder.SMOOTH_STEPS) {
         spatialsToUpdate.add(tile.getChunkPosition().add(1, 0, 0));
       }
-      if (y < ChunkSpatialBuilder.SMOOTH_BUFFER) {
+      if (y < ChunkSpatialBuilder.SMOOTH_STEPS) {
         spatialsToUpdate.add(tile.getChunkPosition().add(0, -1, 0));
       }
-      if (y >= chunkCoordinateSystem.getChunkSize() - ChunkSpatialBuilder.SMOOTH_BUFFER) {
+      if (y >= chunkCoordinateSystem.getChunkSize() - ChunkSpatialBuilder.SMOOTH_STEPS) {
         spatialsToUpdate.add(tile.getChunkPosition().add(0, 1, 0));
       }
-      if (z < ChunkSpatialBuilder.SMOOTH_BUFFER) {
+      if (z < ChunkSpatialBuilder.SMOOTH_STEPS) {
         spatialsToUpdate.add(tile.getChunkPosition().add(0, 0, -1));
       }
-      if (z >= chunkCoordinateSystem.getChunkSize() - ChunkSpatialBuilder.SMOOTH_BUFFER) {
+      if (z >= chunkCoordinateSystem.getChunkSize() - ChunkSpatialBuilder.SMOOTH_STEPS) {
         spatialsToUpdate.add(tile.getChunkPosition().add(0, 0, 1));
       }
     }

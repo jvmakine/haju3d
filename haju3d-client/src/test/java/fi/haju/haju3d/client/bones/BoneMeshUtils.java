@@ -156,13 +156,10 @@ public final class BoneMeshUtils {
 
     ByteArray3d boneMeshGrid = makeBoneMeshGrid();
 
-    float scale = 11;
-    System.out.println("buildMesh");
-    System.out.println("========================");
+    float scale = 10;
 
     List<BoneWorldGrid> boneWorldGrids = new ArrayList<>();
     for (MyBone bone : bones) {
-      System.out.println("bone: " + bone);
       Transform transform = boneTransform(bone);
       //bounding box needed for boneMeshGrid in world grid:
       float bs = 0.7f;
@@ -195,9 +192,6 @@ public final class BoneMeshUtils {
       int xsize = (int) FastMath.ceil(cmax.x - cmin.x);
       int ysize = (int) FastMath.ceil(cmax.y - cmin.y);
       int zsize = (int) FastMath.ceil(cmax.z - cmin.z);
-      System.out.println("xsize = " + xsize);
-      System.out.println("ysize = " + ysize);
-      System.out.println("zsize = " + zsize);
 
       BoneWorldGrid bwg2 = new BoneWorldGrid();
       bwg2.grid = new ByteArray3d(xsize, ysize, zsize);
@@ -242,7 +236,7 @@ public final class BoneMeshUtils {
     }
 
     int requiredSize = Math.max(Math.max(maxLocation.x - minLocation.x, maxLocation.y - minLocation.y), maxLocation.z - minLocation.z);
-    System.out.println("requiredSize = " + requiredSize);
+    System.out.println("required grid size = " + requiredSize);
 
     ChunkCoordinateSystem chunkCoordinateSystem = new ChunkCoordinateSystem(requiredSize);
     World world = new World(chunkCoordinateSystem);
@@ -280,9 +274,9 @@ public final class BoneMeshUtils {
 
     ChunkLightManager light = new ChunkLightManager();
     MyMesh myMesh = ChunkSpatialBuilder.makeCubeMesh(world, cp, light);
-    ChunkSpatialBuilder.smoothMesh(myMesh);
+    ChunkSpatialBuilder.smoothMesh(myMesh, 8);
     ChunkSpatialBuilder.prepareMesh(myMesh);
-    return new ChunkSpatialBuilder.SimpleMeshBuilder(myMesh, new Vector3f(-sz / 2, -sz / 2, 0), 0.1f).build();
+    return new ChunkSpatialBuilder.SimpleMeshBuilder(myMesh, new Vector3f(-sz / 2, -sz / 2, 0), 1.0f / scale).build();
   }
 
   private static ByteArray3d makeBoneMeshGrid() {
