@@ -10,19 +10,13 @@ Run Client in haju3d-client project with
 
 Key bindings in client:
 
-ESC : Exit the client
-
-F : Change between fullscreen and windowed modes.
-
-A S D W : Move the camera/character
-
-SPACE : Jump
-
-F1 : Set FlyCam mode
-F2 : Set First Person perspective mode
-F3 : Set Third Person perspective mode
-
-+ : Change build material
-
-Left Mouse Button : Dig
-Right Mouse button : Build
+* ESC : Exit the client
+* F : Change between fullscreen and windowed modes.
+* A S D W : Move the camera/character
+* SPACE : Jump
+* F1 : Set FlyCam mode
+* F2 : Set First Person perspective mode
+* F3 : Set Third Person perspective mode
+* + : Change build material
+* Left Mouse Button : Dig
+* Right Mouse button : Build
