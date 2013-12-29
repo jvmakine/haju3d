@@ -145,10 +145,12 @@ public final class BoneMeshUtils {
     private Vector3i location;
   }
 
+  private static final int MAX_BONES_PER_TILE = 4;
+
   private static class ResultGrid {
     private ByteArray3d dataGrid;
-    private ByteArray3d[] boneIndexGrid = new ByteArray3d[4];
-    private ByteArray3d[] boneWeightGrid = new ByteArray3d[4];
+    private ByteArray3d[] boneIndexGrid = new ByteArray3d[MAX_BONES_PER_TILE];
+    private ByteArray3d[] boneWeightGrid = new ByteArray3d[MAX_BONES_PER_TILE];
   }
 
   public static Mesh buildMesh(List<MyBone> bones) {
@@ -192,7 +194,7 @@ public final class BoneMeshUtils {
 
     ResultGrid resultGrid = new ResultGrid();
     resultGrid.dataGrid = new ByteArray3d(requiredSize, requiredSize, requiredSize);
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < MAX_BONES_PER_TILE; i++) {
       resultGrid.boneIndexGrid[i] = new ByteArray3d(requiredSize, requiredSize, requiredSize);
       resultGrid.boneWeightGrid[i] = new ByteArray3d(requiredSize, requiredSize, requiredSize);
     }
@@ -220,8 +222,15 @@ public final class BoneMeshUtils {
               }
               dataGrid.set(pos, (byte) newValue);
 
-              resultGrid.boneIndexGrid[0].set(pos, (byte) boneIndex);
-              resultGrid.boneWeightGrid[0].set(pos, (byte) 1);
+              // assign bone weight in next free slot in boneWeightGrid
+              int bcount = 0;
+              while (bcount < MAX_BONES_PER_TILE && resultGrid.boneWeightGrid[bcount].get(pos) != 0) {
+                bcount++;
+              }
+              if (bcount < MAX_BONES_PER_TILE) {
+                resultGrid.boneIndexGrid[bcount].set(pos, (byte) boneIndex);
+                resultGrid.boneWeightGrid[bcount].set(pos, add);
+              }
             }
           }
         }
@@ -297,24 +306,27 @@ public final class BoneMeshUtils {
       putBoneData(weights, indices, myMesh.vertexFaces.get(face.v4), resultGrid);
     }
 
-    mesh.setMaxNumWeights(1);
+    mesh.setMaxNumWeights(MAX_BONES_PER_TILE);
 
     return mesh;
   }
 
   private static void putBoneData(FloatBuffer weights, ByteBuffer indices, List<MyMesh.MyFaceAndIndex> myFaceAndIndexes, ResultGrid resultGrid) {
     Vector3i wp = myFaceAndIndexes.get(0).face.worldPos;
-    byte boneIndex = resultGrid.boneIndexGrid[0].get(wp);
+    float sumWeights = 0;
+    for (int i = 0; i < MAX_BONES_PER_TILE; i++) {
+      sumWeights += resultGrid.boneWeightGrid[i].get(wp);
+    }
 
-    indices.put((byte) boneIndex);
-    indices.put((byte) 0);
-    indices.put((byte) 0);
-    indices.put((byte) 0);
+    indices.put(resultGrid.boneIndexGrid[0].get(wp));
+    indices.put(resultGrid.boneIndexGrid[1].get(wp));
+    indices.put(resultGrid.boneIndexGrid[2].get(wp));
+    indices.put(resultGrid.boneIndexGrid[3].get(wp));
 
-    weights.put(1.0f);
-    weights.put(0.0f);
-    weights.put(0.0f);
-    weights.put(0.0f);
+    weights.put(resultGrid.boneWeightGrid[0].get(wp) / sumWeights);
+    weights.put(resultGrid.boneWeightGrid[1].get(wp) / sumWeights);
+    weights.put(resultGrid.boneWeightGrid[2].get(wp) / sumWeights);
+    weights.put(resultGrid.boneWeightGrid[3].get(wp) / sumWeights);
   }
 
   private static Random r = new Random(0L);

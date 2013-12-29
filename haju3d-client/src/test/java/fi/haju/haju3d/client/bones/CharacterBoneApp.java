@@ -48,14 +48,14 @@ import static fi.haju.haju3d.client.SimpleApplicationUtils.makeLineMaterial;
  * - IK animation on bones
  * - quick way to create a leg or an arm (both consist of 3 bones)
  * - texturing
- *
+ * <p/>
  * Bone snapping:
  * - create bone endpoint inside mesh, not on surface (try to snap to a "good" location..)
  * - the bigger bone is, the deeper inside its endpoint needs to be; how to make it so that endpoint location
  * is fixed regardless of bone size?
  * - or maybe endpoint should be on surface, but bone mesh extends beyond endpoint?
  * - maybe endpoint should always be forced on surface, no free movement allowed?
- *
+ * <p/>
  * Done
  * - ability to delete bones
  * - save/load bones
@@ -512,8 +512,6 @@ public class CharacterBoneApp extends SimpleApplication {
         Quaternion rotation = b.getWorldBindInverseRotation().mult(transform.getRotation());
         Vector3f translation = b.getWorldBindInversePosition().add(transform.getTranslation());
         b.setUserTransforms(translation, rotation, scale);
-        //meshSkeleton.getBone(i).setUserTransformsWorld(transform.getTranslation(), transform.getRotation());
-        //meshSkeleton.getBone(i).setUserTransforms(Vector3f.ZERO, meshRotation, Vector3f.UNIT_XYZ);
         i++;
       }
 
