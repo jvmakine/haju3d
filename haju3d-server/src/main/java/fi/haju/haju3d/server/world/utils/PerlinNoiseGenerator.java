@@ -21,13 +21,13 @@ public final class PerlinNoiseGenerator {
   private final NoiseLevel[] levels; 
   
   private final static class NoiseLevel {
-    public final int size;
+    public final int sizeLog2;
     public final float amplitude;
     public final Map<Vector3i, FloatArray3d> data = Maps.newHashMap();
     public final Random random;
     
-    public NoiseLevel(int size, float amplitude, Random random) {
-      this.size = size;
+    public NoiseLevel(int sizeLog2, float amplitude, Random random) {
+      this.sizeLog2 = sizeLog2;
       this.amplitude = amplitude;
       this.random = random;
     }
@@ -43,9 +43,9 @@ public final class PerlinNoiseGenerator {
       
       public float getValueAt(int x, int y, int z) {
         // efficient integer division with rounding towards -inf
-        int gx = x >= 0 ? x/size : ~(~x / size);
-        int gy = y >= 0 ? y/size : ~(~y / size);
-        int gz = z >= 0 ? z/size : ~(~z / size);
+        int gx = x >= 0 ? (x >> sizeLog2) : ~(~x >> sizeLog2);
+        int gy = y >= 0 ? (y >> sizeLog2) : ~(~y >> sizeLog2);
+        int gz = z >= 0 ? (z >> sizeLog2) : ~(~z >> sizeLog2);
         if(gx != lastx || gy != lasty || gz != lastz) {
           Vector3i pos = new Vector3i(gx, gy, gz);
           makeIfDoesNotExist(pos);
@@ -54,7 +54,7 @@ public final class PerlinNoiseGenerator {
           lasty = gy;
           lastz = gz;
         }
-        return amplitude * array.get(x - gx*size, y - gy*size, z - gz*size);
+        return amplitude * array.get(x - (gx << sizeLog2), y - (gy << sizeLog2), z - (gz << sizeLog2));
       }
       
     }
@@ -78,7 +78,7 @@ public final class PerlinNoiseGenerator {
     
     private void makeIfDoesNotExist(Vector3i pos) {
       if(data.containsKey(pos)) return;
-      data.put(pos, new FloatArray3d(size, size, size, random));
+      data.put(pos, new FloatArray3d(1 << sizeLog2, 1 << sizeLog2, 1 << sizeLog2, random));
     }
     
   }
@@ -96,7 +96,7 @@ public final class PerlinNoiseGenerator {
     for(int level = 1; level <= numberOfLevels; ++level) {
       NoiseLevel noise = levels[level-1];
       if(noise == null) {
-        noise = new NoiseLevel(16, level*LEVEL_AMPLITUDE_MULTIPLIER, random);
+        noise = new NoiseLevel(4, level*LEVEL_AMPLITUDE_MULTIPLIER, random);
         levels[level-1] = noise;
       }
       value += noise.getValueAt(x/(float)size, y/(float)size, z/(float)size);
@@ -122,7 +122,7 @@ public final class PerlinNoiseGenerator {
       float min = Float.MAX_VALUE;
       NoiseLevel level = levels[i-1];
       if(level == null) {
-        level = new NoiseLevel(16, i*LEVEL_AMPLITUDE_MULTIPLIER, random);
+        level = new NoiseLevel(4, i*LEVEL_AMPLITUDE_MULTIPLIER, random);
         levels[i-1] = level;
       }
       for(Vector3i v : corners) {
@@ -154,7 +154,7 @@ public final class PerlinNoiseGenerator {
       float max = Float.MIN_VALUE;
       NoiseLevel level = levels[i-1];
       if(level == null) {
-        level = new NoiseLevel(16, i*LEVEL_AMPLITUDE_MULTIPLIER, random);
+        level = new NoiseLevel(4, i*LEVEL_AMPLITUDE_MULTIPLIER, random);
         levels[i-1] = level;
       }
       for(Vector3i v : corners) {

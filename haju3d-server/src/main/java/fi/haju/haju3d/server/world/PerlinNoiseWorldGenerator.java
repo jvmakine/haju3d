@@ -53,7 +53,7 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
     }
     float maxVal = generator.getMaxValue(wp, size);
     if(maxVal + position.y*(size) < TERRAIN_THRESHOLD) {
-      return new Chunk(size, seed, position, Tile.GROUND);
+      return new Chunk(size, seed, position, Tile.ROCK);
     }
     Chunk chunk = new Chunk(size, seed, position);
     for (int x = 0; x < size; x++) {
@@ -64,7 +64,6 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
           int rz = z + position.z*size;
           float v = ry + generator.getValueAt(rx, ry, rz);
           float tv = typeGenerator.getValueAt(rx, ry, rz);
-          // TODO Type from noise
           Tile tile = v < TERRAIN_THRESHOLD ? getGround(tv) : Tile.AIR;
           if(tile != Tile.AIR) {
             onlyAir = false;
@@ -80,7 +79,6 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
       return new Chunk(size, seed, position, Tile.AIR);
     }
     Random r = new Random(seed);
-    // add trees
     chunk = filterFloaters(chunk);
     generateTrees(chunk, r);
     return chunk;
