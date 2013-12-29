@@ -1,5 +1,8 @@
 package fi.haju.haju3d.client.bones;
 
+import com.jme3.animation.Bone;
+import com.jme3.animation.Skeleton;
+import com.jme3.animation.SkeletonControl;
 import com.jme3.app.SimpleApplication;
 import com.jme3.collision.CollisionResult;
 import com.jme3.collision.CollisionResults;
@@ -67,7 +70,26 @@ public class CharacterBoneApp extends SimpleApplication {
   public static final float MINIMUM_BONE_THICKNESS = 0.05f;
   public static final File BONE_FILE = new File("bones2.json");
   public static final Charset BONE_FILE_ENCODING = Charset.forName("UTF-8");
+
+  private MyBone camTarget;
+  private boolean cameraDragging;
+  private float camDistance = 15;
+  private float camElevation = 0;
+  private float camAzimuth = 0;
+  private List<MyBone> bones;
+  private Node boneSpatials = new Node();
+
+  private DragTarget dragTarget;
+  private Spatial dragPlane;
+  private Spatial dragPlanePreview;
+  private boolean showGuides = true;
+  private boolean showMesh = false;
+  private Spatial meshSpatial = null;
+
   private Spatial axisIndicators;
+  private Skeleton meshSkeleton;
+  private Quaternion meshRotation = new Quaternion();
+  private List<Bone> meshBones;
 
   private static class Actions {
     public static final String ROTATE_LEFT_MOUSE = "RotateLeftMouse";
@@ -120,21 +142,6 @@ public class CharacterBoneApp extends SimpleApplication {
     SimpleApplicationUtils.configureSimpleApplication(app);
     app.start();
   }
-
-  private MyBone camTarget;
-  private boolean cameraDragging;
-  private float camDistance = 15;
-  private float camElevation = 0;
-  private float camAzimuth = 0;
-  private List<MyBone> bones;
-  private Node boneSpatials = new Node();
-
-  private DragTarget dragTarget;
-  private Spatial dragPlane;
-  private Spatial dragPlanePreview;
-  private boolean showGuides = true;
-  private boolean showMesh = false;
-  private Spatial meshSpatial = null;
 
   @Override
   public void simpleInitApp() {
@@ -278,10 +285,33 @@ public class CharacterBoneApp extends SimpleApplication {
           showMesh = !showMesh;
           if (showMesh) {
             LOGGER.info("Show mesh");
-            Geometry geom = new Geometry("BoneMesh", BoneMeshUtils.buildMesh(bones));
-            geom.setMaterial(SimpleApplicationUtils.makeColorMaterial(assetManager, ColorRGBA.White));
+            Mesh mesh = BoneMeshUtils.buildMesh(bones);
+
+            meshBones = new ArrayList<>();
+            for (MyBone bone : bones) {
+              Bone meshBone = new Bone("bone");
+              Transform transform = BoneMeshUtils.boneTransform(bone);
+              meshBone.setBindTransforms(transform.getTranslation(), transform.getRotation(), transform.getScale());
+              meshBone.setUserControl(true);
+              meshBones.add(meshBone);
+            }
+            meshSkeleton = new Skeleton(meshBones.toArray(new Bone[meshBones.size()]));
+
+            // Create model
+            Geometry geom = new Geometry("BoneMesh", mesh);
+            Material col = SimpleApplicationUtils.makeColorMaterial(assetManager, ColorRGBA.White);
+            col.setBoolean("UseVertexColor", true);
+            geom.setMaterial(col);
             geom.setShadowMode(RenderQueue.ShadowMode.CastAndReceive);
-            meshSpatial = geom;
+
+            Node geomNode = new Node("BoneMeshNode");
+            geomNode.attachChild(geom);
+
+            // Create skeleton control
+            SkeletonControl skeletonControl = new SkeletonControl(meshSkeleton);
+            geomNode.addControl(skeletonControl);
+
+            meshSpatial = geomNode;
             rootNode.attachChild(meshSpatial);
             rootNode.detachChild(boneSpatials);
           } else {
@@ -289,6 +319,8 @@ public class CharacterBoneApp extends SimpleApplication {
             if (meshSpatial != null) {
               rootNode.detachChild(meshSpatial);
               meshSpatial = null;
+              meshSkeleton = null;
+              meshBones = null;
             }
             rootNode.attachChild(boneSpatials);
           }
@@ -461,6 +493,33 @@ public class CharacterBoneApp extends SimpleApplication {
 
     setCameraPosition();
     updateBoneSpatials();
+
+    if (meshSkeleton != null) {
+      // Rotate around X axis
+      Quaternion rotate = new Quaternion();
+      rotate.fromAngleAxis(tpf, Vector3f.UNIT_X);
+
+      // Combine rotation with previous
+      meshRotation.multLocal(rotate);
+
+      // Set new rotation into bone
+      int i = 0;
+      for (MyBone bone : bones) {
+        Transform transform = BoneMeshUtils.boneTransform(bone);
+
+        Bone b = meshSkeleton.getBone(i);
+        Vector3f scale = b.getWorldBindInverseScale().mult(transform.getScale());
+        Quaternion rotation = b.getWorldBindInverseRotation().mult(transform.getRotation());
+        Vector3f translation = b.getWorldBindInversePosition().add(transform.getTranslation());
+        b.setUserTransforms(translation, rotation, scale);
+        //meshSkeleton.getBone(i).setUserTransformsWorld(transform.getTranslation(), transform.getRotation());
+        //meshSkeleton.getBone(i).setUserTransforms(Vector3f.ZERO, meshRotation, Vector3f.UNIT_XYZ);
+        i++;
+      }
+
+      // After changing skeleton transforms, must update world data
+      meshSkeleton.updateWorldVectors();
+    }
   }
 
   /**
@@ -518,7 +577,7 @@ public class CharacterBoneApp extends SimpleApplication {
   @Override
   public void destroy() {
     super.destroy();
-    if (bones != null) {
+    if (bones != null && false) {
       try {
         FileUtils.writeStringToFile(BONE_FILE, BoneSaveUtils.saveBones(bones), BONE_FILE_ENCODING);
       } catch (IOException e) {
