@@ -151,6 +151,7 @@ public final class BoneMeshUtils {
     private ByteArray3d dataGrid;
     private ByteArray3d[] boneIndexGrid = new ByteArray3d[MAX_BONES_PER_TILE];
     private ByteArray3d[] boneWeightGrid = new ByteArray3d[MAX_BONES_PER_TILE];
+    public Vector3i minLocation;
   }
 
   public static Mesh buildMesh(List<MyBone> bones) {
@@ -193,6 +194,7 @@ public final class BoneMeshUtils {
     System.out.println("required grid size = " + requiredSize);
 
     ResultGrid resultGrid = new ResultGrid();
+    resultGrid.minLocation = minLocation;
     resultGrid.dataGrid = new ByteArray3d(requiredSize, requiredSize, requiredSize);
     for (int i = 0; i < MAX_BONES_PER_TILE; i++) {
       resultGrid.boneIndexGrid[i] = new ByteArray3d(requiredSize, requiredSize, requiredSize);
@@ -273,7 +275,7 @@ public final class BoneMeshUtils {
 
     ChunkSpatialBuilder.smoothMesh(myMesh, 2);
     ChunkSpatialBuilder.prepareMesh(myMesh);
-    Mesh mesh = new ChunkSpatialBuilder.SimpleMeshBuilder(myMesh, new Vector3f(-sz / 2, -sz / 2, 0), 1.0f / worldScale).build();
+    Mesh mesh = new ChunkSpatialBuilder.SimpleMeshBuilder(myMesh, new Vector3f(resultGrid.minLocation.x, resultGrid.minLocation.y, resultGrid.minLocation.z), 1.0f / worldScale).build();
 
     List<MyFace> realFaces = myMesh.getRealFaces();
     FloatBuffer colors = BufferUtils.createFloatBuffer(realFaces.size() * 4 * 4);

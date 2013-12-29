@@ -37,13 +37,12 @@ import static fi.haju.haju3d.client.SimpleApplicationUtils.makeLineMaterial;
 
 /**
  * TODO:
- * - create a voxel representation out of bones, make solid mesh
+ * - boneTransform is not very robust, the rotation is random
+ * - somehow location of mesh affects transforms?
  * <p/>
  * Backlog:
- * - apply perlin noise to voxel mesh
  * - ability to select bone mesh
  * - ability to quickly edit bone mesh
- * - skin/bones animatable mesh
  * - ability to set constraints on mesh joints
  * - IK animation on bones
  * - quick way to create a leg or an arm (both consist of 3 bones)
@@ -57,6 +56,9 @@ import static fi.haju.haju3d.client.SimpleApplicationUtils.makeLineMaterial;
  * - maybe endpoint should always be forced on surface, no free movement allowed?
  * <p/>
  * Done
+ * - create a voxel representation out of bones, make solid mesh
+ * - apply perlin noise to voxel mesh
+ * - skin/bones animatable mesh
  * - ability to delete bones
  * - save/load bones
  * - RMB to create, LMB to edit
@@ -68,7 +70,7 @@ public class CharacterBoneApp extends SimpleApplication {
   private static final Logger LOGGER = LoggerFactory.getLogger(CharacterBoneApp.class);
 
   public static final float MINIMUM_BONE_THICKNESS = 0.05f;
-  public static final File BONE_FILE = new File("bones2.json");
+  public static final File BONE_FILE = new File("bones3.json");
   public static final Charset BONE_FILE_ENCODING = Charset.forName("UTF-8");
 
   private MyBone camTarget;
