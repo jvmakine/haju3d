@@ -20,6 +20,7 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
   
   private int seed;
   private PerlinNoiseGenerator generator;
+  private PerlinNoiseGenerator typeGenerator;
 
   @Override
   @Profiled
@@ -32,7 +33,9 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
   public void setSeed(int seed) {
     this.seed = seed;
     //TODO : Proper initialization
-    this.generator = new PerlinNoiseGenerator(TERRAIN_FEATURE_SIZE, TERRAIN_SMOOTHNESS, new Random(seed));
+    Random random = new Random(seed);
+    this.generator = new PerlinNoiseGenerator(TERRAIN_FEATURE_SIZE, TERRAIN_SMOOTHNESS, random);
+    this.typeGenerator = new PerlinNoiseGenerator(2, 8, random);
   }
 
   private static Chunk filterFloaters(Chunk chunk) {
@@ -60,8 +63,9 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
           int ry = y + position.y*size;
           int rz = z + position.z*size;
           float v = ry + generator.getValueAt(rx, ry, rz);
+          float tv = typeGenerator.getValueAt(rx, ry, rz);
           // TODO Type from noise
-          Tile tile = v < TERRAIN_THRESHOLD ? Tile.GROUND : Tile.AIR;
+          Tile tile = v < TERRAIN_THRESHOLD ? getGround(tv) : Tile.AIR;
           if(tile != Tile.AIR) {
             onlyAir = false;
           }
@@ -80,6 +84,10 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
     chunk = filterFloaters(chunk);
     generateTrees(chunk, r);
     return chunk;
+  }
+  
+  private Tile getGround(float v) {
+    return v < 0 ? Tile.GROUND : Tile.ROCK;
   }
 
   private void generateTrees(Chunk chunk, Random r) {
