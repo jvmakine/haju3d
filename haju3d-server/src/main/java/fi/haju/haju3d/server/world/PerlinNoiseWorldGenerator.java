@@ -77,8 +77,9 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
     }
     Random r = new Random(seed);
     // add trees
+    chunk = filterFloaters(chunk);
     generateTrees(chunk, r);
-    return filterFloaters(chunk);
+    return chunk;
   }
 
   private void generateTrees(Chunk chunk, Random r) {
@@ -88,7 +89,7 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
       int z = r.nextInt(size - 3);
       int y = WorldGenerationUtils.findGround(chunk, size, x, z);
       if (y >= 1 && y < size - 20 && chunk.get(x, y - 1, z) == Tile.GROUND) {
-        WorldGenerationUtils.makeTreeAt(chunk, r, new LocalTilePosition(x, z, y));
+        WorldGenerationUtils.makeTreeAt(chunk, r, new LocalTilePosition(x, y, z));
       }
     }
   }
