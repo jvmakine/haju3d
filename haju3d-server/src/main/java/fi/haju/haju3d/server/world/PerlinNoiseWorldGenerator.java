@@ -15,7 +15,7 @@ import java.util.Random;
 public class PerlinNoiseWorldGenerator implements WorldGenerator {
   
   private static final int TERRAIN_FEATURE_SIZE = 6;
-  private static final int TERRAIN_SMOOTHNESS = 8;
+  private static final int TERRAIN_SMOOTHNESS = 3;
   private static final int TERRAIN_THRESHOLD = 32;
   
   private int seed;
@@ -35,7 +35,7 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
     //TODO : Proper initialization
     Random random = new Random(seed);
     this.generator = new PerlinNoiseGenerator(TERRAIN_FEATURE_SIZE, TERRAIN_SMOOTHNESS, random);
-    this.typeGenerator = new PerlinNoiseGenerator(2, 8, random);
+    this.typeGenerator = new PerlinNoiseGenerator(2, TERRAIN_SMOOTHNESS, random);
   }
 
   private static Chunk filterFloaters(Chunk chunk) {
