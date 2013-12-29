@@ -76,7 +76,6 @@ public class ServerImpl implements Server {
   }
 
   private synchronized Chunk getOrGenerateChunk(ChunkPosition position) {
-    LOGGER.debug("getOrGenerateChunk: " + position);
     if (world.hasChunk(position)) {
       return world.getChunk(position);
     } else {
@@ -85,6 +84,7 @@ public class ServerImpl implements Server {
         world.setChunk(position, opt.get());
         return opt.get();
       }
+      LOGGER.info("generating chunk " + position);
       int size = chunkCoordinateSystem.getChunkSize();
       Chunk newChunk = generator.generateChunk(position, size);
       world.setChunk(position, newChunk);

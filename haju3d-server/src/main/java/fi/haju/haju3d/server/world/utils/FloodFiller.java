@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Set;
 
 import fi.haju.haju3d.protocol.coordinate.LocalTilePosition;
+import fi.haju.haju3d.protocol.coordinate.TilePosition;
 import fi.haju.haju3d.protocol.world.Chunk;
 import fi.haju.haju3d.protocol.world.Tile;
 
@@ -21,7 +22,10 @@ public final class FloodFiller {
   }
 
   public void fill() {
-    test(new LocalTilePosition(0, 0, 0));
+    Set<TilePosition> edge = ground.getPosition().getEdgeTilePositions(ground.getSize());
+    for(TilePosition pos : edge) {
+      test(pos.getTileWithinChunk()); 
+    }
     while (!front.isEmpty()) {
       LocalTilePosition v = front.remove(front.size() - 1);
       test(v.add(1, 0, 0));

@@ -23,14 +23,12 @@ import fi.haju.haju3d.client.ui.ChunkRenderer;
 import fi.haju.haju3d.client.ui.ChunkSpatial;
 import fi.haju.haju3d.client.ui.mesh.MyMesh.MyFaceAndIndex;
 import fi.haju.haju3d.client.ui.mesh.TileRenderPropertyProvider.TileProperties;
-import fi.haju.haju3d.client.util.Profiled;
 import fi.haju.haju3d.protocol.coordinate.ChunkPosition;
 import fi.haju.haju3d.protocol.coordinate.GlobalTilePosition;
 import fi.haju.haju3d.protocol.coordinate.Vector3i;
 import fi.haju.haju3d.protocol.world.Tile;
 import fi.haju.haju3d.protocol.world.World;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import fi.haju.haju3d.util.Profiled;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
@@ -39,7 +37,7 @@ import java.util.*;
 @Singleton
 public class ChunkSpatialBuilder {
   public static final int SMOOTH_STEPS = 2;
-  private static final Logger LOGGER = LoggerFactory.getLogger(ChunkSpatialBuilder.class);
+
   private Material lowMaterial;
   private Material highMaterial;
 

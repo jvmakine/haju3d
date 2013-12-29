@@ -1,4 +1,4 @@
-package fi.haju.haju3d.client.util;
+package fi.haju.haju3d.util;
 
 import java.io.FileWriter;
 import java.io.IOException;
