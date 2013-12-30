@@ -74,19 +74,29 @@ public final class BoneMeshUtils {
   }
 
   public static Transform boneTransform(MyBone b) {
-    return transformBetween(b.getStart(), b.getEnd(), Vector3f.UNIT_Z, b.getThickness());
+    //return transformBetween(b.getStart(), b.getEnd(), Vector3f.UNIT_Y.add(Vector3f.UNIT_X.mult(1.5f)), b.getThickness());
+    return transformBetween(b.getStart(), b.getEnd(), Vector3f.UNIT_Z, b.getThickness(), false);
   }
 
-  public static Transform transformBetween(Vector3f start, Vector3f end, Vector3f front, float scale) {
+  public static Transform boneTransform2(MyBone b) {
+    //return transformBetween(b.getStart(), b.getEnd(), Vector3f.UNIT_Y.add(Vector3f.UNIT_X.mult(1.5f)), b.getThickness());
+    return transformBetween(b.getStart(), b.getEnd(), Vector3f.UNIT_Z, b.getThickness(), false);
+  }
+
+  public static Transform transformBetween(Vector3f start, Vector3f end, Vector3f front, float scale, boolean preserveVolume) {
     Vector3f dir = start.subtract(end);
-    Vector3f left = dir.normalize().cross(front.normalize());
-    Vector3f ahead = dir.normalize().cross(left.normalize());
+    Vector3f dirn = dir.normalize();
+    Vector3f left = dirn.cross(front.normalize());
+    Vector3f ahead = dirn.cross(left.normalize());
 
     Quaternion q = new Quaternion();
-    q.fromAxes(left.normalize(), ahead.normalize(), dir.normalize());
-    return new Transform(
-        start.add(end).multLocal(0.5f), q,
-        new Vector3f(dir.length() * scale, dir.length() * scale, dir.length()));
+    q.fromAxes(left.normalize(), ahead.normalize(), dirn);
+
+    Vector3f midPoint = start.add(end).multLocal(0.5f);
+    Vector3f scalev = preserveVolume
+        ? new Vector3f(scale / FastMath.sqrt(dir.length()), scale / FastMath.sqrt(dir.length()), dir.length())
+        : new Vector3f(scale * dir.length(), scale * dir.length(), dir.length());
+    return new Transform(midPoint, q, scalev);
   }
 
   public static Spatial makeFloor(Material material) {
@@ -371,7 +381,7 @@ public final class BoneMeshUtils {
   }
 
   private static BoneWorldGrid makeBoneWorldGrid(ByteArray3d boneMeshGrid, float worldScale, MyBone bone) {
-    Transform transform = boneTransform(bone);
+    Transform transform = boneTransform2(bone);
     //bounding box needed for boneMeshGrid in world grid:
     float bs = 1.0f;
     Vector3f c1 = transform.transformVector(new Vector3f(-bs, -bs, -bs), null).multLocal(worldScale);

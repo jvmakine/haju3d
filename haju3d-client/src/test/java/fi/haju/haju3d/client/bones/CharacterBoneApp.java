@@ -61,6 +61,7 @@ import static fi.haju.haju3d.client.SimpleApplicationUtils.makeLineMaterial;
  * - maybe endpoint should always be forced on surface, no free movement allowed?
  * <p/>
  * Done
+ * - when looking at mesh, don't save bone locations
  * - ability to select bone mesh
  * - show bone mesh when editing
  * - create a voxel representation out of bones, make solid mesh
@@ -86,12 +87,13 @@ public class CharacterBoneApp extends SimpleApplication {
   private float camElevation = 0;
   private float camAzimuth = 0;
   private List<MyBone> bones;
+  private List<MyBone> activeBones;
   private Node boneSpatials = new Node();
 
   private DragTarget dragTarget;
   private Spatial dragPlane;
   private Spatial dragPlanePreview;
-  private boolean showGuides = true;
+  private boolean showGuides = false;
   private boolean showMesh = false;
   private Spatial meshSpatial = null;
 
@@ -188,6 +190,8 @@ public class CharacterBoneApp extends SimpleApplication {
       bones.add(bone);
     }
 
+    activeBones = bones;
+
     camTarget = bones.get(0);
 
     for (MyBone bone : bones) {
@@ -254,7 +258,7 @@ public class CharacterBoneApp extends SimpleApplication {
           stopDragging();
           if (name.equals(Actions.CLICK)) {
             dragTarget = findDragTarget();
-          } else {
+          } else if (name.equals(Actions.CLICK_RMB) && !isMeshPreviewMode()) {
             Vector3f attachPoint = findBoneCollisionPoint();
             if (attachPoint != null) {
               // create new bone
@@ -307,12 +311,16 @@ public class CharacterBoneApp extends SimpleApplication {
           showMesh = !showMesh;
           if (showMesh) {
             LOGGER.info("Show mesh");
-            Mesh mesh = BoneMeshUtils.buildMesh(bones, MESH_GRID_MAP);
+
+            activeBones = BoneSaveUtils.cloneBones(bones);
+
+
+            Mesh mesh = BoneMeshUtils.buildMesh(activeBones, MESH_GRID_MAP);
 
             meshBones = new ArrayList<>();
-            for (MyBone bone : bones) {
+            for (MyBone bone : activeBones) {
               Bone meshBone = new Bone("bone");
-              Transform transform = BoneMeshUtils.boneTransform(bone);
+              Transform transform = BoneMeshUtils.boneTransform2(bone);
               meshBone.setBindTransforms(transform.getTranslation(), transform.getRotation(), transform.getScale());
               meshBone.setUserControl(true);
               meshBones.add(meshBone);
@@ -338,7 +346,8 @@ public class CharacterBoneApp extends SimpleApplication {
             rootNode.detachChild(boneSpatials);
           } else {
             LOGGER.info("Hide mesh");
-            if (meshSpatial != null) {
+            activeBones = bones;
+            if (isMeshPreviewMode()) {
               rootNode.detachChild(meshSpatial);
               meshSpatial = null;
               meshSkeleton = null;
@@ -355,7 +364,7 @@ public class CharacterBoneApp extends SimpleApplication {
     inputManager.addListener(new ActionListener() {
       @Override
       public void onAction(String name, boolean isPressed, float tpf) {
-        if (isPressed) {
+        if (isPressed && !isMeshPreviewMode()) {
           MyBone bone = findCurrentBone();
           if (bone != null && bones.indexOf(bone) != 0) {
             removeBoneAndMirror(bone);
@@ -388,6 +397,10 @@ public class CharacterBoneApp extends SimpleApplication {
         }
       }
     }, Actions.SELECT_BONE_MESH_1, Actions.SELECT_BONE_MESH_2, Actions.SELECT_BONE_MESH_3);
+  }
+
+  private boolean isMeshPreviewMode() {
+    return meshSpatial != null;
   }
 
   private void selectBoneMeshAndMirror(MyBone bone, String meshName) {
@@ -468,7 +481,7 @@ public class CharacterBoneApp extends SimpleApplication {
     CollisionResult collision = findBoneCollision();
     if (collision != null) {
       Geometry geom = collision.getGeometry();
-      return bones.get(boneSpatials.getChildIndex(geom));
+      return activeBones.get(boneSpatials.getChildIndex(geom));
     }
     return null;
   }
@@ -485,7 +498,7 @@ public class CharacterBoneApp extends SimpleApplication {
   private DragTarget findDragTarget() {
     DragTarget best = null;
     float bestDist = 20;
-    for (MyBone bone : bones) {
+    for (MyBone bone : activeBones) {
       float distance = cursorDistanceTo(bone.getStart());
       if (distance < bestDist) {
         bestDist = distance;
@@ -534,9 +547,11 @@ public class CharacterBoneApp extends SimpleApplication {
     Vector3f center = dragTarget.getPosition();
 
     // non-mirrored bones only dragged along X-plane
-    if (dragTarget.bone.getMirrorBone() == null) {
-      direction = Vector3f.UNIT_X;
-      left = Vector3f.UNIT_Z;
+    if (!isMeshPreviewMode()) {
+      if (dragTarget.bone.getMirrorBone() == null) {
+        direction = Vector3f.UNIT_X;
+        left = Vector3f.UNIT_Z;
+      }
     }
 
     return BoneMeshUtils.makeDragPlane(sz, mesh, material, direction, left, center);
@@ -555,20 +570,22 @@ public class CharacterBoneApp extends SimpleApplication {
     setCameraPosition();
     updateBoneSpatials();
 
-    if (meshSkeleton != null) {
+    if (isMeshPreviewMode()) {
       // apply new bone tranformations to skeleton
       int i = 0;
-      for (MyBone bone : bones) {
-        Transform transform = BoneMeshUtils.boneTransform(bone);
+      for (MyBone bone : activeBones) {
+        Transform transform = BoneMeshUtils.boneTransform2(bone);
 
         Bone b = meshSkeleton.getBone(i);
+        //Vector3f scale = new Vector3f(1,1,1); //b.getWorldBindInverseScale().mult(transform.getScale());
         Vector3f scale = b.getWorldBindInverseScale().mult(transform.getScale());
         Quaternion rotation = b.getWorldBindInverseRotation().mult(transform.getRotation());
         Vector3f translation = b.getWorldBindInversePosition().add(transform.getTranslation());
         b.setUserTransforms(translation, rotation, scale);
+        b.updateWorldVectors();
         i++;
       }
-      meshSkeleton.updateWorldVectors();
+      //meshSkeleton.updateWorldVectors();
     }
   }
 
@@ -586,7 +603,7 @@ public class CharacterBoneApp extends SimpleApplication {
     guiNode.detachAllChildren();
 
     int i = 0;
-    for (MyBone b : bones) {
+    for (MyBone b : activeBones) {
       Transform t = BoneMeshUtils.boneTransform(b);
       if (Vector3f.isValidVector(t.getTranslation())) {
         boneSpatials.getChild(i).setLocalTransform(t);

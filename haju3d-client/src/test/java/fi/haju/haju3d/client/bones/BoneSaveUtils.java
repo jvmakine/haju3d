@@ -24,6 +24,10 @@ public final class BoneSaveUtils {
     public String meshName;
   }
 
+  public static List<MyBone> cloneBones(List<MyBone> bones) {
+    return readBones(saveBones(bones));
+  }
+
   public static String saveBones(List<MyBone> bones) {
     List<MyBoneStruct> boneStructs = new ArrayList<>();
     for (MyBone bone : bones) {
