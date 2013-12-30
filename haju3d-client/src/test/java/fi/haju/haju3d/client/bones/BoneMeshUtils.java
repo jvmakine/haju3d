@@ -26,6 +26,9 @@ import java.nio.IntBuffer;
 import java.util.*;
 
 public final class BoneMeshUtils {
+
+  public static final int BONE_MESH_SIZE = 64;
+
   private BoneMeshUtils() {
     assert false;
   }
@@ -166,7 +169,8 @@ public final class BoneMeshUtils {
     //-each bone's world grid representation should be copied to single world grid that has simple binary value
     // for each cell
 
-    ByteArray3d boneMeshGrid = makeBoneMeshGrid();
+    //ByteArray3d boneMeshGrid = makeBlobBoneMeshGrid();
+    ByteArray3d boneMeshGrid = makeSphereBoneMeshGrid();
     float worldScale = 10;
     List<BoneWorldGrid> boneWorldGrids = new ArrayList<>();
     for (MyBone bone : bones) {
@@ -243,39 +247,16 @@ public final class BoneMeshUtils {
   }
 
   private static Mesh getMeshFromGrid(final ResultGrid resultGrid, float worldScale) {
-    final int sz = resultGrid.dataGrid.getWidth();
-    ChunkPosition cp = new ChunkPosition(0, 0, 0);
-    Chunk chunk = new Chunk(sz, 0, cp);
-    chunk.set(new Chunk.GetValue() {
-      @Override
-      public Tile getValue(int x, int y, int z) {
-        return resultGrid.dataGrid.get(x, y, z) > 32 ? Tile.GROUND : Tile.AIR;
-      }
-    });
+    final ByteArray3d dataGrid = resultGrid.dataGrid;
+    Vector3f translate = new Vector3f(resultGrid.minLocation.x, resultGrid.minLocation.y, resultGrid.minLocation.z);
 
-    ChunkCoordinateSystem chunkCoordinateSystem = new ChunkCoordinateSystem(sz);
-    World world = new World(chunkCoordinateSystem);
-    for (int x = 0; x < 3; x++) {
-      for (int y = 0; y < 3; y++) {
-        for (int z = 0; z < 3; z++) {
-          ChunkPosition pos = new ChunkPosition(x - 1, y - 1, z - 1);
-          world.setChunk(pos, new Chunk(sz, 0, pos, Tile.AIR));
-        }
-      }
-    }
-    world.setChunk(cp, chunk);
-
-    ChunkLightManager light = new ChunkLightManager();
-    MyMesh myMesh = ChunkSpatialBuilder.makeCubeMesh(world, cp, light);
+    MyMesh myMesh = makeMyMesh(dataGrid);
+    Mesh mesh = makeMesh(myMesh, worldScale, translate);
 
     Map<MyVertex, Vector3f> vertexToColor = new HashMap<>();
     for (Map.Entry<MyVertex, List<MyMesh.MyFaceAndIndex>> v : myMesh.vertexFaces.entrySet()) {
       vertexToColor.put(v.getKey(), calcVertexColor(v.getValue(), resultGrid));
     }
-
-    ChunkSpatialBuilder.smoothMesh(myMesh, 2);
-    ChunkSpatialBuilder.prepareMesh(myMesh);
-    Mesh mesh = new ChunkSpatialBuilder.SimpleMeshBuilder(myMesh, new Vector3f(resultGrid.minLocation.x, resultGrid.minLocation.y, resultGrid.minLocation.z), 1.0f / worldScale).build();
 
     List<MyFace> realFaces = myMesh.getRealFaces();
     FloatBuffer colors = BufferUtils.createFloatBuffer(realFaces.size() * 4 * 4);
@@ -313,22 +294,60 @@ public final class BoneMeshUtils {
     return mesh;
   }
 
+  public static Mesh makeBoneMesh(ByteArray3d byteArray3d) {
+    final int sz = byteArray3d.getWidth();
+    return makeMesh(makeMyMesh(byteArray3d), sz * 0.5f, new Vector3f(-sz / 2, -sz / 2, -sz / 2));
+  }
+
+
+  private static Mesh makeMesh(MyMesh myMesh, float worldScale, Vector3f translate) {
+    ChunkSpatialBuilder.smoothMesh(myMesh, 2);
+    ChunkSpatialBuilder.prepareMesh(myMesh);
+    return new ChunkSpatialBuilder.SimpleMeshBuilder(myMesh, translate, 1.0f / worldScale).build();
+  }
+
+  private static MyMesh makeMyMesh(final ByteArray3d dataGrid) {
+    ChunkPosition cp = new ChunkPosition(0, 0, 0);
+    final int sz = dataGrid.getWidth();
+    Chunk chunk = new Chunk(sz, 0, cp);
+    chunk.set(new Chunk.GetValue() {
+      @Override
+      public Tile getValue(int x, int y, int z) {
+        return dataGrid.get(x, y, z) > 32 ? Tile.GROUND : Tile.AIR;
+      }
+    });
+
+    ChunkCoordinateSystem chunkCoordinateSystem = new ChunkCoordinateSystem(sz);
+    World world = new World(chunkCoordinateSystem);
+    for (int x = 0; x < 3; x++) {
+      for (int y = 0; y < 3; y++) {
+        for (int z = 0; z < 3; z++) {
+          ChunkPosition pos = new ChunkPosition(x - 1, y - 1, z - 1);
+          world.setChunk(pos, new Chunk(sz, 0, pos, Tile.AIR));
+        }
+      }
+    }
+    world.setChunk(cp, chunk);
+
+    ChunkLightManager light = new ChunkLightManager();
+    return ChunkSpatialBuilder.makeCubeMesh(world, cp, light);
+  }
+
   private static void putBoneData(FloatBuffer weights, ByteBuffer indices, List<MyMesh.MyFaceAndIndex> myFaceAndIndexes, ResultGrid resultGrid) {
+    //TODO take average of all in the list "myFaceAndIndexes". But it probably won't change outcome much.
+
+    //TODO the face.worldPos does not correspond exactly to vertex pos because of smooting. This can cause
+    //weird artifacts when nearby vertices have different blending weights depending on where they were located
+    //in the grid?
     Vector3i wp = myFaceAndIndexes.get(0).face.worldPos;
     float sumWeights = 0;
     for (int i = 0; i < MAX_BONES_PER_TILE; i++) {
       sumWeights += resultGrid.boneWeightGrid[i].get(wp);
     }
-
-    indices.put(resultGrid.boneIndexGrid[0].get(wp));
-    indices.put(resultGrid.boneIndexGrid[1].get(wp));
-    indices.put(resultGrid.boneIndexGrid[2].get(wp));
-    indices.put(resultGrid.boneIndexGrid[3].get(wp));
-
-    weights.put(resultGrid.boneWeightGrid[0].get(wp) / sumWeights);
-    weights.put(resultGrid.boneWeightGrid[1].get(wp) / sumWeights);
-    weights.put(resultGrid.boneWeightGrid[2].get(wp) / sumWeights);
-    weights.put(resultGrid.boneWeightGrid[3].get(wp) / sumWeights);
+    for (int i = 0; i < MAX_BONES_PER_TILE; i++) {
+      indices.put(resultGrid.boneIndexGrid[i].get(wp));
+      weights.put(resultGrid.boneWeightGrid[i].get(wp) / sumWeights);
+    }
   }
 
   private static Random r = new Random(0L);
@@ -417,36 +436,76 @@ public final class BoneMeshUtils {
     return bwg2;
   }
 
-  private static ByteArray3d makeBoneMeshGrid() {
-    int sz = 128;
+  public static ByteArray3d makeSphereBoneMeshGrid() {
+    final int sz = BONE_MESH_SIZE;
     ByteArray3d grid = new ByteArray3d(sz, sz, sz);
-    int w = grid.getWidth();
-    int h = grid.getHeight();
-    int d = grid.getDepth();
+    grid.set(new ByteArray3d.GetValue() {
+      @Override
+      public byte getValue(int x, int y, int z) {
+        int xd = x - sz / 2;
+        int yd = y - sz / 2;
+        int zd = z - sz / 2;
+        int bsz = sz / 3;
+        int value = bsz - (int) FastMath.sqrt(xd * xd + yd * yd + zd * zd);
 
-    FloatArray3d noise = make3dPerlinNoise(1, sz, sz, sz);
-
-    for (int x = 0; x < w; x++) {
-      for (int y = 0; y < h; y++) {
-        for (int z = 0; z < d; z++) {
-          int xd = x - sz / 2;
-          int yd = y - sz / 2;
-          int zd = z - sz / 2;
-          int bsz = sz / 3;
-          int value = bsz - (int) FastMath.sqrt(xd * xd + yd * yd + zd * zd);
-
-          value = (value * 2) + 32;
-
-          //x-symmetric noise
-          value += noise.get(Math.abs(sz / 2 - x), y, z) * 3;
-          value -= 32;
-          if (value < 0) value = 0;
-          if (value > 63) value = 63;
-
-          grid.set(x, y, z, (byte) value);
-        }
+        value = (value * 2) + 32;
+        if (value < 0) value = 0;
+        if (value > 63) value = 63;
+        return (byte) value;
       }
-    }
+    });
+    return grid;
+  }
+
+  public static ByteArray3d makeBoxBoneMeshGrid() {
+    final int sz = BONE_MESH_SIZE;
+    ByteArray3d grid = new ByteArray3d(sz, sz, sz);
+    grid.set(new ByteArray3d.GetValue() {
+      @Override
+      public byte getValue(int x, int y, int z) {
+        int xd = x - sz / 2;
+        int yd = y - sz / 2;
+        int zd = z - sz / 2;
+        int bsz = sz / 3;
+        int value = bsz - Math.max(Math.max(xd, yd), zd);
+
+        value = (value * 2) + 32;
+        if (value < 0) value = 0;
+        if (value > 63) value = 63;
+        return (byte) value;
+      }
+    });
+    return grid;
+  }
+
+  public static ByteArray3d makeBlobBoneMeshGrid() {
+    return makeBlobBoneMeshGrid(1);
+  }
+
+  public static ByteArray3d makeBlobBoneMeshGrid(int randomSeed) {
+    final int sz = BONE_MESH_SIZE;
+    ByteArray3d grid = new ByteArray3d(sz, sz, sz);
+    final FloatArray3d noise = make3dPerlinNoise(randomSeed, sz, sz, sz);
+
+    grid.set(new ByteArray3d.GetValue() {
+      @Override
+      public byte getValue(int x, int y, int z) {
+        int xd = x - sz / 2;
+        int yd = y - sz / 2;
+        int zd = z - sz / 2;
+        int bsz = sz / 3;
+        int value = bsz - (int) FastMath.sqrt(xd * xd + yd * yd + zd * zd);
+
+        value = (value * 2) + 32;
+
+        //x-symmetric noise
+        value += noise.get(Math.abs(sz / 2 - x), y, z) * 3;
+        value -= 32;
+        if (value < 0) value = 0;
+        if (value > 63) value = 63;
+        return (byte) value;
+      }
+    });
     return grid;
   }
 

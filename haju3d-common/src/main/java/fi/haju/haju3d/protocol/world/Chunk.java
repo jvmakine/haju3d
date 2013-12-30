@@ -30,7 +30,7 @@ public final class Chunk implements Serializable {
     }
   }
 
-  public static interface GetValue {
+  public interface GetValue {
     Tile getValue(int x, int y, int z);
   }
 

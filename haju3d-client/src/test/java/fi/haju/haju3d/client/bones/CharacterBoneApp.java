@@ -16,10 +16,9 @@ import com.jme3.scene.Geometry;
 import com.jme3.scene.Mesh;
 import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
-import com.jme3.scene.shape.Box;
 import com.jme3.scene.shape.Quad;
-import com.jme3.scene.shape.Sphere;
 import fi.haju.haju3d.client.SimpleApplicationUtils;
+import fi.haju.haju3d.protocol.world.ByteArray3d;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,11 +36,18 @@ import static fi.haju.haju3d.client.SimpleApplicationUtils.makeLineMaterial;
 
 /**
  * TODO:
+ * - ability to select bone mesh
  * - boneTransform is not very robust, the rotation is random
- * - somehow location of mesh affects transforms?
+ * - ability to rotate bone mesh
+ * - when looking at mesh:
+ * -- don't save bone locations
+ * -- allow non-mirrored bones move off x-plane
+ * -- use different boneTransform; scale ~ sqrt(length)
+ * -- somehow attach joints together
+ * -- ideally IK movement of joints
+ * - bug: somehow location of mesh affects transforms?
  * <p/>
  * Backlog:
- * - ability to select bone mesh
  * - ability to quickly edit bone mesh
  * - ability to set constraints on mesh joints
  * - IK animation on bones
@@ -56,6 +62,7 @@ import static fi.haju.haju3d.client.SimpleApplicationUtils.makeLineMaterial;
  * - maybe endpoint should always be forced on surface, no free movement allowed?
  * <p/>
  * Done
+ * - show bone mesh when editing
  * - create a voxel representation out of bones, make solid mesh
  * - apply perlin noise to voxel mesh
  * - skin/bones animatable mesh
@@ -90,7 +97,6 @@ public class CharacterBoneApp extends SimpleApplication {
 
   private Spatial axisIndicators;
   private Skeleton meshSkeleton;
-  private Quaternion meshRotation = new Quaternion();
   private List<Bone> meshBones;
 
   private static class Actions {
@@ -107,14 +113,24 @@ public class CharacterBoneApp extends SimpleApplication {
     public static final String SHOW_MESH = "ShowMesh";
   }
 
-
-  private Map<String, Mesh> meshMap = new HashMap<>();
   private static final String SPHERE_MESH = "SPHERE";
   private static final String BOX_MESH = "BOX";
+  private static final String BLOB_MESH = "BLOB";
 
-  {
-    meshMap.put(SPHERE_MESH, new Sphere(20, 20, 0.7f));
-    meshMap.put(BOX_MESH, new Box(0.2f, 0.2f, 0.5f));
+  private static final Map<String, ByteArray3d> meshGridMap = new HashMap<>();
+
+  static {
+    meshGridMap.put(SPHERE_MESH, BoneMeshUtils.makeSphereBoneMeshGrid());
+    meshGridMap.put(BOX_MESH, BoneMeshUtils.makeBoxBoneMeshGrid());
+    meshGridMap.put(BLOB_MESH, BoneMeshUtils.makeBlobBoneMeshGrid());
+  }
+
+  private static final Map<String, Mesh> meshMap = new HashMap<>();
+
+  static {
+    for (Map.Entry<String, ByteArray3d> e : meshGridMap.entrySet()) {
+      meshMap.put(e.getKey(), BoneMeshUtils.makeBoneMesh(e.getValue()));
+    }
   }
 
   private static class DragTarget {
@@ -497,14 +513,7 @@ public class CharacterBoneApp extends SimpleApplication {
     updateBoneSpatials();
 
     if (meshSkeleton != null) {
-      // Rotate around X axis
-      Quaternion rotate = new Quaternion();
-      rotate.fromAngleAxis(tpf, Vector3f.UNIT_X);
-
-      // Combine rotation with previous
-      meshRotation.multLocal(rotate);
-
-      // Set new rotation into bone
+      // apply new bone tranformations to skeleton
       int i = 0;
       for (MyBone bone : bones) {
         Transform transform = BoneMeshUtils.boneTransform(bone);
@@ -516,8 +525,6 @@ public class CharacterBoneApp extends SimpleApplication {
         b.setUserTransforms(translation, rotation, scale);
         i++;
       }
-
-      // After changing skeleton transforms, must update world data
       meshSkeleton.updateWorldVectors();
     }
   }

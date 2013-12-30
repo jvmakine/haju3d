@@ -9,15 +9,29 @@ public final class ByteArray3d implements Serializable {
   private static final long serialVersionUID = 1L;
 
   private final byte[] data;
-  public final int width;
-  public final int height;
-  public final int depth;
+  private final int width;
+  private final int height;
+  private final int depth;
+
+  public interface GetValue {
+    byte getValue(int x, int y, int z);
+  }
 
   public ByteArray3d(int width, int height, int depth) {
     this.width = width;
     this.height = height;
     this.depth = depth;
     this.data = new byte[width * height * depth];
+  }
+
+  public void set(GetValue getValue) {
+    for (int x = 0; x < width; x++) {
+      for (int y = 0; y < height; y++) {
+        for (int z = 0; z < depth; z++) {
+          set(x, y, z, getValue.getValue(x, y, z));
+        }
+      }
+    }
   }
 
   public void fill(byte value) {
@@ -33,6 +47,7 @@ public final class ByteArray3d implements Serializable {
   }
 
   private int getIndex(int x, int y, int z) {
+    assert isInside(x, y, z);
     return x + z * width + y * width * depth;
   }
 
