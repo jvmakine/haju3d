@@ -375,19 +375,26 @@ public class CharacterBoneApp extends SimpleApplication {
           if (bone != null) {
             switch (name) {
             case Actions.SELECT_BONE_MESH_1:
-              selectBoneMesh(bone, BOX_MESH);
+              selectBoneMeshAndMirror(bone, BOX_MESH);
               break;
             case Actions.SELECT_BONE_MESH_2:
-              selectBoneMesh(bone, SPHERE_MESH);
+              selectBoneMeshAndMirror(bone, SPHERE_MESH);
               break;
             case Actions.SELECT_BONE_MESH_3:
-              selectBoneMesh(bone, BLOB_MESH);
+              selectBoneMeshAndMirror(bone, BLOB_MESH);
               break;
             }
           }
         }
       }
     }, Actions.SELECT_BONE_MESH_1, Actions.SELECT_BONE_MESH_2, Actions.SELECT_BONE_MESH_3);
+  }
+
+  private void selectBoneMeshAndMirror(MyBone bone, String meshName) {
+    if (bone.getMirrorBone() != null) {
+      selectBoneMesh(bone.getMirrorBone(), meshName);
+    }
+    selectBoneMesh(bone, meshName);
   }
 
   private void selectBoneMesh(MyBone bone, String meshName) {
@@ -461,11 +468,7 @@ public class CharacterBoneApp extends SimpleApplication {
     CollisionResult collision = findBoneCollision();
     if (collision != null) {
       Geometry geom = collision.getGeometry();
-      for (Spatial s : boneSpatials.getChildren()) {
-        if (s == geom) {
-          return bones.get(boneSpatials.getChildIndex(s));
-        }
-      }
+      return bones.get(boneSpatials.getChildIndex(geom));
     }
     return null;
   }
