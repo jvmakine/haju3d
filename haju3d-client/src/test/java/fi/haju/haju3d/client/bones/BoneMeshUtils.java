@@ -276,19 +276,19 @@ public final class BoneMeshUtils {
     }
     mesh.setBuffer(VertexBuffer.Type.Color, 4, colors);
 
+    mesh.setStatic();
+
     // Setup bone weight buffer
-    FloatBuffer weights = FloatBuffer.allocate(mesh.getVertexCount() * 4);
-    VertexBuffer weightsBuf = new VertexBuffer(VertexBuffer.Type.BoneWeight);
-    weightsBuf.setupData(VertexBuffer.Usage.CpuOnly, 4, VertexBuffer.Format.Float, weights);
+    FloatBuffer weights = BufferUtils.createFloatBuffer(mesh.getVertexCount() * 4);
+    VertexBuffer weightsBuf = new VertexBuffer(VertexBuffer.Type.HWBoneWeight);
+    weightsBuf.setupData(VertexBuffer.Usage.Static, 4, VertexBuffer.Format.Float, weights);
     mesh.setBuffer(weightsBuf);
 
     // Setup bone index buffer
-    ByteBuffer indices = ByteBuffer.allocate(mesh.getVertexCount() * 4);
-    VertexBuffer indicesBuf = new VertexBuffer(VertexBuffer.Type.BoneIndex);
-    indicesBuf.setupData(VertexBuffer.Usage.CpuOnly, 4, VertexBuffer.Format.UnsignedByte, indices);
+    ByteBuffer indices = BufferUtils.createByteBuffer(mesh.getVertexCount() * 4);
+    VertexBuffer indicesBuf = new VertexBuffer(VertexBuffer.Type.HWBoneIndex);
+    indicesBuf.setupData(VertexBuffer.Usage.Static, 4, VertexBuffer.Format.UnsignedByte, indices);
     mesh.setBuffer(indicesBuf);
-
-    mesh.generateBindPose(true);
 
     for (MyFace face : realFaces) {
       putBoneData(weights, indices, myMesh.vertexFaces.get(face.v1), resultGrid);
@@ -296,8 +296,6 @@ public final class BoneMeshUtils {
       putBoneData(weights, indices, myMesh.vertexFaces.get(face.v3), resultGrid);
       putBoneData(weights, indices, myMesh.vertexFaces.get(face.v4), resultGrid);
     }
-
-    mesh.setMaxNumWeights(MAX_BONES_PER_TILE);
 
     return mesh;
   }

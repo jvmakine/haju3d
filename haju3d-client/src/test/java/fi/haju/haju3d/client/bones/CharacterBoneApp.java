@@ -2,7 +2,6 @@ package fi.haju.haju3d.client.bones;
 
 import com.jme3.animation.Bone;
 import com.jme3.animation.Skeleton;
-import com.jme3.animation.SkeletonControl;
 import com.jme3.app.SimpleApplication;
 import com.jme3.collision.CollisionResult;
 import com.jme3.collision.CollisionResults;
@@ -17,6 +16,7 @@ import com.jme3.scene.Mesh;
 import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
 import com.jme3.scene.shape.Quad;
+import com.jme3.shader.VarType;
 import fi.haju.haju3d.client.SimpleApplicationUtils;
 import fi.haju.haju3d.protocol.world.ByteArray3d;
 import org.apache.commons.io.FileUtils;
@@ -39,8 +39,6 @@ import static fi.haju.haju3d.client.SimpleApplicationUtils.makeLineMaterial;
  * - boneTransform is not very robust, the rotation is random
  * - ability to rotate bone mesh
  * - when looking at mesh:
- * -- don't save bone locations
- * -- allow non-mirrored bones move off x-plane
  * -- use different boneTransform; scale ~ sqrt(length)
  * -- somehow attach joints together
  * -- ideally IK movement of joints
@@ -62,6 +60,7 @@ import static fi.haju.haju3d.client.SimpleApplicationUtils.makeLineMaterial;
  * <p/>
  * Done
  * - when looking at mesh, don't save bone locations
+ * - when looking at mesh, allow non-mirrored bones move off x-plane
  * - ability to select bone mesh
  * - show bone mesh when editing
  * - create a voxel representation out of bones, make solid mesh
@@ -95,9 +94,9 @@ public class CharacterBoneApp extends SimpleApplication {
   private Spatial dragPlanePreview;
   private boolean showGuides = false;
   private boolean showMesh = false;
-  private Spatial meshSpatial = null;
 
   private Spatial axisIndicators;
+  private Geometry meshSpatial = null;
   private Skeleton meshSkeleton;
   private List<Bone> meshBones;
   private String currentBoneMeshName = SPHERE_MESH;
@@ -314,7 +313,6 @@ public class CharacterBoneApp extends SimpleApplication {
 
             activeBones = BoneSaveUtils.cloneBones(bones);
 
-
             Mesh mesh = BoneMeshUtils.buildMesh(activeBones, MESH_GRID_MAP);
 
             meshBones = new ArrayList<>();
@@ -329,19 +327,13 @@ public class CharacterBoneApp extends SimpleApplication {
 
             // Create model
             Geometry geom = new Geometry("BoneMesh", mesh);
-            Material col = SimpleApplicationUtils.makeColorMaterial(assetManager, ColorRGBA.White);
-            col.setBoolean("UseVertexColor", true);
-            geom.setMaterial(col);
+            Material meshMaterial = SimpleApplicationUtils.makeColorMaterial(assetManager, ColorRGBA.White);
+            meshMaterial.setBoolean("UseVertexColor", true);
+            meshMaterial.setInt("NumberOfBones", 20);
+            geom.setMaterial(meshMaterial);
             geom.setShadowMode(RenderQueue.ShadowMode.CastAndReceive);
 
-            Node geomNode = new Node("BoneMeshNode");
-            geomNode.attachChild(geom);
-
-            // Create skeleton control
-            SkeletonControl skeletonControl = new SkeletonControl(meshSkeleton);
-            geomNode.addControl(skeletonControl);
-
-            meshSpatial = geomNode;
+            meshSpatial = geom;
             rootNode.attachChild(meshSpatial);
             rootNode.detachChild(boneSpatials);
           } else {
@@ -582,10 +574,13 @@ public class CharacterBoneApp extends SimpleApplication {
         Quaternion rotation = b.getWorldBindInverseRotation().mult(transform.getRotation());
         Vector3f translation = b.getWorldBindInversePosition().add(transform.getTranslation());
         b.setUserTransforms(translation, rotation, scale);
-        b.updateWorldVectors();
+
         i++;
       }
-      //meshSkeleton.updateWorldVectors();
+
+      meshSkeleton.updateWorldVectors();
+      Matrix4f[] offsetMatrices = meshSkeleton.computeSkinningMatrices();
+      meshSpatial.getMaterial().setParam("BoneMatrices", VarType.Matrix4Array, offsetMatrices);
     }
   }
 
