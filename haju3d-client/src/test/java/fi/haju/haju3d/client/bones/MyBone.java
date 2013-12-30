@@ -81,4 +81,8 @@ public class MyBone {
   public String getMeshName() {
     return meshName;
   }
+
+  public void setMeshName(String meshName) {
+    this.meshName = meshName;
+  }
 }

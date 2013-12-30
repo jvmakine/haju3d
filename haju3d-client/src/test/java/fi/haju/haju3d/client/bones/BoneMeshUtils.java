@@ -157,7 +157,7 @@ public final class BoneMeshUtils {
     public Vector3i minLocation;
   }
 
-  public static Mesh buildMesh(List<MyBone> bones) {
+  public static Mesh buildMesh(List<MyBone> bones, Map<String, ByteArray3d> meshGridMap) {
     //-each bone has some 3d grid associated with it
     //-the grid should not be just binary, but values from 0 to 128 in order to do "meta"-shapes
     //-grid should have bounding box to represent valid x,y,z values where the shape is located..Or that's just grid size.
@@ -169,12 +169,10 @@ public final class BoneMeshUtils {
     //-each bone's world grid representation should be copied to single world grid that has simple binary value
     // for each cell
 
-    //ByteArray3d boneMeshGrid = makeBlobBoneMeshGrid();
-    ByteArray3d boneMeshGrid = makeSphereBoneMeshGrid();
     float worldScale = 10;
     List<BoneWorldGrid> boneWorldGrids = new ArrayList<>();
     for (MyBone bone : bones) {
-      boneWorldGrids.add(makeBoneWorldGrid(boneMeshGrid, worldScale, bone));
+      boneWorldGrids.add(makeBoneWorldGrid(meshGridMap.get(bone.getMeshName()), worldScale, bone));
     }
     ResultGrid resultGrid = makeResultGrid(boneWorldGrids);
     return getMeshFromGrid(resultGrid, worldScale);
@@ -350,22 +348,22 @@ public final class BoneMeshUtils {
     }
   }
 
-  private static Random r = new Random(0L);
-  private static List<Vector3f> boneColors = new ArrayList<>();
+  private static final List<Vector3f> BONE_COLORS = new ArrayList<>();
 
   static {
+    Random random = new Random(0L);
     for (int i = 0; i < 100; i++) {
-      boneColors.add(new Vector3f((float) r.nextDouble(), (float) r.nextDouble(), (float) r.nextDouble()));
+      float r = (float) random.nextDouble();
+      float g = (float) random.nextDouble();
+      float b = (float) random.nextDouble();
+      BONE_COLORS.add(new Vector3f(r, g, b));
     }
   }
 
   private static Vector3f calcVertexColor(List<MyMesh.MyFaceAndIndex> faceAndIndex, ResultGrid resultGrid) {
-    for (MyMesh.MyFaceAndIndex fi : faceAndIndex) {
-      Vector3i wp = fi.face.worldPos;
-      byte bi = resultGrid.boneIndexGrid[0].get(wp);
-      return boneColors.get(bi);
-    }
-    throw new IllegalStateException();
+    Vector3i wp = faceAndIndex.get(0).face.worldPos;
+    byte bi = resultGrid.boneIndexGrid[0].get(wp);
+    return BONE_COLORS.get(bi);
   }
 
   private static void putColor(FloatBuffer colors, Vector3f v) {
@@ -448,7 +446,7 @@ public final class BoneMeshUtils {
         int bsz = sz / 3;
         int value = bsz - (int) FastMath.sqrt(xd * xd + yd * yd + zd * zd);
 
-        value = (value * 2) + 32;
+        value = (value * 4) + 32;
         if (value < 0) value = 0;
         if (value > 63) value = 63;
         return (byte) value;
@@ -463,13 +461,13 @@ public final class BoneMeshUtils {
     grid.set(new ByteArray3d.GetValue() {
       @Override
       public byte getValue(int x, int y, int z) {
-        int xd = x - sz / 2;
-        int yd = y - sz / 2;
-        int zd = z - sz / 2;
-        int bsz = sz / 3;
+        int xd = Math.abs(x - sz / 2);
+        int yd = Math.abs(y - sz / 2);
+        int zd = Math.abs(z - sz / 2);
+        int bsz = sz / 4;
         int value = bsz - Math.max(Math.max(xd, yd), zd);
 
-        value = (value * 2) + 32;
+        value = (value * 4) + 32;
         if (value < 0) value = 0;
         if (value > 63) value = 63;
         return (byte) value;
@@ -496,11 +494,11 @@ public final class BoneMeshUtils {
         int bsz = sz / 3;
         int value = bsz - (int) FastMath.sqrt(xd * xd + yd * yd + zd * zd);
 
-        value = (value * 2) + 32;
+        value = (value * 4) + 32;
 
         //x-symmetric noise
-        value += noise.get(Math.abs(sz / 2 - x), y, z) * 3;
-        value -= 32;
+        value += noise.get(Math.abs(sz / 2 - x), y, z) * 6;
+        value -= 24;
         if (value < 0) value = 0;
         if (value > 63) value = 63;
         return (byte) value;

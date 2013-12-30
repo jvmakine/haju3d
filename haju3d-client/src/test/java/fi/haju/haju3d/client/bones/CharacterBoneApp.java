@@ -36,7 +36,6 @@ import static fi.haju.haju3d.client.SimpleApplicationUtils.makeLineMaterial;
 
 /**
  * TODO:
- * - ability to select bone mesh
  * - boneTransform is not very robust, the rotation is random
  * - ability to rotate bone mesh
  * - when looking at mesh:
@@ -62,6 +61,7 @@ import static fi.haju.haju3d.client.SimpleApplicationUtils.makeLineMaterial;
  * - maybe endpoint should always be forced on surface, no free movement allowed?
  * <p/>
  * Done
+ * - ability to select bone mesh
  * - show bone mesh when editing
  * - create a voxel representation out of bones, make solid mesh
  * - apply perlin noise to voxel mesh
@@ -98,6 +98,7 @@ public class CharacterBoneApp extends SimpleApplication {
   private Spatial axisIndicators;
   private Skeleton meshSkeleton;
   private List<Bone> meshBones;
+  private String currentBoneMeshName = SPHERE_MESH;
 
   private static class Actions {
     public static final String ROTATE_LEFT_MOUSE = "RotateLeftMouse";
@@ -111,25 +112,28 @@ public class CharacterBoneApp extends SimpleApplication {
     public static final String SHOW_GUIDES = "ShowGuides";
     public static final String DELETE_BONE = "DeleteBone";
     public static final String SHOW_MESH = "ShowMesh";
+    public static final String SELECT_BONE_MESH_1 = "SelectBoneMesh1";
+    public static final String SELECT_BONE_MESH_2 = "SelectBoneMesh2";
+    public static final String SELECT_BONE_MESH_3 = "SelectBoneMesh3";
   }
 
   private static final String SPHERE_MESH = "SPHERE";
   private static final String BOX_MESH = "BOX";
   private static final String BLOB_MESH = "BLOB";
 
-  private static final Map<String, ByteArray3d> meshGridMap = new HashMap<>();
+  private static final Map<String, ByteArray3d> MESH_GRID_MAP = new HashMap<>();
 
   static {
-    meshGridMap.put(SPHERE_MESH, BoneMeshUtils.makeSphereBoneMeshGrid());
-    meshGridMap.put(BOX_MESH, BoneMeshUtils.makeBoxBoneMeshGrid());
-    meshGridMap.put(BLOB_MESH, BoneMeshUtils.makeBlobBoneMeshGrid());
+    MESH_GRID_MAP.put(SPHERE_MESH, BoneMeshUtils.makeSphereBoneMeshGrid());
+    MESH_GRID_MAP.put(BOX_MESH, BoneMeshUtils.makeBoxBoneMeshGrid());
+    MESH_GRID_MAP.put(BLOB_MESH, BoneMeshUtils.makeBlobBoneMeshGrid());
   }
 
-  private static final Map<String, Mesh> meshMap = new HashMap<>();
+  private static final Map<String, Mesh> MESH_MAP = new HashMap<>();
 
   static {
-    for (Map.Entry<String, ByteArray3d> e : meshGridMap.entrySet()) {
-      meshMap.put(e.getKey(), BoneMeshUtils.makeBoneMesh(e.getValue()));
+    for (Map.Entry<String, ByteArray3d> e : MESH_GRID_MAP.entrySet()) {
+      MESH_MAP.put(e.getKey(), BoneMeshUtils.makeBoneMesh(e.getValue()));
     }
   }
 
@@ -254,12 +258,12 @@ public class CharacterBoneApp extends SimpleApplication {
             Vector3f attachPoint = findBoneCollisionPoint();
             if (attachPoint != null) {
               // create new bone
-              MyBone bone = new MyBone(attachPoint.clone(), attachPoint.clone(), 0.2f, SPHERE_MESH);
+              MyBone bone = new MyBone(attachPoint.clone(), attachPoint.clone(), 0.2f, currentBoneMeshName);
               bones.add(bone);
               addBoneSpatial(bone);
               dragTarget = new DragTarget(bone, false);
 
-              MyBone bone2 = new MyBone(getMirroredVector(attachPoint), getMirroredVector(attachPoint), 0.2f, SPHERE_MESH);
+              MyBone bone2 = new MyBone(getMirroredVector(attachPoint), getMirroredVector(attachPoint), 0.2f, currentBoneMeshName);
               bones.add(bone2);
               addBoneSpatial(bone2);
 
@@ -303,7 +307,7 @@ public class CharacterBoneApp extends SimpleApplication {
           showMesh = !showMesh;
           if (showMesh) {
             LOGGER.info("Show mesh");
-            Mesh mesh = BoneMeshUtils.buildMesh(bones);
+            Mesh mesh = BoneMeshUtils.buildMesh(bones, MESH_GRID_MAP);
 
             meshBones = new ArrayList<>();
             for (MyBone bone : bones) {
@@ -359,14 +363,50 @@ public class CharacterBoneApp extends SimpleApplication {
         }
       }
     }, Actions.DELETE_BONE);
+
+    inputManager.addMapping(Actions.SELECT_BONE_MESH_1, new KeyTrigger(KeyInput.KEY_1));
+    inputManager.addMapping(Actions.SELECT_BONE_MESH_2, new KeyTrigger(KeyInput.KEY_2));
+    inputManager.addMapping(Actions.SELECT_BONE_MESH_3, new KeyTrigger(KeyInput.KEY_3));
+    inputManager.addListener(new ActionListener() {
+      @Override
+      public void onAction(String name, boolean isPressed, float tpf) {
+        if (isPressed) {
+          MyBone bone = findCurrentBone();
+          if (bone != null) {
+            switch (name) {
+            case Actions.SELECT_BONE_MESH_1:
+              selectBoneMesh(bone, BOX_MESH);
+              break;
+            case Actions.SELECT_BONE_MESH_2:
+              selectBoneMesh(bone, SPHERE_MESH);
+              break;
+            case Actions.SELECT_BONE_MESH_3:
+              selectBoneMesh(bone, BLOB_MESH);
+              break;
+            }
+          }
+        }
+      }
+    }, Actions.SELECT_BONE_MESH_1, Actions.SELECT_BONE_MESH_2, Actions.SELECT_BONE_MESH_3);
+  }
+
+  private void selectBoneMesh(MyBone bone, String meshName) {
+    bone.setMeshName(meshName);
+    int index = bones.indexOf(bone);
+    boneSpatials.detachChildAt(index);
+    boneSpatials.attachChildAt(makeBoneSpatial(bone), index);
   }
 
   private void addBoneSpatial(MyBone bone) {
-    Mesh mesh = meshMap.get(bone.getMeshName());
-    final Geometry geom = new Geometry("ColoredMesh", mesh);
+    boneSpatials.attachChild(makeBoneSpatial(bone));
+  }
+
+  private Geometry makeBoneSpatial(MyBone bone) {
+    Mesh mesh = MESH_MAP.get(bone.getMeshName());
+    final Geometry geom = new Geometry("BoneSpatial", mesh);
     geom.setMaterial(makeColorMaterial(assetManager, ColorRGBA.White));
     geom.setShadowMode(RenderQueue.ShadowMode.CastAndReceive);
-    boneSpatials.attachChild(geom);
+    return geom;
   }
 
 
