@@ -75,12 +75,12 @@ public final class BoneMeshUtils {
 
   public static Transform boneTransform(MyBone b) {
     //return transformBetween(b.getStart(), b.getEnd(), Vector3f.UNIT_Y.add(Vector3f.UNIT_X.mult(1.5f)), b.getThickness());
-    return transformBetween(b.getStart(), b.getEnd(), Vector3f.UNIT_Z, b.getThickness(), false);
+    return transformBetween(b.getStart(), b.getEnd(), Vector3f.UNIT_X, b.getThickness(), false);
   }
 
   public static Transform boneTransform2(MyBone b) {
     //return transformBetween(b.getStart(), b.getEnd(), Vector3f.UNIT_Y.add(Vector3f.UNIT_X.mult(1.5f)), b.getThickness());
-    return transformBetween(b.getStart(), b.getEnd(), Vector3f.UNIT_Z, b.getThickness(), false);
+    return transformBetween(b.getStart(), b.getEnd(), Vector3f.UNIT_X, b.getThickness(), false);
   }
 
   public static Transform transformBetween(Vector3f start, Vector3f end, Vector3f front, float scale, boolean preserveVolume) {
@@ -505,8 +505,9 @@ public final class BoneMeshUtils {
         value = (value * 4) + 32;
 
         //x-symmetric noise
-        value += noise.get(Math.abs(sz / 2 - x), y, z) * 6;
-        value -= 24;
+        //value += noise.get(Math.abs(sz / 2 - x), y, z) * 6;
+        value += noise.get(x, Math.abs(sz / 2 - y), z) * 6;
+        value -= 4;
         if (value < 0) value = 0;
         if (value > 63) value = 63;
         return (byte) value;

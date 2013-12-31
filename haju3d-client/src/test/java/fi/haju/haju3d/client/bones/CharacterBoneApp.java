@@ -639,7 +639,7 @@ public class CharacterBoneApp extends SimpleApplication {
   @Override
   public void destroy() {
     super.destroy();
-    if (bones != null && false) {
+    if (bones != null) {
       try {
         FileUtils.writeStringToFile(BONE_FILE, BoneSaveUtils.saveBones(bones), BONE_FILE_ENCODING);
       } catch (IOException e) {
