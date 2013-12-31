@@ -1,7 +1,5 @@
 package fi.haju.haju3d.client.bones;
 
-import com.jme3.animation.Bone;
-import com.jme3.animation.Skeleton;
 import com.jme3.app.SimpleApplication;
 import com.jme3.collision.CollisionResult;
 import com.jme3.collision.CollisionResults;
@@ -36,19 +34,23 @@ import static fi.haju.haju3d.client.SimpleApplicationUtils.makeLineMaterial;
 
 /**
  * TODO:
- * - boneTransform is not very robust, the rotation is random
- * - ability to rotate bone mesh
  * - when looking at mesh:
  * -- use different boneTransform; scale ~ sqrt(length)
  * -- somehow attach joints together
  * -- ideally IK movement of joints
+ * - marching cubes meshing (just blur the boneworldgrid a bit)
+ * -- solves: smoothing spikes, higher quality sphere, ladders in bone weights..and can be faster
+ * - MeshToBone
  * - bug: somehow location of mesh affects transforms?
  * <p/>
  * Backlog:
- * - ability to quickly edit bone mesh
- * - ability to set constraints on mesh joints
  * - IK animation on bones
+ * - ability to set constraints on mesh joints
+ * - ability to quickly edit bone mesh
+ * - ability to rotate bone mesh
  * - quick way to create a leg or an arm (both consist of 3 bones)
+ * Tough problems:
+ * - boneTransform is not very robust, the rotation is random
  * - texturing
  * <p/>
  * Bone snapping:
@@ -97,8 +99,7 @@ public class CharacterBoneApp extends SimpleApplication {
 
   private Spatial axisIndicators;
   private Geometry meshSpatial = null;
-  private Skeleton meshSkeleton;
-  private List<Bone> meshBones;
+  private List<Matrix4f> meshBoneBindPoseInverseTransforms;
   private String currentBoneMeshName = SPHERE_MESH;
 
   private static class Actions {
@@ -315,15 +316,11 @@ public class CharacterBoneApp extends SimpleApplication {
 
             Mesh mesh = BoneMeshUtils.buildMesh(activeBones, MESH_GRID_MAP);
 
-            meshBones = new ArrayList<>();
+            meshBoneBindPoseInverseTransforms = new ArrayList<>();
             for (MyBone bone : activeBones) {
-              Bone meshBone = new Bone("bone");
               Transform transform = BoneMeshUtils.boneTransform2(bone);
-              meshBone.setBindTransforms(transform.getTranslation(), transform.getRotation(), transform.getScale());
-              meshBone.setUserControl(true);
-              meshBones.add(meshBone);
+              meshBoneBindPoseInverseTransforms.add(BoneMeshUtils.getTransformMatrix(transform).invert());
             }
-            meshSkeleton = new Skeleton(meshBones.toArray(new Bone[meshBones.size()]));
 
             // Create model
             Geometry geom = new Geometry("BoneMesh", mesh);
@@ -339,12 +336,11 @@ public class CharacterBoneApp extends SimpleApplication {
           } else {
             LOGGER.info("Hide mesh");
             activeBones = bones;
-            if (isMeshPreviewMode()) {
+            if (meshSpatial != null) {
               rootNode.detachChild(meshSpatial);
-              meshSpatial = null;
-              meshSkeleton = null;
-              meshBones = null;
             }
+            meshSpatial = null;
+            meshBoneBindPoseInverseTransforms = null;
             rootNode.attachChild(boneSpatials);
           }
 
@@ -563,23 +559,16 @@ public class CharacterBoneApp extends SimpleApplication {
     updateBoneSpatials();
 
     if (isMeshPreviewMode()) {
-      // apply new bone tranformations to skeleton
+      // apply new bone tranformations to BoneMatrices
       int i = 0;
+      Matrix4f[] offsetMatrices = new Matrix4f[activeBones.size()];
       for (MyBone bone : activeBones) {
         Transform transform = BoneMeshUtils.boneTransform2(bone);
-
-        Bone b = meshSkeleton.getBone(i);
-        //Vector3f scale = new Vector3f(1,1,1); //b.getWorldBindInverseScale().mult(transform.getScale());
-        Vector3f scale = b.getWorldBindInverseScale().mult(transform.getScale());
-        Quaternion rotation = b.getWorldBindInverseRotation().mult(transform.getRotation());
-        Vector3f translation = b.getWorldBindInversePosition().add(transform.getTranslation());
-        b.setUserTransforms(translation, rotation, scale);
+        Matrix4f m = BoneMeshUtils.getTransformMatrix(transform);
+        offsetMatrices[i] = m.mult(meshBoneBindPoseInverseTransforms.get(i));
 
         i++;
       }
-
-      meshSkeleton.updateWorldVectors();
-      Matrix4f[] offsetMatrices = meshSkeleton.computeSkinningMatrices();
       meshSpatial.getMaterial().setParam("BoneMatrices", VarType.Matrix4Array, offsetMatrices);
     }
   }

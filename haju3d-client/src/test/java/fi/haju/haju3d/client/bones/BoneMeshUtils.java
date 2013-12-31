@@ -83,6 +83,12 @@ public final class BoneMeshUtils {
     return transformBetween(b.getStart(), b.getEnd(), Vector3f.UNIT_X, b.getThickness(), false);
   }
 
+  public static Matrix4f getTransformMatrix(Transform t) {
+    Matrix4f m = new Matrix4f();
+    m.setTransform(t.getTranslation(), t.getScale(), t.getRotation().toRotationMatrix());
+    return m;
+  }
+
   public static Transform transformBetween(Vector3f start, Vector3f end, Vector3f front, float scale, boolean preserveVolume) {
     Vector3f dir = start.subtract(end);
     Vector3f dirn = dir.normalize();
