@@ -261,18 +261,8 @@ public class CharacterBoneApp extends SimpleApplication {
           } else if (name.equals(Actions.CLICK_RMB) && !showMesh) {
             Vector3f attachPoint = findBoneCollisionPoint();
             if (attachPoint != null) {
-              // create new bone
-              MyBone bone = new MyBone(attachPoint.clone(), attachPoint.clone(), 0.2f, currentBoneMeshName);
-              bones.add(bone);
-              addBoneSpatial(bone);
+              MyBone bone = createNewBone(attachPoint);
               dragTarget = new DragTarget(bone, false);
-
-              MyBone bone2 = new MyBone(getMirroredVector(attachPoint), getMirroredVector(attachPoint), 0.2f, currentBoneMeshName);
-              bones.add(bone2);
-              addBoneSpatial(bone2);
-
-              bone.setMirrorBone(bone2);
-              startDragging();
             }
           }
           if (dragTarget != null) {
@@ -394,6 +384,20 @@ public class CharacterBoneApp extends SimpleApplication {
         }
       }
     }, Actions.SELECT_BONE_MESH_1, Actions.SELECT_BONE_MESH_2, Actions.SELECT_BONE_MESH_3);
+  }
+
+  private MyBone createNewBone(Vector3f attachPoint) {
+    // create new bone
+    MyBone bone = new MyBone(attachPoint.clone(), attachPoint.clone(), 0.2f, currentBoneMeshName);
+    bones.add(bone);
+    addBoneSpatial(bone);
+
+    MyBone bone2 = new MyBone(getMirroredVector(attachPoint), getMirroredVector(attachPoint), 0.2f, currentBoneMeshName);
+    bones.add(bone2);
+    addBoneSpatial(bone2);
+
+    bone.setMirrorBone(bone2);
+    return bone;
   }
 
   private void selectBoneMeshAndMirror(MyBone bone, String meshName) {
