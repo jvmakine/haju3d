@@ -33,6 +33,11 @@ public class MyBone {
     }
   }
 
+  // only use for animated bones, not for editable bones
+  public void setThicknessSelf(float value) {
+    this.thickness = value;
+  }
+
   public void addThickness(float value) {
     addThicknessSelf(value);
     if (mirrorBone != null) {

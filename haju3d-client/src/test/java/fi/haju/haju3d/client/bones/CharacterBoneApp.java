@@ -35,7 +35,6 @@ import static fi.haju.haju3d.client.SimpleApplicationUtils.makeLineMaterial;
 /**
  * TODO:
  * - when looking at mesh:
- * -- use different boneTransform; scale ~ sqrt(length)
  * -- somehow attach joints together
  * -- ideally IK movement of joints
  * - marching cubes meshing (just blur the boneworldgrid a bit)
@@ -61,6 +60,7 @@ import static fi.haju.haju3d.client.SimpleApplicationUtils.makeLineMaterial;
  * - maybe endpoint should always be forced on surface, no free movement allowed?
  * <p/>
  * Done
+ * - when looking at mesh, use different boneTransform; scale ~ sqrt(length)
  * - when looking at mesh, don't save bone locations
  * - when looking at mesh, allow non-mirrored bones move off x-plane
  * - ability to select bone mesh
@@ -258,7 +258,7 @@ public class CharacterBoneApp extends SimpleApplication {
           stopDragging();
           if (name.equals(Actions.CLICK)) {
             dragTarget = findDragTarget();
-          } else if (name.equals(Actions.CLICK_RMB) && !isMeshPreviewMode()) {
+          } else if (name.equals(Actions.CLICK_RMB) && !showMesh) {
             Vector3f attachPoint = findBoneCollisionPoint();
             if (attachPoint != null) {
               // create new bone
@@ -314,6 +314,15 @@ public class CharacterBoneApp extends SimpleApplication {
 
             activeBones = BoneSaveUtils.cloneBones(bones);
 
+            for (MyBone bone : activeBones) {
+              Vector3f dir = bone.getStart().subtract(bone.getEnd());
+              float length = dir.length();
+              // the way bone scaling works is different when moving mesh bones than when editing them,
+              // so we must solve for new thickness:
+              // t1*len = t2/sqrt(len), solve for t2
+              bone.setThicknessSelf(bone.getThickness() * length * FastMath.sqrt(length));
+            }
+
             Mesh mesh = BoneMeshUtils.buildMesh(activeBones, MESH_GRID_MAP);
 
             meshBoneBindPoseInverseTransforms = new ArrayList<>();
@@ -326,7 +335,7 @@ public class CharacterBoneApp extends SimpleApplication {
             Geometry geom = new Geometry("BoneMesh", mesh);
             Material meshMaterial = SimpleApplicationUtils.makeColorMaterial(assetManager, ColorRGBA.White);
             meshMaterial.setBoolean("UseVertexColor", true);
-            meshMaterial.setInt("NumberOfBones", 20);
+            meshMaterial.setInt("NumberOfBones", activeBones.size());
             geom.setMaterial(meshMaterial);
             geom.setShadowMode(RenderQueue.ShadowMode.CastAndReceive);
 
@@ -352,7 +361,7 @@ public class CharacterBoneApp extends SimpleApplication {
     inputManager.addListener(new ActionListener() {
       @Override
       public void onAction(String name, boolean isPressed, float tpf) {
-        if (isPressed && !isMeshPreviewMode()) {
+        if (isPressed && !showMesh) {
           MyBone bone = findCurrentBone();
           if (bone != null && bones.indexOf(bone) != 0) {
             removeBoneAndMirror(bone);
@@ -385,10 +394,6 @@ public class CharacterBoneApp extends SimpleApplication {
         }
       }
     }, Actions.SELECT_BONE_MESH_1, Actions.SELECT_BONE_MESH_2, Actions.SELECT_BONE_MESH_3);
-  }
-
-  private boolean isMeshPreviewMode() {
-    return meshSpatial != null;
   }
 
   private void selectBoneMeshAndMirror(MyBone bone, String meshName) {
@@ -535,7 +540,7 @@ public class CharacterBoneApp extends SimpleApplication {
     Vector3f center = dragTarget.getPosition();
 
     // non-mirrored bones only dragged along X-plane
-    if (!isMeshPreviewMode()) {
+    if (!showMesh) {
       if (dragTarget.bone.getMirrorBone() == null) {
         direction = Vector3f.UNIT_X;
         left = Vector3f.UNIT_Z;
@@ -558,7 +563,7 @@ public class CharacterBoneApp extends SimpleApplication {
     setCameraPosition();
     updateBoneSpatials();
 
-    if (isMeshPreviewMode()) {
+    if (showMesh) {
       // apply new bone tranformations to BoneMatrices
       int i = 0;
       Matrix4f[] offsetMatrices = new Matrix4f[activeBones.size()];
@@ -588,7 +593,7 @@ public class CharacterBoneApp extends SimpleApplication {
 
     int i = 0;
     for (MyBone b : activeBones) {
-      Transform t = BoneMeshUtils.boneTransform(b);
+      Transform t = showMesh ? BoneMeshUtils.boneTransform2(b) : BoneMeshUtils.boneTransform(b);
       if (Vector3f.isValidVector(t.getTranslation())) {
         boneSpatials.getChild(i).setLocalTransform(t);
       }

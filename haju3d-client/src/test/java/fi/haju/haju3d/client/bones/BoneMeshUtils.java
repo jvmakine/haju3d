@@ -74,13 +74,11 @@ public final class BoneMeshUtils {
   }
 
   public static Transform boneTransform(MyBone b) {
-    //return transformBetween(b.getStart(), b.getEnd(), Vector3f.UNIT_Y.add(Vector3f.UNIT_X.mult(1.5f)), b.getThickness());
     return transformBetween(b.getStart(), b.getEnd(), Vector3f.UNIT_X, b.getThickness(), false);
   }
 
   public static Transform boneTransform2(MyBone b) {
-    //return transformBetween(b.getStart(), b.getEnd(), Vector3f.UNIT_Y.add(Vector3f.UNIT_X.mult(1.5f)), b.getThickness());
-    return transformBetween(b.getStart(), b.getEnd(), Vector3f.UNIT_X, b.getThickness(), false);
+    return transformBetween(b.getStart(), b.getEnd(), Vector3f.UNIT_X, b.getThickness(), true);
   }
 
   public static Matrix4f getTransformMatrix(Transform t) {
