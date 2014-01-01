@@ -24,24 +24,14 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static fi.haju.haju3d.client.SimpleApplicationUtils.makeColorMaterial;
 import static fi.haju.haju3d.client.SimpleApplicationUtils.makeLineMaterial;
 
 /**
  * TODO:
- * - when looking at mesh:
- * -- somehow attach joints together
- * -- ideally IK movement of joints
- * -->* each bone has parentBone (except root). It has "attachPoint" and "freePoint" instead of start/end.
- * --> When a bone is moved, all its child bones move too. Or their "freePoint" does not but "attachPoint" does.
- * --> Ability to switch between "skeleton mode" and "free mode".
- * --> In "skeleton mode" you can't move the "attachPoint".
- * --> Mesh preview is always in "skeleton mode".
+ * - Ability to switch between "skeleton mode" and "free mode"; In "skeleton mode" you can't move the "attachPoint". Mesh preview is always in "skeleton mode".
  * - MeshToBone
  * - meshing: vertex sharing for marching cubes: ~1/3 number of vertices
  * - ability to edit bones while showing real mesh: mesh reconstructed on every change
@@ -67,6 +57,9 @@ import static fi.haju.haju3d.client.SimpleApplicationUtils.makeLineMaterial;
  * - maybe endpoint should always be forced on surface, no free movement allowed?
  * <p/>
  * Done
+ * - IK movement of joints
+ * -- each bone has parentBone (except root). It has "attachPoint" and "freePoint" instead of start/end.
+ * -- When a bone is moved, all its child bones move too. both their "freePoint" and "attachPoint".
  * - marching cubes meshing (just blur the boneworldgrid a bit)
  * -- solves: smoothing spikes, higher quality sphere, ladders in bone weights..and can be faster
  * - meshing: apply small blur to data in BoneWorldGrid. takes care of aliasing
@@ -261,7 +254,10 @@ public class CharacterEditorApp extends SimpleApplication {
         }
         MyBone bone = findCurrentBone();
         if (bone != null) {
+          Transform oldTransform = boneTransform(bone);
           bone.addThickness(value);
+          Transform newTransform = boneTransform(bone);
+          applyTransformToChildren(bone, oldTransform, newTransform);
         }
       }
     }, Actions.RESIZE_DOWN, Actions.RESIZE_UP);
@@ -404,6 +400,10 @@ public class CharacterEditorApp extends SimpleApplication {
     }, Actions.SELECT_BONE_MESH_1, Actions.SELECT_BONE_MESH_2, Actions.SELECT_BONE_MESH_3);
   }
 
+  private Transform boneTransform(MyBone bone) {
+    return showMesh ? BoneTransformUtils.boneTransform2(bone) : BoneTransformUtils.boneTransform(bone);
+  }
+
   private MyBone createNewBone(Vector3f attachPoint, MyBone attachBone) {
     // create new bone
     MyBone bone = new MyBone(
@@ -518,10 +518,14 @@ public class CharacterEditorApp extends SimpleApplication {
     DragTarget best = null;
     float bestDist = 20;
     for (MyBone bone : activeBones) {
-      float distance = cursorDistanceTo(bone.getAttachPoint());
-      if (distance < bestDist) {
-        bestDist = distance;
-        best = new DragTarget(bone, true);
+      float distance;
+      // allow attach point dragging if mesh is not shown
+      if (!showMesh) {
+        distance = cursorDistanceTo(bone.getAttachPoint());
+        if (distance < bestDist) {
+          bestDist = distance;
+          best = new DragTarget(bone, true);
+        }
       }
       distance = cursorDistanceTo(bone.getFreePoint());
       if (distance < bestDist) {
@@ -576,6 +580,16 @@ public class CharacterEditorApp extends SimpleApplication {
     return CharacterEditorUtils.makeDragPlane(sz, mesh, material, direction, left, center);
   }
 
+  public List<MyBone> getChildren(MyBone bone) {
+    List<MyBone> result = new ArrayList<>();
+    for (MyBone b : activeBones) {
+      if (b.getParentBone() == bone) {
+        result.add(b);
+      }
+    }
+    return result;
+  }
+
   @Override
   public void simpleUpdate(float tpf) {
     if (dragTarget != null) {
@@ -583,12 +597,15 @@ public class CharacterEditorApp extends SimpleApplication {
       CollisionResults results = new CollisionResults();
       if (dragPlane.collideWith(ray, results) > 0) {
         Vector3f newPosition = results.getCollision(0).getContactPoint();
+        Transform oldTransform = boneTransform(dragTarget.bone);
         if (showMesh) {
           // move mirrored bones individually when in showMesh mode
           dragTarget.setPositionSelf(newPosition);
         } else {
           dragTarget.setPosition(newPosition);
         }
+        Transform newTransform = boneTransform(dragTarget.bone);
+        applyTransformToChildren(dragTarget.bone, oldTransform, newTransform);
       }
     }
 
@@ -610,6 +627,34 @@ public class CharacterEditorApp extends SimpleApplication {
     }
   }
 
+  private void applyTransformToChildren(MyBone bone, Transform oldTransform, Transform newTransform, Set<MyBone> moved) {
+    for (MyBone c : getChildren(bone)) {
+      if (moved.contains(c)) {
+        continue;
+      }
+      Transform childOldTransform = boneTransform(c);
+
+      moved.add(c);
+      if (showMesh) {
+        c.setPositionSelf(newTransform.transformVector(oldTransform.transformInverseVector(c.getAttachPoint(), null), null), true);
+        c.setPositionSelf(newTransform.transformVector(oldTransform.transformInverseVector(c.getFreePoint(), null), null), false);
+      } else {
+        moved.add(c.getMirrorBone());
+        c.setPosition(newTransform.transformVector(oldTransform.transformInverseVector(c.getAttachPoint(), null), null), true);
+        c.setPosition(newTransform.transformVector(oldTransform.transformInverseVector(c.getFreePoint(), null), null), false);
+      }
+
+      Transform childNewTransform = boneTransform(c);
+
+      applyTransformToChildren(c, childOldTransform, childNewTransform, moved);
+    }
+  }
+
+  private void applyTransformToChildren(MyBone bone, Transform oldTransform, Transform newTransform) {
+    Set<MyBone> moved = new HashSet<>();
+    applyTransformToChildren(bone, oldTransform, newTransform, moved);
+  }
+
   /**
    * returns a ray pointing from camera to cursor
    */
@@ -625,7 +670,7 @@ public class CharacterEditorApp extends SimpleApplication {
 
     int i = 0;
     for (MyBone b : activeBones) {
-      Transform t = showMesh ? BoneTransformUtils.boneTransform2(b) : BoneTransformUtils.boneTransform(b);
+      Transform t = boneTransform(b);
       if (Vector3f.isValidVector(t.getTranslation())) {
         boneSpatials.getChild(i).setLocalTransform(t);
       }
@@ -636,12 +681,16 @@ public class CharacterEditorApp extends SimpleApplication {
     if (b != null) {
       Node gui = new Node();
 
-      Vector3f screenAttachPoint = cam.getScreenCoordinates(b.getAttachPoint());
-      gui.attachChild(CharacterEditorUtils.makeSymbol(screenAttachPoint, guiFont, "X", ColorRGBA.White));
-
       Vector3f screenFreePoint = cam.getScreenCoordinates(b.getFreePoint());
       gui.attachChild(CharacterEditorUtils.makeSymbol(screenFreePoint, guiFont, "O", ColorRGBA.White));
-      gui.attachChild(CharacterEditorUtils.makeLine(screenAttachPoint, screenFreePoint, makeLineMaterial(assetManager, ColorRGBA.Green)));
+
+      // allow attach point movement when mesh is not shown
+      if (!showMesh) {
+        Vector3f screenAttachPoint = cam.getScreenCoordinates(b.getAttachPoint());
+        gui.attachChild(CharacterEditorUtils.makeSymbol(screenAttachPoint, guiFont, "X", ColorRGBA.White));
+        gui.attachChild(CharacterEditorUtils.makeLine(screenAttachPoint, screenFreePoint, makeLineMaterial(assetManager, ColorRGBA.Green)));
+      }
+
       guiNode.attachChild(gui);
     }
 
