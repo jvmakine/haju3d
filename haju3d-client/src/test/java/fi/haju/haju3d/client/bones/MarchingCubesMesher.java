@@ -8,6 +8,10 @@ import fi.haju.haju3d.protocol.world.ByteArray3d;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -16,25 +20,24 @@ import java.nio.IntBuffer;
 public final class MarchingCubesMesher {
 
   public static Mesh createMesh(ByteArray3d grid) {
+    return createMesh(grid, 1, Vector3f.ZERO);
+  }
+
+  public static Mesh createMesh(ByteArray3d grid, float scale, Vector3f translate) {
     GRIDCELL c = new GRIDCELL();
-    TRIANGLE[] ts = new TRIANGLE[16];
-    for (int i = 0; i < ts.length; i++) {
-      ts[i] = new TRIANGLE();
-    }
     for (int i = 0; i < c.p.length; i++) {
       c.p[i] = new Vector3f();
     }
+    Vector3f[] vertlist = new Vector3f[12];
+    for (int i = 0; i < vertlist.length; i++) {
+      vertlist[i] = new Vector3f();
+    }
 
-    int faces = 10000;
+    List<TRIANGLE> triangles = new ArrayList<>();
 
-    FloatBuffer vertexes = BufferUtils.createFloatBuffer(faces * 3 * 3);
-    FloatBuffer vertexNormals = BufferUtils.createFloatBuffer(faces * 3 * 3);
-    IntBuffer indexes = BufferUtils.createIntBuffer(faces * 3);
-
-    int ix = 0;
-    for (int x = 0; x < grid.getWidth() - 1; x++) {
+    for (int z = 0; z < grid.getDepth() - 1; z++) {
       for (int y = 0; y < grid.getHeight() - 1; y++) {
-        for (int z = 0; z < grid.getDepth() - 1; z++) {
+        for (int x = 0; x < grid.getWidth() - 1; x++) {
           c.p[0].set(x, y, z + 1);
           c.p[1].set(x + 1, y + 0, z + 1);
           c.p[2].set(x + 1, y + 0, z + 0);
@@ -53,22 +56,36 @@ public final class MarchingCubesMesher {
           c.val[6] = grid.get(x + 1, y + 1, z);
           c.val[7] = grid.get(x, y + 1, z);
 
-          int fc = polygonise(c, 32, ts);
-          for (int f = 0; f < fc; f++) {
-            TRIANGLE t = ts[f];
-            vertexes.put(t.p[0].x).put(t.p[0].y).put(t.p[0].z);
-            vertexes.put(t.p[1].x).put(t.p[1].y).put(t.p[1].z);
-            vertexes.put(t.p[2].x).put(t.p[2].y).put(t.p[2].z);
-
-            vertexNormals.put(0).put(0).put(1);
-            vertexNormals.put(0).put(0).put(1);
-            vertexNormals.put(0).put(0).put(1);
-
-            indexes.put(ix).put(ix + 1).put(ix + 2);
-            ix += 3;
-          }
+          polygonise(c, 32, triangles, vertlist);
         }
       }
+    }
+
+    int faces = triangles.size();
+    FloatBuffer vertexes = BufferUtils.createFloatBuffer(faces * 3 * 3);
+    FloatBuffer vertexNormals = BufferUtils.createFloatBuffer(faces * 3 * 3);
+    IntBuffer indexes = BufferUtils.createIntBuffer(faces * 3);
+
+    Map<Vector3f, Vector3f> normalMap = new HashMap<>();
+
+    for (TRIANGLE t : triangles) {
+      Vector3f normal = t.p[0].subtract(t.p[1]).cross(t.p[2].subtract(t.p[1])).negateLocal();
+      addNormal(normalMap, t.p[0], normal);
+      addNormal(normalMap, t.p[1], normal);
+      addNormal(normalMap, t.p[2], normal);
+    }
+
+    int ix = 0;
+    for (TRIANGLE t : triangles) {
+      for (Vector3f v : t.p) {
+        Vector3f v2 = v.add(translate).multLocal(scale);
+        vertexes.put(v2.x).put(v2.y).put(v2.z);
+        Vector3f n = normalMap.get(v).normalizeLocal();
+        vertexNormals.put(n.x).put(n.y).put(n.z);
+      }
+
+      indexes.put(ix).put(ix + 1).put(ix + 2);
+      ix += 3;
     }
 
     Mesh m = new Mesh();
@@ -76,7 +93,17 @@ public final class MarchingCubesMesher {
     m.setBuffer(VertexBuffer.Type.Normal, 3, vertexNormals);
     m.setBuffer(VertexBuffer.Type.Index, 1, indexes);
     m.updateBound();
+    m.setStatic();
     return m;
+  }
+
+  private static void addNormal(Map<Vector3f, Vector3f> normalMap, Vector3f vert, Vector3f normal) {
+    Vector3f n = normalMap.get(vert);
+    if (n == null) {
+      n = Vector3f.ZERO.clone();
+      normalMap.put(vert, n);
+    }
+    n.addLocal(normal);
   }
 
   public static class TRIANGLE {
@@ -388,10 +415,9 @@ public final class MarchingCubesMesher {
     0 will be returned if the grid cell is either totally above
      of totally below the isolevel.
   */
-  public static int polygonise(GRIDCELL grid, float isolevel, TRIANGLE[] triangles) {
-    int i, ntriang;
+  public static void polygonise(GRIDCELL grid, float isolevel, List<TRIANGLE> triangles, Vector3f[] vertlist) {
+    int i;
     int cubeindex;
-    Vector3f vertlist[] = new Vector3f[12];
 
    /*
       Determine the index into the edge table which
@@ -410,77 +436,66 @@ public final class MarchingCubesMesher {
    /* Cube is entirely in/out of the surface */
     int edge = edgeTable[cubeindex];
     if (edge == 0)
-      return (0);
+      return;
 
    /* Find the vertices where the surface intersects the cube */
     if ((edge & 1) != 0)
-      vertlist[0] =
-          VertexInterp(isolevel, grid.p[0], grid.p[1], grid.val[0], grid.val[1]);
+      VertexInterp(isolevel, grid.p[0], grid.p[1], grid.val[0], grid.val[1], vertlist[0]);
     if ((edge & 2) != 0)
-      vertlist[1] =
-          VertexInterp(isolevel, grid.p[1], grid.p[2], grid.val[1], grid.val[2]);
+      VertexInterp(isolevel, grid.p[1], grid.p[2], grid.val[1], grid.val[2], vertlist[1]);
     if ((edge & 4) != 0)
-      vertlist[2] =
-          VertexInterp(isolevel, grid.p[2], grid.p[3], grid.val[2], grid.val[3]);
+      VertexInterp(isolevel, grid.p[2], grid.p[3], grid.val[2], grid.val[3], vertlist[2]);
     if ((edge & 8) != 0)
-      vertlist[3] =
-          VertexInterp(isolevel, grid.p[3], grid.p[0], grid.val[3], grid.val[0]);
+      VertexInterp(isolevel, grid.p[3], grid.p[0], grid.val[3], grid.val[0], vertlist[3]);
     if ((edge & 16) != 0)
-      vertlist[4] =
-          VertexInterp(isolevel, grid.p[4], grid.p[5], grid.val[4], grid.val[5]);
+      VertexInterp(isolevel, grid.p[4], grid.p[5], grid.val[4], grid.val[5], vertlist[4]);
     if ((edge & 32) != 0)
-      vertlist[5] =
-          VertexInterp(isolevel, grid.p[5], grid.p[6], grid.val[5], grid.val[6]);
+      VertexInterp(isolevel, grid.p[5], grid.p[6], grid.val[5], grid.val[6], vertlist[5]);
     if ((edge & 64) != 0)
-      vertlist[6] =
-          VertexInterp(isolevel, grid.p[6], grid.p[7], grid.val[6], grid.val[7]);
+      VertexInterp(isolevel, grid.p[6], grid.p[7], grid.val[6], grid.val[7], vertlist[6]);
     if ((edge & 128) != 0)
-      vertlist[7] =
-          VertexInterp(isolevel, grid.p[7], grid.p[4], grid.val[7], grid.val[4]);
+      VertexInterp(isolevel, grid.p[7], grid.p[4], grid.val[7], grid.val[4], vertlist[7]);
     if ((edge & 256) != 0)
-      vertlist[8] =
-          VertexInterp(isolevel, grid.p[0], grid.p[4], grid.val[0], grid.val[4]);
+      VertexInterp(isolevel, grid.p[0], grid.p[4], grid.val[0], grid.val[4], vertlist[8]);
     if ((edge & 512) != 0)
-      vertlist[9] =
-          VertexInterp(isolevel, grid.p[1], grid.p[5], grid.val[1], grid.val[5]);
+      VertexInterp(isolevel, grid.p[1], grid.p[5], grid.val[1], grid.val[5], vertlist[9]);
     if ((edge & 1024) != 0)
-      vertlist[10] =
-          VertexInterp(isolevel, grid.p[2], grid.p[6], grid.val[2], grid.val[6]);
+      VertexInterp(isolevel, grid.p[2], grid.p[6], grid.val[2], grid.val[6], vertlist[10]);
     if ((edge & 2048) != 0)
-      vertlist[11] =
-          VertexInterp(isolevel, grid.p[3], grid.p[7], grid.val[3], grid.val[7]);
+      VertexInterp(isolevel, grid.p[3], grid.p[7], grid.val[3], grid.val[7], vertlist[11]);
 
    /* Create the triangle */
-    ntriang = 0;
-    for (i = 0; triTable[cubeindex][i] != -1; i += 3) {
-      triangles[ntriang].p[0] = vertlist[triTable[cubeindex][i]];
-      triangles[ntriang].p[1] = vertlist[triTable[cubeindex][i + 1]];
-      triangles[ntriang].p[2] = vertlist[triTable[cubeindex][i + 2]];
-      ntriang++;
+    int[] tris = triTable[cubeindex];
+    for (i = 0; tris[i] != -1; i += 3) {
+      TRIANGLE newTri = new TRIANGLE();
+      newTri.p[0] = vertlist[tris[i]].clone();
+      newTri.p[1] = vertlist[tris[i + 1]].clone();
+      newTri.p[2] = vertlist[tris[i + 2]].clone();
+      triangles.add(newTri);
     }
-
-    return (ntriang);
   }
 
   /*
      Linearly interpolate the position where an isosurface cuts
      an edge between two vertices, each with their own scalar value
   */
-  private static Vector3f VertexInterp(float isolevel, Vector3f p1, Vector3f p2, float valp1, float valp2) {
-    float mu;
-    Vector3f p = new Vector3f();
-
-    if (Math.abs(isolevel - valp1) < 0.00001)
-      return (p1);
-    if (Math.abs(isolevel - valp2) < 0.00001)
-      return (p2);
-    if (Math.abs(valp1 - valp2) < 0.00001)
-      return (p1);
-    mu = (isolevel - valp1) / (valp2 - valp1);
-    p.x = p1.x + mu * (p2.x - p1.x);
-    p.y = p1.y + mu * (p2.y - p1.y);
-    p.z = p1.z + mu * (p2.z - p1.z);
-
-    return (p);
+  private static void VertexInterp(float isolevel, Vector3f p1, Vector3f p2, float valp1, float valp2, Vector3f out) {
+    if (Math.abs(isolevel - valp1) < 0.00001) {
+      out.set(p1);
+      return;
+    }
+    if (Math.abs(isolevel - valp2) < 0.00001) {
+      out.set(p2);
+      return;
+    }
+    if (Math.abs(valp1 - valp2) < 0.00001) {
+      out.set(p1);
+      return;
+    }
+    float mu = (isolevel - valp1) / (valp2 - valp1);
+    out.set(
+        p1.x + mu * (p2.x - p1.x),
+        p1.y + mu * (p2.y - p1.y),
+        p1.z + mu * (p2.z - p1.z));
   }
 }

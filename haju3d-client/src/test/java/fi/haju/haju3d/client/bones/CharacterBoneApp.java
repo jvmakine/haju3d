@@ -35,11 +35,16 @@ import static fi.haju.haju3d.client.SimpleApplicationUtils.makeLineMaterial;
 /**
  * TODO:
  * - when looking at mesh:
+ * -- allow moving mirrored bones individually
  * -- somehow attach joints together
  * -- ideally IK movement of joints
- * - marching cubes meshing (just blur the boneworldgrid a bit)
- * -- solves: smoothing spikes, higher quality sphere, ladders in bone weights..and can be faster
+ * --> each bone has parentBone (except root). It has "attachPoint" and "freePoint" instead of start/end.
+ * --> When a bone is moved, all its child bones move too. Or their "freePoint" does not but "attachPoint" does.
+ * --> Ability to switch between "skeleton mode" and "free mode".
+ * --> In "skeleton mode" you can't move the "attachPoint".
+ * --> Mesh preview is always in "skeleton mode".
  * - MeshToBone
+ * - meshing: vertex sharing for marching cubes: ~1/3 number of vertices
  * - bug: somehow location of mesh affects transforms?
  * <p/>
  * Backlog:
@@ -60,6 +65,10 @@ import static fi.haju.haju3d.client.SimpleApplicationUtils.makeLineMaterial;
  * - maybe endpoint should always be forced on surface, no free movement allowed?
  * <p/>
  * Done
+ * - marching cubes meshing (just blur the boneworldgrid a bit)
+ * -- solves: smoothing spikes, higher quality sphere, ladders in bone weights..and can be faster
+ * - meshing: apply small blur to data in BoneWorldGrid. takes care of aliasing
+ * --> 7 neighbor blur, applied twice?
  * - when looking at mesh, use different boneTransform; scale ~ sqrt(length)
  * - when looking at mesh, don't save bone locations
  * - when looking at mesh, allow non-mirrored bones move off x-plane
@@ -100,7 +109,7 @@ public class CharacterBoneApp extends SimpleApplication {
   private Spatial axisIndicators;
   private Geometry meshSpatial = null;
   private List<Matrix4f> meshBoneBindPoseInverseTransforms;
-  private String currentBoneMeshName = SPHERE_MESH;
+  private String currentBoneMeshName = BLOB_MESH;
 
   private static class Actions {
     public static final String ROTATE_LEFT_MOUSE = "RotateLeftMouse";
@@ -324,7 +333,7 @@ public class CharacterBoneApp extends SimpleApplication {
             // Create model
             Geometry geom = new Geometry("BoneMesh", mesh);
             Material meshMaterial = SimpleApplicationUtils.makeColorMaterial(assetManager, ColorRGBA.White);
-            meshMaterial.setBoolean("UseVertexColor", true);
+            //meshMaterial.setBoolean("UseVertexColor", true);
             meshMaterial.setInt("NumberOfBones", activeBones.size());
             geom.setMaterial(meshMaterial);
             geom.setShadowMode(RenderQueue.ShadowMode.CastAndReceive);

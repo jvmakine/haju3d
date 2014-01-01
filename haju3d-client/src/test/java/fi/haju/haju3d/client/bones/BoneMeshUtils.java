@@ -10,20 +10,19 @@ import com.jme3.scene.debug.Arrow;
 import com.jme3.scene.shape.Line;
 import com.jme3.scene.shape.Quad;
 import com.jme3.util.BufferUtils;
-import fi.haju.haju3d.client.chunk.light.ChunkLightManager;
-import fi.haju.haju3d.client.ui.mesh.ChunkSpatialBuilder;
-import fi.haju.haju3d.client.ui.mesh.MyFace;
 import fi.haju.haju3d.client.ui.mesh.MyMesh;
-import fi.haju.haju3d.client.ui.mesh.MyVertex;
-import fi.haju.haju3d.protocol.coordinate.ChunkPosition;
 import fi.haju.haju3d.protocol.coordinate.Vector3i;
-import fi.haju.haju3d.protocol.world.*;
+import fi.haju.haju3d.protocol.world.ByteArray3d;
+import fi.haju.haju3d.protocol.world.FloatArray3d;
 import fi.haju.haju3d.util.noise.InterpolationUtil;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 
 public final class BoneMeshUtils {
 
@@ -189,6 +188,7 @@ public final class BoneMeshUtils {
       boneWorldGrids.add(makeBoneWorldGrid(meshGridMap.get(bone.getMeshName()), worldScale, bone));
     }
     ResultGrid resultGrid = makeResultGrid(boneWorldGrids);
+    // this final meshing takes about 10x longer than any other part here
     return getMeshFromGrid(resultGrid, worldScale);
   }
 
@@ -259,28 +259,9 @@ public final class BoneMeshUtils {
   }
 
   private static Mesh getMeshFromGrid(final ResultGrid resultGrid, float worldScale) {
-    final ByteArray3d dataGrid = resultGrid.dataGrid;
     Vector3f translate = new Vector3f(resultGrid.minLocation.x, resultGrid.minLocation.y, resultGrid.minLocation.z);
-
-    MyMesh myMesh = makeMyMesh(dataGrid);
-    Mesh mesh = makeMesh(myMesh, worldScale, translate);
-
-    Map<MyVertex, Vector3f> vertexToColor = new HashMap<>();
-    for (Map.Entry<MyVertex, List<MyMesh.MyFaceAndIndex>> v : myMesh.vertexFaces.entrySet()) {
-      vertexToColor.put(v.getKey(), calcVertexColor(v.getValue(), resultGrid));
-    }
-
-    List<MyFace> realFaces = myMesh.getRealFaces();
-    FloatBuffer colors = BufferUtils.createFloatBuffer(realFaces.size() * 4 * 4);
-    for (MyFace face : realFaces) {
-      putColor(colors, vertexToColor.get(face.v1));
-      putColor(colors, vertexToColor.get(face.v2));
-      putColor(colors, vertexToColor.get(face.v3));
-      putColor(colors, vertexToColor.get(face.v4));
-    }
-    mesh.setBuffer(VertexBuffer.Type.Color, 4, colors);
-
-    mesh.setStatic();
+    float scale = 1.0f / worldScale;
+    Mesh mesh = MarchingCubesMesher.createMesh(resultGrid.dataGrid, scale, translate);
 
     // Setup bone weight buffer
     FloatBuffer weights = BufferUtils.createFloatBuffer(mesh.getVertexCount() * 4);
@@ -294,62 +275,22 @@ public final class BoneMeshUtils {
     indicesBuf.setupData(VertexBuffer.Usage.Static, 4, VertexBuffer.Format.UnsignedByte, indices);
     mesh.setBuffer(indicesBuf);
 
-    for (MyFace face : realFaces) {
-      putBoneData(weights, indices, myMesh.vertexFaces.get(face.v1), resultGrid);
-      putBoneData(weights, indices, myMesh.vertexFaces.get(face.v2), resultGrid);
-      putBoneData(weights, indices, myMesh.vertexFaces.get(face.v3), resultGrid);
-      putBoneData(weights, indices, myMesh.vertexFaces.get(face.v4), resultGrid);
+    Vector3f v1 = new Vector3f();
+    Vector3f v2 = new Vector3f();
+    Vector3f v3 = new Vector3f();
+    for (int i = 0; i < mesh.getTriangleCount(); i++) {
+      mesh.getTriangle(i, v1, v2, v3);
+      putBoneData(weights, indices, v1, resultGrid, scale, translate);
+      putBoneData(weights, indices, v2, resultGrid, scale, translate);
+      putBoneData(weights, indices, v3, resultGrid, scale, translate);
     }
 
     return mesh;
   }
 
-  public static Mesh makeBoneMesh(ByteArray3d byteArray3d) {
-    final int sz = byteArray3d.getWidth();
-    return makeMesh(makeMyMesh(byteArray3d), sz * 0.5f, new Vector3f(-sz / 2, -sz / 2, -sz / 2));
-  }
-
-
-  private static Mesh makeMesh(MyMesh myMesh, float worldScale, Vector3f translate) {
-    ChunkSpatialBuilder.smoothMesh(myMesh, 2);
-    ChunkSpatialBuilder.prepareMesh(myMesh);
-    return new ChunkSpatialBuilder.SimpleMeshBuilder(myMesh, translate, 1.0f / worldScale).build();
-  }
-
-  private static MyMesh makeMyMesh(final ByteArray3d dataGrid) {
-    ChunkPosition cp = new ChunkPosition(0, 0, 0);
-    final int sz = dataGrid.getWidth();
-    Chunk chunk = new Chunk(sz, 0, cp);
-    chunk.set(new Chunk.GetValue() {
-      @Override
-      public Tile getValue(int x, int y, int z) {
-        return dataGrid.get(x, y, z) > 32 ? Tile.GROUND : Tile.AIR;
-      }
-    });
-
-    ChunkCoordinateSystem chunkCoordinateSystem = new ChunkCoordinateSystem(sz);
-    World world = new World(chunkCoordinateSystem);
-    for (int x = 0; x < 3; x++) {
-      for (int y = 0; y < 3; y++) {
-        for (int z = 0; z < 3; z++) {
-          ChunkPosition pos = new ChunkPosition(x - 1, y - 1, z - 1);
-          world.setChunk(pos, new Chunk(sz, 0, pos, Tile.AIR));
-        }
-      }
-    }
-    world.setChunk(cp, chunk);
-
-    ChunkLightManager light = new ChunkLightManager();
-    return ChunkSpatialBuilder.makeCubeMesh(world, cp, light);
-  }
-
-  private static void putBoneData(FloatBuffer weights, ByteBuffer indices, List<MyMesh.MyFaceAndIndex> myFaceAndIndexes, ResultGrid resultGrid) {
-    //TODO take average of all in the list "myFaceAndIndexes". But it probably won't change outcome much.
-
-    //TODO the face.worldPos does not correspond exactly to vertex pos because of smooting. This can cause
-    //weird artifacts when nearby vertices have different blending weights depending on where they were located
-    //in the grid?
-    Vector3i wp = myFaceAndIndexes.get(0).face.worldPos;
+  private static void putBoneData(FloatBuffer weights, ByteBuffer indices, Vector3f vert, ResultGrid resultGrid, float scale, Vector3f translate) {
+    Vector3f vorig = vert.divide(scale).subtractLocal(translate);
+    Vector3i wp = new Vector3i((int) (vorig.x + 0.5f), (int) (vorig.y + 0.5f), (int) (vorig.z + 0.5f));
     float sumWeights = 0;
     for (int i = 0; i < MAX_BONES_PER_TILE; i++) {
       sumWeights += resultGrid.boneWeightGrid[i].get(wp);
@@ -358,6 +299,11 @@ public final class BoneMeshUtils {
       indices.put(resultGrid.boneIndexGrid[i].get(wp));
       weights.put(resultGrid.boneWeightGrid[i].get(wp) / sumWeights);
     }
+  }
+
+  public static Mesh makeBoneMesh(ByteArray3d byteArray3d) {
+    final int sz = byteArray3d.getWidth();
+    return MarchingCubesMesher.createMesh(byteArray3d, 1.0f / (sz * 0.5f), new Vector3f(-sz / 2, -sz / 2, -sz / 2));
   }
 
   private static final List<Vector3f> BONE_COLORS = new ArrayList<>();
@@ -416,20 +362,27 @@ public final class BoneMeshUtils {
     int ysize = (int) FastMath.ceil(cmax.y - cmin.y);
     int zsize = (int) FastMath.ceil(cmax.z - cmin.z);
 
-    BoneWorldGrid bwg2 = new BoneWorldGrid();
-    bwg2.grid = new ByteArray3d(xsize, ysize, zsize);
-    bwg2.location = new Vector3i(Math.round(cmin.x), Math.round(cmin.y), Math.round(cmin.z));
-
-    ByteArray3d grid = bwg2.grid;
+    ByteArray3d grid = new ByteArray3d(xsize, ysize, zsize);
     int w = grid.getWidth();
     int h = grid.getHeight();
     int d = grid.getDepth();
+    Vector3f v = new Vector3f();
+    Vector3f inv = new Vector3f();
+    Vector3f inv2 = new Vector3f();
+    final float eps = 0.001f;
     for (int x = 0; x < w; x++) {
       for (int y = 0; y < h; y++) {
+        // calculate inverse transform at (x,y,0) and (x,y,1), the rest of the transforms in inner loop
+        // can be calculated by adding (inv2-inv1) because the transforms are linear
+        v.set(x, y, 0).addLocal(cmin).divideLocal(worldScale);
+        transform.transformInverseVector(v, inv);
+
+        v.set(x, y, 1).addLocal(cmin).divideLocal(worldScale);
+        transform.transformInverseVector(v, inv2);
+        Vector3f add = inv2.subtractLocal(inv);
+
         for (int z = 0; z < d; z++) {
-          Vector3f v = new Vector3f(x, y, z).add(cmin).divide(worldScale);
-          Vector3f inv = transform.transformInverseVector(v, null);
-          float eps = 0.001f;
+          inv.addLocal(add);
           if (inv.x > -bs + eps && inv.x < bs - eps &&
               inv.y > -bs + eps && inv.y < bs - eps &&
               inv.z > -bs + eps && inv.z < bs - eps) {
@@ -443,7 +396,28 @@ public final class BoneMeshUtils {
         }
       }
     }
+    blurGrid(grid);
+
+    BoneWorldGrid bwg2 = new BoneWorldGrid();
+    bwg2.grid = grid;
+    bwg2.location = new Vector3i(Math.round(cmin.x), Math.round(cmin.y), Math.round(cmin.z));
     return bwg2;
+  }
+
+  private static void blurGrid(ByteArray3d grid) {
+    int w = grid.getWidth();
+    int h = grid.getHeight();
+    int d = grid.getDepth();
+    for (int x = 1; x < w - 1; x++) {
+      for (int y = 1; y < h - 1; y++) {
+        for (int z = 1; z < d - 1; z++) {
+          int newVal = ((int) grid.get(x, y, z) + grid.get(x - 1, y, z) + grid.get(x + 1, y, z)
+              + grid.get(x, y - 1, z) + grid.get(x, y + 1, z)
+              + grid.get(x, y, z - 1) + grid.get(x, y, z + 1)) / 7;
+          grid.set(x, y, z, (byte) newVal);
+        }
+      }
+    }
   }
 
   public static ByteArray3d makeSphereBoneMeshGrid() {
@@ -456,7 +430,7 @@ public final class BoneMeshUtils {
         int yd = y - sz / 2;
         int zd = z - sz / 2;
         int bsz = sz / 3;
-        int value = bsz - (int) FastMath.sqrt(xd * xd + yd * yd + zd * zd);
+        float value = bsz - FastMath.sqrt(xd * xd + yd * yd + zd * zd);
 
         value = (value * 4) + 32;
         if (value < 0) value = 0;
@@ -504,12 +478,11 @@ public final class BoneMeshUtils {
         int yd = y - sz / 2;
         int zd = z - sz / 2;
         int bsz = sz / 3;
-        int value = bsz - (int) FastMath.sqrt(xd * xd + yd * yd + zd * zd);
+        float value = bsz - FastMath.sqrt(xd * xd + yd * yd + zd * zd);
 
         value = (value * 4) + 32;
 
         //x-symmetric noise
-        //value += noise.get(Math.abs(sz / 2 - x), y, z) * 6;
         value += noise.get(x, Math.abs(sz / 2 - y), z) * 6;
         value -= 4;
         if (value < 0) value = 0;

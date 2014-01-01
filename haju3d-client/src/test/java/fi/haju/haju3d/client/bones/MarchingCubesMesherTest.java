@@ -28,9 +28,23 @@ public class MarchingCubesMesherTest extends SimpleApplication {
   private ChunkLightManager light = new ChunkLightManager();
 
   public static void main(String[] args) {
-    MarchingCubesMesherTest app = new MarchingCubesMesherTest();
-    SimpleApplicationUtils.configureSimpleApplication(app);
-    app.start();
+//    MarchingCubesMesherTest app = new MarchingCubesMesherTest();
+//    SimpleApplicationUtils.configureSimpleApplication(app);
+//    app.start();
+
+    //time: 593 (max alloc, correct normals) ==> 458 by changing loop order! ==> 384 with reduced allocs
+    //time: 508 (few alloc)
+    //time: 409 (zero alloc)
+    //time just to read the grid: 171
+    //time just to read the grid, when x is innermost loop: 53
+    //how to get time down: only update changed parts
+    ByteArray3d grid = makeBoneMeshGrid(220);
+    for (int i = 0; i < 20; i++) {
+      long t0 = System.currentTimeMillis();
+      MarchingCubesMesher.createMesh(grid);
+      long t1 = System.currentTimeMillis();
+      System.out.println("tt_grid = " + (t1 - t0));
+    }
   }
 
   private final Map<Vector3i, Spatial> spatials = new HashMap<>();
@@ -44,16 +58,15 @@ public class MarchingCubesMesherTest extends SimpleApplication {
     SimpleApplicationUtils.addLights(this);
     SimpleApplicationUtils.addCartoonEdges(this);
     SimpleApplicationUtils.setupCrosshair(this, this.settings);
-    //updateChunkMesh(new ChunkPosition(0, 0, 0));
+//    updateChunkMesh(new ChunkPosition(0, 0, 0));
 
-    ByteArray3d grid = makeBoneMeshGrid();
+    ByteArray3d grid = makeBoneMeshGrid(32);
     Mesh mesh = MarchingCubesMesher.createMesh(grid);
     final Geometry geom = new Geometry("ColoredMesh", mesh);
     geom.setMaterial(SimpleApplicationUtils.makeColorMaterial(assetManager, ColorRGBA.White));
     geom.setShadowMode(RenderQueue.ShadowMode.CastAndReceive);
     geom.setLocalTranslation(0, 0, 100);
     rootNode.attachChild(geom);
-
 
     for (int i = 0; i < 20; i++) {
       long t0 = System.currentTimeMillis();
@@ -135,8 +148,7 @@ public class MarchingCubesMesherTest extends SimpleApplication {
     return world;
   }
 
-  private static ByteArray3d makeBoneMeshGrid() {
-    int sz = 32;
+  private static ByteArray3d makeBoneMeshGrid(int sz) {
     ByteArray3d grid = new ByteArray3d(sz, sz, sz);
     int w = grid.getWidth();
     int h = grid.getHeight();
@@ -149,9 +161,9 @@ public class MarchingCubesMesherTest extends SimpleApplication {
           int yd = y - sz / 2;
           int zd = z - sz / 2;
           int bsz = (int) (sz / 2.5);
-          int value = bsz - (int) FastMath.sqrt(xd * xd + yd * yd + zd * zd);
+          float value = bsz - FastMath.sqrt(xd * xd + yd * yd + zd * zd);
 
-          value = (value) + 32;
+          value = (value * 4) + 32;
           if (value < 0) value = 0;
           if (value > 63) value = 63;
 
