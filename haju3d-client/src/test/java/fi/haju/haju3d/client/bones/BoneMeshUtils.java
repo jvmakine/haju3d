@@ -39,9 +39,9 @@ public final class BoneMeshUtils {
         int bsz = sz / 3;
         float value = bsz - FastMath.sqrt(xd * xd + yd * yd + zd * zd);
 
-        value = (value * 4) + 32;
+        value = (value * 4) + 64;
         if (value < 0) value = 0;
-        if (value > 63) value = 63;
+        if (value > 127) value = 127;
         return (byte) value;
       }
     });
@@ -60,9 +60,9 @@ public final class BoneMeshUtils {
         int bsz = sz / 4;
         int value = bsz - Math.max(Math.max(xd, yd), zd);
 
-        value = (value * 4) + 32;
+        value = (value * 4) + 64;
         if (value < 0) value = 0;
-        if (value > 63) value = 63;
+        if (value > 127) value = 127;
         return (byte) value;
       }
     });
@@ -87,13 +87,13 @@ public final class BoneMeshUtils {
         int bsz = sz / 3;
         float value = bsz - FastMath.sqrt(xd * xd + yd * yd + zd * zd);
 
-        value = (value * 4) + 32;
+        value = (value * 6) + 64;
 
         //x-symmetric noise
         value += noise.get(x, Math.abs(sz / 2 - y), z) * 6;
         value -= 4;
         if (value < 0) value = 0;
-        if (value > 63) value = 63;
+        if (value > 127) value = 127;
         return (byte) value;
       }
     });

@@ -56,7 +56,7 @@ public final class MarchingCubesMesher {
           c.val[6] = grid.get(x + 1, y + 1, z);
           c.val[7] = grid.get(x, y + 1, z);
 
-          polygonise(c, 32, triangles, vertlist);
+          polygonise(c, 64, triangles, vertlist);
         }
       }
     }

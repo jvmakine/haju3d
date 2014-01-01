@@ -37,24 +37,21 @@ public final class CharacterMeshUtils {
     public Vector3i minLocation;
   }
 
+  /**
+   * Create final, HW skinned character mesh out of bone and meshGridMap information.
+   *
+   * @param meshGridMap maps bone's meshName to a boneMeshGrid that represents the bone's shape
+   */
   public static Mesh buildMesh(List<MyBone> bones, Map<String, ByteArray3d> meshGridMap) {
-    //-each bone has some 3d grid associated with it
-    //-the grid should not be just binary, but values from 0 to 128 in order to do "meta"-shapes
-    //-grid should have bounding box to represent valid x,y,z values where the shape is located..Or that's just grid size.
-    //-grid should also indicate location of "start" and "end". So here it's ByteArray3d + startPos + endPos. During
-    //  editing it could be represented with World, but when saving it's converted to ByteArray3d with "tight fit".
-    //......
-    //-based on desired output resolution, one can calculate how big grid is needed for each bone.
-    //-each bone gridmesh should be transformed to world grid representation.
-    //-each bone's world grid representation should be copied to single world grid that has simple binary value
-    // for each cell
-
     float worldScale = 10;
     List<BoneWorldGrid> boneWorldGrids = new ArrayList<>();
+    // 1.Transform each bone into same "world grid"
     for (MyBone bone : bones) {
       boneWorldGrids.add(makeBoneWorldGrid(meshGridMap.get(bone.getMeshName()), worldScale, bone));
     }
+    // 2.Merge boneWorldGrids into a single grid
     ResultGrid resultGrid = makeResultGrid(boneWorldGrids);
+    // 3.Create a mesh from boneWorldGrids
     // this final meshing takes about 10x longer than any other part here
     return getMeshFromGrid(resultGrid, worldScale);
   }
@@ -102,8 +99,8 @@ public final class CharacterMeshUtils {
               pos.set(x + offset.x, y + offset.y, z + offset.z);
               byte old = dataGrid.get(pos);
               int newValue = (int) old + (int) add;
-              if (newValue > 63) {
-                newValue = 63;
+              if (newValue > 127) {
+                newValue = 127;
               }
               dataGrid.set(pos, (byte) newValue);
 

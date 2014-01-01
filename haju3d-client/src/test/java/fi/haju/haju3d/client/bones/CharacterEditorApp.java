@@ -375,7 +375,7 @@ public class CharacterEditorApp extends SimpleApplication {
     inputManager.addListener(new ActionListener() {
       @Override
       public void onAction(String name, boolean isPressed, float tpf) {
-        if (isPressed) {
+        if (isPressed && !showMesh) {
           MyBone bone = findCurrentBone();
           if (bone != null) {
             switch (name) {
