@@ -461,13 +461,15 @@ public class CharacterEditorApp extends SimpleApplication {
     if (dragPlanePreview != null) {
       rootNode.detachChild(dragPlanePreview);
     }
-    // possibly remove mirror buddy if bones lie along X plane
-    if (dragTarget != null && dragTarget.bone.getMirrorBone() != null) {
-      final float snapToXDistance = 0.3f;
-      if (FastMath.abs(dragTarget.bone.getAttachPoint().x) < snapToXDistance && FastMath.abs(dragTarget.bone.getFreePoint().x) < snapToXDistance) {
-        removeBone(dragTarget.bone.getMirrorBone());
-        dragTarget.bone.getAttachPoint().x = 0;
-        dragTarget.bone.getFreePoint().x = 0;
+    if (!showMesh) {
+      // possibly remove mirror buddy if bones lie along X plane
+      if (dragTarget != null && dragTarget.bone.getMirrorBone() != null) {
+        final float snapToXDistance = 0.3f;
+        if (FastMath.abs(dragTarget.bone.getAttachPoint().x) < snapToXDistance && FastMath.abs(dragTarget.bone.getFreePoint().x) < snapToXDistance) {
+          removeBone(dragTarget.bone.getMirrorBone());
+          dragTarget.bone.getAttachPoint().x = 0;
+          dragTarget.bone.getFreePoint().x = 0;
+        }
       }
     }
     dragPlane = null;
