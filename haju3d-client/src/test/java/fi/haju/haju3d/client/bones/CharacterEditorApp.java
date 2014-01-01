@@ -35,7 +35,6 @@ import static fi.haju.haju3d.client.SimpleApplicationUtils.makeLineMaterial;
 /**
  * TODO:
  * - when looking at mesh:
- * -- allow moving mirrored bones individually
  * -- somehow attach joints together
  * -- ideally IK movement of joints
  * --> each bone has parentBone (except root). It has "attachPoint" and "freePoint" instead of start/end.
@@ -46,6 +45,8 @@ import static fi.haju.haju3d.client.SimpleApplicationUtils.makeLineMaterial;
  * - MeshToBone
  * - meshing: vertex sharing for marching cubes: ~1/3 number of vertices
  * - ability to edit bones while showing real mesh: mesh reconstructed on every change
+ * -- optimizing for partial updates may not be worth it. One still has to update quickly when root bone
+ *    is moved and almost full mesh needs to be reconstructed. First build low res mesh, then high res?
  * <p/>
  * Backlog:
  * - fix "off by one or half"-issues in meshing. Rounding issues, MC grid placement etc.
@@ -70,6 +71,7 @@ import static fi.haju.haju3d.client.SimpleApplicationUtils.makeLineMaterial;
  * -- solves: smoothing spikes, higher quality sphere, ladders in bone weights..and can be faster
  * - meshing: apply small blur to data in BoneWorldGrid. takes care of aliasing
  * --> 7 neighbor blur, applied twice?
+ * - when looking at mesh, allow moving mirrored bones individually
  * - when looking at mesh, use different boneTransform; scale ~ sqrt(length)
  * - when looking at mesh, don't save bone locations
  * - when looking at mesh, allow non-mirrored bones move off x-plane
@@ -164,6 +166,10 @@ public class CharacterEditorApp extends SimpleApplication {
 
     public void setPosition(Vector3f p) {
       bone.setPosition(p, isStart);
+    }
+
+    public void setPositionSelf(Vector3f p) {
+      bone.setPositionSelf(p, isStart);
     }
   }
 
@@ -570,7 +576,13 @@ public class CharacterEditorApp extends SimpleApplication {
       Ray ray = getCursorRay();
       CollisionResults results = new CollisionResults();
       if (dragPlane.collideWith(ray, results) > 0) {
-        dragTarget.setPosition(results.getCollision(0).getContactPoint());
+        Vector3f newPosition = results.getCollision(0).getContactPoint();
+        if (showMesh) {
+          // move mirrored bones individually when in showMesh mode
+          dragTarget.setPositionSelf(newPosition);
+        } else {
+          dragTarget.setPosition(newPosition);
+        }
       }
     }
 
