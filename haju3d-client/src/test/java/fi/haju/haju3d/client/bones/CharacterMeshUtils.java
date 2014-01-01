@@ -71,7 +71,7 @@ public final class CharacterMeshUtils {
     }
 
     int requiredSize = Math.max(Math.max(maxLocation.x - minLocation.x, maxLocation.y - minLocation.y), maxLocation.z - minLocation.z);
-    System.out.println("required grid size = " + requiredSize);
+    //System.out.println("required grid size = " + requiredSize);
 
     ResultGrid resultGrid = new ResultGrid();
     resultGrid.minLocation = minLocation;
@@ -206,33 +206,43 @@ public final class CharacterMeshUtils {
     Vector3f v = new Vector3f();
     Vector3f inv = new Vector3f();
     Vector3f inv2 = new Vector3f();
-    final float eps = 0.001f;
+
+    //we want to calculate transform: (inv - (-bs)) * (sz / (bs - (-bs)))
+    //se let's precalculate it to (inv + shift) * scale
+    Vector3f scale = new Vector3f(boneMeshGrid.getWidth(), boneMeshGrid.getHeight(), boneMeshGrid.getDepth()).divideLocal(bs * 2);
+    Vector3f shift = Vector3f.UNIT_XYZ.mult(bs);
+
     for (int x = 0; x < w; x++) {
       for (int y = 0; y < h; y++) {
         // calculate inverse transform at (x,y,0) and (x,y,1), the rest of the transforms in inner loop
         // can be calculated by adding (inv2-inv1) because the transforms are linear
         v.set(x, y, 0).addLocal(cmin).divideLocal(worldScale);
         transform.transformInverseVector(v, inv);
+        inv.addLocal(shift).multLocal(scale);
 
         v.set(x, y, 1).addLocal(cmin).divideLocal(worldScale);
         transform.transformInverseVector(v, inv2);
+        inv2.addLocal(shift).multLocal(scale);
+
         Vector3f add = inv2.subtractLocal(inv);
 
         for (int z = 0; z < d; z++) {
           inv.addLocal(add);
-          if (inv.x > -bs + eps && inv.x < bs - eps &&
-              inv.y > -bs + eps && inv.y < bs - eps &&
-              inv.z > -bs + eps && inv.z < bs - eps) {
+          if (inv.x >= 0 && inv.x < boneMeshGrid.getWidth() &&
+              inv.y >= 0 && inv.y < boneMeshGrid.getHeight() &&
+              inv.z >= 0 && inv.z < boneMeshGrid.getDepth()) {
 
-            int bx = (int) ((inv.x - (-bs)) / (bs - (-bs)) * boneMeshGrid.getWidth());
-            int by = (int) ((inv.y - (-bs)) / (bs - (-bs)) * boneMeshGrid.getHeight());
-            int bz = (int) ((inv.z - (-bs)) / (bs - (-bs)) * boneMeshGrid.getDepth());
-
-            grid.set(x, y, z, boneMeshGrid.get(bx, by, bz));
+            grid.set(x, y, z, boneMeshGrid.get((int) inv.x, (int) inv.y, (int) inv.z));
           }
         }
       }
     }
+
+    // Once the boneMeshGrid has been transformed into world grid, it may suffer from
+    // downsampling and upsampling artifacts (because the sampling is very simple nearest-neighbor).
+    // Blurring the grid helps with both issues (blur=fake antialias). It has the added benefit
+    // that each BoneWorldGrid will have some "smoothing buffer" around the actual shape, so that
+    // the shape blends better with other bones' shapes.
     blurGrid(grid);
 
     BoneWorldGrid bwg2 = new BoneWorldGrid();
@@ -241,6 +251,9 @@ public final class CharacterMeshUtils {
     return bwg2;
   }
 
+  /**
+   * Apply small blur filter on the grid.
+   */
   private static void blurGrid(ByteArray3d grid) {
     int w = grid.getWidth();
     int h = grid.getHeight();

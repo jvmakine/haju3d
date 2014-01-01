@@ -45,9 +45,10 @@ import static fi.haju.haju3d.client.SimpleApplicationUtils.makeLineMaterial;
  * --> Mesh preview is always in "skeleton mode".
  * - MeshToBone
  * - meshing: vertex sharing for marching cubes: ~1/3 number of vertices
- * - bug: somehow location of mesh affects transforms?
+ * - ability to edit bones while showing real mesh: mesh reconstructed on every change
  * <p/>
  * Backlog:
+ * - fix "off by one or half"-issues in meshing. Rounding issues, MC grid placement etc.
  * - IK animation on bones
  * - ability to set constraints on mesh joints
  * - ability to quickly edit bone mesh
