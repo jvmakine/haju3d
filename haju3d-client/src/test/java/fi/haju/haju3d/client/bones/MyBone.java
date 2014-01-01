@@ -47,15 +47,15 @@ public class MyBone {
 
   public void addThicknessSelf(float value) {
     this.thickness = this.thickness + value * 0.05f;
-    if (this.thickness < CharacterBoneApp.MINIMUM_BONE_THICKNESS) {
-      this.thickness = CharacterBoneApp.MINIMUM_BONE_THICKNESS;
+    if (this.thickness < CharacterEditorApp.MINIMUM_BONE_THICKNESS) {
+      this.thickness = CharacterEditorApp.MINIMUM_BONE_THICKNESS;
     }
   }
 
   public void setPosition(Vector3f p, boolean start) {
     setPositionSelf(p, start);
     if (mirrorBone != null) {
-      mirrorBone.setPositionSelf(CharacterBoneApp.getMirroredVector(p), start);
+      mirrorBone.setPositionSelf(CharacterEditorApp.getMirroredVector(p), start);
     }
   }
 

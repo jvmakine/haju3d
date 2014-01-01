@@ -84,8 +84,8 @@ import static fi.haju.haju3d.client.SimpleApplicationUtils.makeLineMaterial;
  * - LMB on empty to rotate
  * - snap dragPlane to x/y/z axes
  */
-public class CharacterBoneApp extends SimpleApplication {
-  private static final Logger LOGGER = LoggerFactory.getLogger(CharacterBoneApp.class);
+public class CharacterEditorApp extends SimpleApplication {
+  private static final Logger LOGGER = LoggerFactory.getLogger(CharacterEditorApp.class);
 
   public static final float MINIMUM_BONE_THICKNESS = 0.05f;
   public static final File BONE_FILE = new File("bones3.json");
@@ -171,7 +171,7 @@ public class CharacterBoneApp extends SimpleApplication {
   }
 
   public static void main(String[] args) {
-    CharacterBoneApp app = new CharacterBoneApp();
+    CharacterEditorApp app = new CharacterEditorApp();
     SimpleApplicationUtils.configureSimpleApplication(app);
     app.start();
   }
@@ -181,7 +181,7 @@ public class CharacterBoneApp extends SimpleApplication {
     flyCam.setEnabled(false);
     SimpleApplicationUtils.addLights(this);
     SimpleApplicationUtils.addCartoonEdges(this);
-    rootNode.attachChild(BoneMeshUtils.makeFloor(makeColorMaterial(assetManager, ColorRGBA.Blue)));
+    rootNode.attachChild(CharacterEditorUtils.makeFloor(makeColorMaterial(assetManager, ColorRGBA.Blue)));
     axisIndicators = makeAxisIndicators();
     if (showGuides) {
       rootNode.attachChild(axisIndicators);
@@ -322,12 +322,12 @@ public class CharacterBoneApp extends SimpleApplication {
               bone.setThicknessSelf(bone.getThickness() * length * FastMath.sqrt(length));
             }
 
-            Mesh mesh = BoneMeshUtils.buildMesh(activeBones, MESH_GRID_MAP);
+            Mesh mesh = CharacterMeshUtils.buildMesh(activeBones, MESH_GRID_MAP);
 
             meshBoneBindPoseInverseTransforms = new ArrayList<>();
             for (MyBone bone : activeBones) {
-              Transform transform = BoneMeshUtils.boneTransform2(bone);
-              meshBoneBindPoseInverseTransforms.add(BoneMeshUtils.getTransformMatrix(transform).invert());
+              Transform transform = BoneTransformUtils.boneTransform2(bone);
+              meshBoneBindPoseInverseTransforms.add(BoneTransformUtils.getTransformMatrix(transform).invert());
             }
 
             // Create model
@@ -527,16 +527,16 @@ public class CharacterBoneApp extends SimpleApplication {
   private Spatial makeAxisIndicators() {
     Node n = new Node("AxisIndicators");
     float sz = 20;
-    Mesh m = BoneMeshUtils.makeGridMesh(sz, sz, 20, 20);
+    Mesh m = CharacterEditorUtils.makeGridMesh(sz, sz, 20, 20);
     //n.attachChild(makeDragPlane(sz, m, makeLineMaterial(assetManager, ColorRGBA.Red), Vector3f.UNIT_Z, Vector3f.UNIT_X, Vector3f.ZERO));
     ColorRGBA color = new ColorRGBA(0.5f, 0.5f, 0, 0.2f);
-    n.attachChild(BoneMeshUtils.makeDragPlane(sz, m, makeLineMaterial(assetManager, color), Vector3f.UNIT_X, Vector3f.UNIT_Z, Vector3f.ZERO));
+    n.attachChild(CharacterEditorUtils.makeDragPlane(sz, m, makeLineMaterial(assetManager, color), Vector3f.UNIT_X, Vector3f.UNIT_Z, Vector3f.ZERO));
     return n;
   }
 
   private Spatial makeDragPlanePreview() {
     float sz = 20;
-    Mesh m = BoneMeshUtils.makeGridMesh(sz, sz, 50, 50);
+    Mesh m = CharacterEditorUtils.makeGridMesh(sz, sz, 50, 50);
     return makeDragPlane(sz, m, makeLineMaterial(assetManager, ColorRGBA.Red));
   }
 
@@ -548,8 +548,8 @@ public class CharacterBoneApp extends SimpleApplication {
 
   private Spatial makeDragPlane(float sz, Mesh mesh, Material material) {
     // mesh should be a plane [x=[0..sz],y=[0..sz],z=0]
-    Vector3f direction = BoneMeshUtils.getAxisSnappedVector(cam.getDirection());
-    Vector3f left = BoneMeshUtils.getAxisSnappedVector(cam.getLeft());
+    Vector3f direction = CharacterEditorUtils.getAxisSnappedVector(cam.getDirection());
+    Vector3f left = CharacterEditorUtils.getAxisSnappedVector(cam.getLeft());
     Vector3f center = dragTarget.getPosition();
 
     // non-mirrored bones only dragged along X-plane
@@ -560,7 +560,7 @@ public class CharacterBoneApp extends SimpleApplication {
       }
     }
 
-    return BoneMeshUtils.makeDragPlane(sz, mesh, material, direction, left, center);
+    return CharacterEditorUtils.makeDragPlane(sz, mesh, material, direction, left, center);
   }
 
   @Override
@@ -581,8 +581,8 @@ public class CharacterBoneApp extends SimpleApplication {
       int i = 0;
       Matrix4f[] offsetMatrices = new Matrix4f[activeBones.size()];
       for (MyBone bone : activeBones) {
-        Transform transform = BoneMeshUtils.boneTransform2(bone);
-        Matrix4f m = BoneMeshUtils.getTransformMatrix(transform);
+        Transform transform = BoneTransformUtils.boneTransform2(bone);
+        Matrix4f m = BoneTransformUtils.getTransformMatrix(transform);
         offsetMatrices[i] = m.mult(meshBoneBindPoseInverseTransforms.get(i));
 
         i++;
@@ -606,7 +606,7 @@ public class CharacterBoneApp extends SimpleApplication {
 
     int i = 0;
     for (MyBone b : activeBones) {
-      Transform t = showMesh ? BoneMeshUtils.boneTransform2(b) : BoneMeshUtils.boneTransform(b);
+      Transform t = showMesh ? BoneTransformUtils.boneTransform2(b) : BoneTransformUtils.boneTransform(b);
       if (Vector3f.isValidVector(t.getTranslation())) {
         boneSpatials.getChild(i).setLocalTransform(t);
       }
@@ -618,11 +618,11 @@ public class CharacterBoneApp extends SimpleApplication {
       Node gui = new Node();
 
       Vector3f screenStart = cam.getScreenCoordinates(b.getStart());
-      gui.attachChild(BoneMeshUtils.makeCircle(screenStart, guiFont));
+      gui.attachChild(CharacterEditorUtils.makeCircle(screenStart, guiFont));
 
       Vector3f screenEnd = cam.getScreenCoordinates(b.getEnd());
-      gui.attachChild(BoneMeshUtils.makeCircle(screenEnd, guiFont));
-      gui.attachChild(BoneMeshUtils.makeLine(screenStart, screenEnd, makeLineMaterial(assetManager, ColorRGBA.Green)));
+      gui.attachChild(CharacterEditorUtils.makeCircle(screenEnd, guiFont));
+      gui.attachChild(CharacterEditorUtils.makeLine(screenStart, screenEnd, makeLineMaterial(assetManager, ColorRGBA.Green)));
       guiNode.attachChild(gui);
     }
 
