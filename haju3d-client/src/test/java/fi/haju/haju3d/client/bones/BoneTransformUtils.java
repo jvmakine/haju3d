@@ -12,11 +12,11 @@ public final class BoneTransformUtils {
 
 
   public static Transform boneTransform(MyBone b) {
-    return transformBetween(b.getStart(), b.getEnd(), Vector3f.UNIT_X, b.getThickness(), false);
+    return transformBetween(b.getAttachPoint(), b.getFreePoint(), Vector3f.UNIT_X, b.getThickness(), false);
   }
 
   public static Transform boneTransform2(MyBone b) {
-    return transformBetween(b.getStart(), b.getEnd(), Vector3f.UNIT_X, b.getThickness(), true);
+    return transformBetween(b.getAttachPoint(), b.getFreePoint(), Vector3f.UNIT_X, b.getThickness(), true);
   }
 
   public static Matrix4f getTransformMatrix(Transform t) {

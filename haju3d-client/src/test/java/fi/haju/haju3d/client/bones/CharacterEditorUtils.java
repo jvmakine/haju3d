@@ -3,6 +3,7 @@ package fi.haju.haju3d.client.bones;
 import com.jme3.font.BitmapFont;
 import com.jme3.font.BitmapText;
 import com.jme3.material.Material;
+import com.jme3.math.ColorRGBA;
 import com.jme3.math.FastMath;
 import com.jme3.math.Matrix3f;
 import com.jme3.math.Vector3f;
@@ -40,10 +41,11 @@ public final class CharacterEditorUtils {
     return node;
   }
 
-  public static BitmapText makeCircle(Vector3f screenPos, BitmapFont guiFont1) {
+  public static BitmapText makeSymbol(Vector3f screenPos, BitmapFont guiFont1, String symbol, ColorRGBA color) {
     BitmapText text = new BitmapText(guiFont1, false);
+    text.setColor(color);
     text.setSize(guiFont1.getCharSet().getRenderedSize() * 2);
-    text.setText("O");
+    text.setText(symbol);
     text.setLocalTranslation(screenPos.add(-text.getLineWidth() / 2, text.getLineHeight() / 2, 0));
     return text;
   }

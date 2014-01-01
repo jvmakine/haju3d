@@ -4,19 +4,20 @@ import com.jme3.math.Vector3f;
 import org.apache.commons.lang3.Validate;
 
 public class MyBone {
-  private Vector3f start;
-  private Vector3f end;
+  private Vector3f attachPoint;
+  private Vector3f freePoint;
   private float thickness = 1.0f;
   //private float rotation;
   private String meshName;
   private MyBone mirrorBone;
+  private MyBone parentBone;
 
-  public MyBone(Vector3f start, Vector3f end, float thickness, String meshName) {
-    Validate.notNull(start);
-    Validate.notNull(end);
+  public MyBone(Vector3f attachPoint, Vector3f freePoint, float thickness, String meshName) {
+    Validate.notNull(attachPoint);
+    Validate.notNull(freePoint);
     Validate.notNull(meshName);
-    this.start = start;
-    this.end = end;
+    this.attachPoint = attachPoint;
+    this.freePoint = freePoint;
     this.thickness = thickness;
     this.meshName = meshName;
   }
@@ -31,6 +32,10 @@ public class MyBone {
     if (mirrorBone != null) {
       mirrorBone.mirrorBone = this;
     }
+  }
+
+  public void setParentBone(MyBone parentBone) {
+    this.parentBone = parentBone;
   }
 
   // only use for animated bones, not for editable bones
@@ -52,27 +57,27 @@ public class MyBone {
     }
   }
 
-  public void setPosition(Vector3f p, boolean start) {
-    setPositionSelf(p, start);
+  public void setPosition(Vector3f p, boolean isAttachPosition) {
+    setPositionSelf(p, isAttachPosition);
     if (mirrorBone != null) {
-      mirrorBone.setPositionSelf(CharacterEditorApp.getMirroredVector(p), start);
+      mirrorBone.setPositionSelf(CharacterEditorApp.getMirroredVector(p), isAttachPosition);
     }
   }
 
-  public void setPositionSelf(Vector3f p, boolean start) {
-    if (start) {
-      this.start = p;
+  public void setPositionSelf(Vector3f p, boolean isAttachPosition) {
+    if (isAttachPosition) {
+      this.attachPoint = p;
     } else {
-      this.end = p;
+      this.freePoint = p;
     }
   }
 
-  public Vector3f getStart() {
-    return start;
+  public Vector3f getAttachPoint() {
+    return attachPoint;
   }
 
-  public Vector3f getEnd() {
-    return end;
+  public Vector3f getFreePoint() {
+    return freePoint;
   }
 
   public float getThickness() {
@@ -89,5 +94,9 @@ public class MyBone {
 
   public void setMeshName(String meshName) {
     this.meshName = meshName;
+  }
+
+  public MyBone getParentBone() {
+    return parentBone;
   }
 }

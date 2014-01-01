@@ -17,10 +17,11 @@ public final class BoneSaveUtils {
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   private static class MyBoneStruct implements Serializable {
-    public float[] start;
-    public float[] end;
+    public float[] attachPoint;
+    public float[] freePoint;
     public float thickness = 1.0f;
     public int mirrorBoneIndex;
+    public int parentBoneIndex;
     public String meshName;
   }
 
@@ -32,14 +33,11 @@ public final class BoneSaveUtils {
     List<MyBoneStruct> boneStructs = new ArrayList<>();
     for (MyBone bone : bones) {
       MyBoneStruct bs = new MyBoneStruct();
-      bs.start = bone.getStart().toArray(null);
-      bs.end = bone.getEnd().toArray(null);
+      bs.attachPoint = bone.getAttachPoint().toArray(null);
+      bs.freePoint = bone.getFreePoint().toArray(null);
       bs.thickness = bone.getThickness();
-      if (bone.getMirrorBone() != null) {
-        bs.mirrorBoneIndex = bones.indexOf(bone.getMirrorBone());
-      } else {
-        bs.mirrorBoneIndex = -1;
-      }
+      bs.mirrorBoneIndex = getBoneIndex(bones, bone.getMirrorBone());
+      bs.parentBoneIndex = getBoneIndex(bones, bone.getParentBone());
       bs.meshName = bone.getMeshName();
       boneStructs.add(bs);
     }
@@ -47,6 +45,14 @@ public final class BoneSaveUtils {
       return OBJECT_MAPPER.writeValueAsString(boneStructs);
     } catch (IOException e) {
       throw new RuntimeException(e);
+    }
+  }
+
+  public static int getBoneIndex(List<MyBone> bones, MyBone bone) {
+    if (bone != null) {
+      return bones.indexOf(bone);
+    } else {
+      return -1;
     }
   }
 
@@ -61,8 +67,8 @@ public final class BoneSaveUtils {
     List<MyBone> bones = new ArrayList<>();
     for (MyBoneStruct bs : boneStructs) {
       MyBone bone = new MyBone(
-          new Vector3f(bs.start[0], bs.start[1], bs.start[2]),
-          new Vector3f(bs.end[0], bs.end[1], bs.end[2]),
+          new Vector3f(bs.attachPoint[0], bs.attachPoint[1], bs.attachPoint[2]),
+          new Vector3f(bs.freePoint[0], bs.freePoint[1], bs.freePoint[2]),
           bs.thickness,
           bs.meshName);
       bones.add(bone);
@@ -71,6 +77,9 @@ public final class BoneSaveUtils {
     for (MyBoneStruct bs : boneStructs) {
       if (bs.mirrorBoneIndex >= 0) {
         bones.get(i).setMirrorBone(bones.get(bs.mirrorBoneIndex));
+      }
+      if (bs.parentBoneIndex >= 0) {
+        bones.get(i).setParentBone(bones.get(bs.parentBoneIndex));
       }
       i++;
     }

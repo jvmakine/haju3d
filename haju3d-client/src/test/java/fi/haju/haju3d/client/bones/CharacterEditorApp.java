@@ -37,7 +37,7 @@ import static fi.haju.haju3d.client.SimpleApplicationUtils.makeLineMaterial;
  * - when looking at mesh:
  * -- somehow attach joints together
  * -- ideally IK movement of joints
- * --> each bone has parentBone (except root). It has "attachPoint" and "freePoint" instead of start/end.
+ * -->* each bone has parentBone (except root). It has "attachPoint" and "freePoint" instead of start/end.
  * --> When a bone is moved, all its child bones move too. Or their "freePoint" does not but "attachPoint" does.
  * --> Ability to switch between "skeleton mode" and "free mode".
  * --> In "skeleton mode" you can't move the "attachPoint".
@@ -91,7 +91,7 @@ public class CharacterEditorApp extends SimpleApplication {
   private static final Logger LOGGER = LoggerFactory.getLogger(CharacterEditorApp.class);
 
   public static final float MINIMUM_BONE_THICKNESS = 0.05f;
-  public static final File BONE_FILE = new File("bones3.json");
+  public static final File BONE_FILE = new File("bones4.json");
   public static final Charset BONE_FILE_ENCODING = Charset.forName("UTF-8");
 
   private MyBone camTarget;
@@ -112,6 +112,7 @@ public class CharacterEditorApp extends SimpleApplication {
   private Spatial axisIndicators;
   private Geometry meshSpatial = null;
   private List<Matrix4f> meshBoneBindPoseInverseTransforms;
+  private float currentBoneThickness = 0.5f;
   private String currentBoneMeshName = BLOB_MESH;
 
   private static class Actions {
@@ -153,23 +154,23 @@ public class CharacterEditorApp extends SimpleApplication {
 
   private static class DragTarget {
     private MyBone bone;
-    private boolean isStart;
+    private boolean isAttachPosition;
 
-    private DragTarget(MyBone bone, boolean isStart) {
+    private DragTarget(MyBone bone, boolean isAttachPosition) {
       this.bone = bone;
-      this.isStart = isStart;
+      this.isAttachPosition = isAttachPosition;
     }
 
     public Vector3f getPosition() {
-      return isStart ? bone.getStart() : bone.getEnd();
+      return isAttachPosition ? bone.getAttachPoint() : bone.getFreePoint();
     }
 
     public void setPosition(Vector3f p) {
-      bone.setPosition(p, isStart);
+      bone.setPosition(p, isAttachPosition);
     }
 
     public void setPositionSelf(Vector3f p) {
-      bone.setPositionSelf(p, isStart);
+      bone.setPositionSelf(p, isAttachPosition);
     }
   }
 
@@ -275,9 +276,10 @@ public class CharacterEditorApp extends SimpleApplication {
           if (name.equals(Actions.CLICK)) {
             dragTarget = findDragTarget();
           } else if (name.equals(Actions.CLICK_RMB) && !showMesh) {
+            MyBone attachBone = findCurrentBone();
             Vector3f attachPoint = findBoneCollisionPoint();
-            if (attachPoint != null) {
-              MyBone bone = createNewBone(attachPoint);
+            if (attachPoint != null && attachBone != null) {
+              MyBone bone = createNewBone(attachPoint, attachBone);
               dragTarget = new DragTarget(bone, false);
             }
           }
@@ -321,7 +323,7 @@ public class CharacterEditorApp extends SimpleApplication {
             activeBones = BoneSaveUtils.cloneBones(bones);
 
             for (MyBone bone : activeBones) {
-              Vector3f dir = bone.getStart().subtract(bone.getEnd());
+              Vector3f dir = bone.getAttachPoint().subtract(bone.getFreePoint());
               float length = dir.length();
               // the way bone scaling works is different when moving mesh bones than when editing them,
               // so we must solve for new thickness:
@@ -402,13 +404,17 @@ public class CharacterEditorApp extends SimpleApplication {
     }, Actions.SELECT_BONE_MESH_1, Actions.SELECT_BONE_MESH_2, Actions.SELECT_BONE_MESH_3);
   }
 
-  private MyBone createNewBone(Vector3f attachPoint) {
+  private MyBone createNewBone(Vector3f attachPoint, MyBone attachBone) {
     // create new bone
-    MyBone bone = new MyBone(attachPoint.clone(), attachPoint.clone(), 0.2f, currentBoneMeshName);
+    MyBone bone = new MyBone(
+        attachPoint.clone(), attachPoint.clone(), currentBoneThickness, currentBoneMeshName);
+    bone.setParentBone(attachBone);
     bones.add(bone);
     addBoneSpatial(bone);
 
-    MyBone bone2 = new MyBone(getMirroredVector(attachPoint), getMirroredVector(attachPoint), 0.2f, currentBoneMeshName);
+    MyBone bone2 = new MyBone(
+        getMirroredVector(attachPoint), getMirroredVector(attachPoint), currentBoneThickness, currentBoneMeshName);
+    bone2.setParentBone(attachBone.getMirrorBone() != null ? attachBone.getMirrorBone() : attachBone);
     bones.add(bone2);
     addBoneSpatial(bone2);
 
@@ -458,10 +464,10 @@ public class CharacterEditorApp extends SimpleApplication {
     // possibly remove mirror buddy if bones lie along X plane
     if (dragTarget != null && dragTarget.bone.getMirrorBone() != null) {
       final float snapToXDistance = 0.3f;
-      if (FastMath.abs(dragTarget.bone.getStart().x) < snapToXDistance && FastMath.abs(dragTarget.bone.getEnd().x) < snapToXDistance) {
+      if (FastMath.abs(dragTarget.bone.getAttachPoint().x) < snapToXDistance && FastMath.abs(dragTarget.bone.getFreePoint().x) < snapToXDistance) {
         removeBone(dragTarget.bone.getMirrorBone());
-        dragTarget.bone.getStart().x = 0;
-        dragTarget.bone.getEnd().x = 0;
+        dragTarget.bone.getAttachPoint().x = 0;
+        dragTarget.bone.getFreePoint().x = 0;
       }
     }
     dragPlane = null;
@@ -512,12 +518,12 @@ public class CharacterEditorApp extends SimpleApplication {
     DragTarget best = null;
     float bestDist = 20;
     for (MyBone bone : activeBones) {
-      float distance = cursorDistanceTo(bone.getStart());
+      float distance = cursorDistanceTo(bone.getAttachPoint());
       if (distance < bestDist) {
         bestDist = distance;
         best = new DragTarget(bone, true);
       }
-      distance = cursorDistanceTo(bone.getEnd());
+      distance = cursorDistanceTo(bone.getFreePoint());
       if (distance < bestDist) {
         bestDist = distance;
         best = new DragTarget(bone, false);
@@ -630,12 +636,12 @@ public class CharacterEditorApp extends SimpleApplication {
     if (b != null) {
       Node gui = new Node();
 
-      Vector3f screenStart = cam.getScreenCoordinates(b.getStart());
-      gui.attachChild(CharacterEditorUtils.makeCircle(screenStart, guiFont));
+      Vector3f screenAttachPoint = cam.getScreenCoordinates(b.getAttachPoint());
+      gui.attachChild(CharacterEditorUtils.makeSymbol(screenAttachPoint, guiFont, "X", ColorRGBA.White));
 
-      Vector3f screenEnd = cam.getScreenCoordinates(b.getEnd());
-      gui.attachChild(CharacterEditorUtils.makeCircle(screenEnd, guiFont));
-      gui.attachChild(CharacterEditorUtils.makeLine(screenStart, screenEnd, makeLineMaterial(assetManager, ColorRGBA.Green)));
+      Vector3f screenFreePoint = cam.getScreenCoordinates(b.getFreePoint());
+      gui.attachChild(CharacterEditorUtils.makeSymbol(screenFreePoint, guiFont, "O", ColorRGBA.White));
+      gui.attachChild(CharacterEditorUtils.makeLine(screenAttachPoint, screenFreePoint, makeLineMaterial(assetManager, ColorRGBA.Green)));
       guiNode.attachChild(gui);
     }
 
@@ -644,7 +650,7 @@ public class CharacterEditorApp extends SimpleApplication {
   private void setCameraPosition() {
     Quaternion quat = getCameraQuaternion();
     cam.setRotation(quat);
-    Vector3f camPos = camTarget.getStart().add(camTarget.getEnd()).divideLocal(2);
+    Vector3f camPos = camTarget.getAttachPoint().add(camTarget.getFreePoint()).divideLocal(2);
     Vector3f lookDir = quat.mult(Vector3f.UNIT_Z);
     camPos.addLocal(lookDir.mult(-camDistance));
     cam.setLocation(camPos);
