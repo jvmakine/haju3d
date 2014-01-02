@@ -69,6 +69,27 @@ public final class BoneMeshUtils {
     return grid;
   }
 
+  public static ByteArray3d makeCylinderBoneMeshGrid() {
+    final int sz = BONE_MESH_SIZE;
+    ByteArray3d grid = new ByteArray3d(sz, sz, sz);
+    grid.set(new ByteArray3d.GetValue() {
+      @Override
+      public byte getValue(int x, int y, int z) {
+        int xd = Math.abs(x - sz / 2);
+        int yd = Math.abs(y - sz / 2);
+        int zd = Math.abs(z - sz / 2);
+        int bsz = sz / 4;
+        float value = bsz - Math.max(FastMath.sqrt(xd * xd + yd * yd), zd);
+
+        value = (value * 4) + 64;
+        if (value < 0) value = 0;
+        if (value > 127) value = 127;
+        return (byte) value;
+      }
+    });
+    return grid;
+  }
+
   public static ByteArray3d makeBlobBoneMeshGrid() {
     return makeBlobBoneMeshGrid(1);
   }

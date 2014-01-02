@@ -90,7 +90,7 @@ public class CharacterEditorApp extends SimpleApplication {
   private static final Logger LOGGER = LoggerFactory.getLogger(CharacterEditorApp.class);
 
   public static final float MINIMUM_BONE_THICKNESS = 0.05f;
-  public static final File BONE_FILE = new File("bones4-elephant.json");
+  public static final File BONE_FILE = new File("bones4-ant.json");
   public static final Charset BONE_FILE_ENCODING = Charset.forName("UTF-8");
 
   private MyBone camTarget;
@@ -130,12 +130,14 @@ public class CharacterEditorApp extends SimpleApplication {
     public static final String SELECT_BONE_MESH_1 = "SelectBoneMesh1";
     public static final String SELECT_BONE_MESH_2 = "SelectBoneMesh2";
     public static final String SELECT_BONE_MESH_3 = "SelectBoneMesh3";
+    public static final String SELECT_BONE_MESH_4 = "SelectBoneMesh4";
     public static final String MODIFY_CLICK = "ModifyClick";
   }
 
   private static final String SPHERE_MESH = "SPHERE";
   private static final String BOX_MESH = "BOX";
   private static final String BLOB_MESH = "BLOB";
+  private static final String CYLINDER_MESH = "CYLINDER";
 
   private static final Map<String, ByteArray3d> MESH_GRID_MAP = new HashMap<>();
 
@@ -143,6 +145,7 @@ public class CharacterEditorApp extends SimpleApplication {
     MESH_GRID_MAP.put(SPHERE_MESH, BoneMeshUtils.makeSphereBoneMeshGrid());
     MESH_GRID_MAP.put(BOX_MESH, BoneMeshUtils.makeBoxBoneMeshGrid());
     MESH_GRID_MAP.put(BLOB_MESH, BoneMeshUtils.makeBlobBoneMeshGrid());
+    MESH_GRID_MAP.put(CYLINDER_MESH, BoneMeshUtils.makeCylinderBoneMeshGrid());
   }
 
   private static final Map<String, Mesh> MESH_MAP = new HashMap<>();
@@ -234,6 +237,7 @@ public class CharacterEditorApp extends SimpleApplication {
     inputManager.addMapping(Actions.SELECT_BONE_MESH_1, new KeyTrigger(KeyInput.KEY_1));
     inputManager.addMapping(Actions.SELECT_BONE_MESH_2, new KeyTrigger(KeyInput.KEY_2));
     inputManager.addMapping(Actions.SELECT_BONE_MESH_3, new KeyTrigger(KeyInput.KEY_3));
+    inputManager.addMapping(Actions.SELECT_BONE_MESH_4, new KeyTrigger(KeyInput.KEY_4));
     inputManager.addListener(new ActionListener() {
       @Override
       public void onAction(String name, boolean isPressed, float tpf) {
@@ -250,11 +254,14 @@ public class CharacterEditorApp extends SimpleApplication {
             case Actions.SELECT_BONE_MESH_3:
               selectBoneMeshAndMirror(bone, BLOB_MESH);
               break;
+            case Actions.SELECT_BONE_MESH_4:
+              selectBoneMeshAndMirror(bone, CYLINDER_MESH);
+              break;
             }
           }
         }
       }
-    }, Actions.SELECT_BONE_MESH_1, Actions.SELECT_BONE_MESH_2, Actions.SELECT_BONE_MESH_3);
+    }, Actions.SELECT_BONE_MESH_1, Actions.SELECT_BONE_MESH_2, Actions.SELECT_BONE_MESH_3, Actions.SELECT_BONE_MESH_4);
   }
 
   private void initBoneDeleteAction() {
