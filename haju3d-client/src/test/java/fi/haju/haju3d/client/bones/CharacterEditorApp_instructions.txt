@@ -1,0 +1,22 @@
+Character Editor
+================
+
+Click in air and drag to rotate camera.
+
+Use LMB to drag bone end points. The drag targets are highlighed when you move your cursor close to them.
+Use <Ctrl>+LMB to focus on bone attach points.
+
+Use RMB to create new mirrored bones.
+Use <Ctrl>+RMB to create center bones.
+
+Press "delete" to delete a bone. All its child bones will be deleted as well.
+
+Use mouse scroll wheel to adjust bone thickness.
+
+Press keys 1-4 to switch bone mesh.
+
+Press space to go to mesh preview mode. In mesh preview you can move the mesh to a new pose by dragging
+its joints. Any changes you do in mesh preview mode are discarded when you press space to switch back to edit mode.
+You can also use mouse scroll wheel in mesh preview mode to resize bones.
+
+Press "enter" to switch X-plane guide on/off.

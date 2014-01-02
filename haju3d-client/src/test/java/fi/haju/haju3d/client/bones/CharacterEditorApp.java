@@ -104,7 +104,7 @@ public class CharacterEditorApp extends SimpleApplication {
 
   private DragTarget dragTarget;
   private Spatial dragPlane;
-  private boolean showGuides = false;
+  private boolean showGuides = true;
   private boolean showMesh = false;
 
   private Spatial axisIndicators;
@@ -375,7 +375,7 @@ public class CharacterEditorApp extends SimpleApplication {
             MyBone attachBone = findCurrentBone();
             Vector3f attachPoint = findBoneCollisionPoint();
             if (attachPoint != null && attachBone != null) {
-              boolean mirrored = !clickModifier;
+              boolean mirrored = !clickModifier || attachBone.getMirrorBone() != null;
               MyBone bone = createNewBone(attachPoint, attachBone, mirrored);
               dragTarget = new DragTarget(bone, false);
             }
