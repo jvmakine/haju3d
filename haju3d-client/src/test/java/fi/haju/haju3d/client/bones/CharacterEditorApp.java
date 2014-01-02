@@ -96,8 +96,8 @@ public class CharacterEditorApp extends SimpleApplication {
   private MyBone camTarget;
   private boolean cameraDragging;
   private float camDistance = 15;
-  private float camElevation = 0;
-  private float camAzimuth = 0;
+  private float camElevation = 0.26367188f;
+  private float camAzimuth = -0.5761719f;
   private List<MyBone> bones;
   private List<MyBone> activeBones;
   private Node boneSpatials = new Node();
