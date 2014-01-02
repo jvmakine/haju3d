@@ -31,7 +31,6 @@ import static fi.haju.haju3d.client.SimpleApplicationUtils.makeLineMaterial;
 
 /**
  * TODO:
- * - better way to create center bones (ctrl+rmb)
  * - MeshToBone
  * - meshing: vertex sharing for marching cubes: ~1/3 number of vertices
  * - ability to edit bones while showing real mesh: mesh reconstructed on every change
@@ -60,6 +59,7 @@ import static fi.haju.haju3d.client.SimpleApplicationUtils.makeLineMaterial;
  * - maybe endpoint should always be forced on surface, no free movement allowed?
  * <p/>
  * Done
+ * - better way to create center bones (ctrl+rmb)
  * - Drag point selection should be smarter..not select hidden drag points. Maybe use 3d distance instead of 2d distance
  * -- Show which point will be dragged if user clicks.
  * - When deleting a bone, its children should be deleted too
@@ -90,7 +90,7 @@ public class CharacterEditorApp extends SimpleApplication {
   private static final Logger LOGGER = LoggerFactory.getLogger(CharacterEditorApp.class);
 
   public static final float MINIMUM_BONE_THICKNESS = 0.05f;
-  public static final File BONE_FILE = new File("bones4-ant.json");
+  public static final File BONE_FILE = new File("bones4-fish.json");
   public static final Charset BONE_FILE_ENCODING = Charset.forName("UTF-8");
 
   private MyBone camTarget;
@@ -104,7 +104,6 @@ public class CharacterEditorApp extends SimpleApplication {
 
   private DragTarget dragTarget;
   private Spatial dragPlane;
-  private Spatial dragPlanePreview;
   private boolean showGuides = false;
   private boolean showMesh = false;
 
@@ -368,7 +367,8 @@ public class CharacterEditorApp extends SimpleApplication {
             MyBone attachBone = findCurrentBone();
             Vector3f attachPoint = findBoneCollisionPoint();
             if (attachPoint != null && attachBone != null) {
-              MyBone bone = createNewBone(attachPoint, attachBone);
+              boolean mirrored = !clickModifier;
+              MyBone bone = createNewBone(attachPoint, attachBone, mirrored);
               dragTarget = new DragTarget(bone, false);
             }
           }
@@ -450,7 +450,7 @@ public class CharacterEditorApp extends SimpleApplication {
     return showMesh ? BoneTransformUtils.boneTransform2(bone) : BoneTransformUtils.boneTransform(bone);
   }
 
-  private MyBone createNewBone(Vector3f attachPoint, MyBone attachBone) {
+  private MyBone createNewBone(Vector3f attachPoint, MyBone attachBone, boolean mirrored) {
     // create new bone
     MyBone bone = new MyBone(
         attachPoint.clone(), attachPoint.clone(), currentBoneThickness, currentBoneMeshName);
@@ -458,13 +458,18 @@ public class CharacterEditorApp extends SimpleApplication {
     bones.add(bone);
     addBoneSpatial(bone);
 
-    MyBone bone2 = new MyBone(
-        getMirroredVector(attachPoint), getMirroredVector(attachPoint), currentBoneThickness, currentBoneMeshName);
-    bone2.setParentBone(attachBone.getMirrorBone() != null ? attachBone.getMirrorBone() : attachBone);
-    bones.add(bone2);
-    addBoneSpatial(bone2);
+    if (mirrored) {
+      MyBone bone2 = new MyBone(
+          getMirroredVector(attachPoint), getMirroredVector(attachPoint), currentBoneThickness, currentBoneMeshName);
+      bone2.setParentBone(attachBone.getMirrorBone() != null ? attachBone.getMirrorBone() : attachBone);
+      bones.add(bone2);
+      addBoneSpatial(bone2);
 
-    bone.setMirrorBone(bone2);
+      bone.setMirrorBone(bone2);
+    } else {
+      bone.getAttachPoint().x = 0;
+      bone.getFreePoint().x = 0;
+    }
     return bone;
   }
 
@@ -498,28 +503,11 @@ public class CharacterEditorApp extends SimpleApplication {
   private void startDragging() {
     // start dragging
     dragPlane = makeDragPlane();
-//    dragPlanePreview = makeDragPlanePreview();
-//    rootNode.attachChild(dragPlanePreview);
   }
 
   private void stopDragging() {
     // stop dragging
-    if (dragPlanePreview != null) {
-      rootNode.detachChild(dragPlanePreview);
-    }
-    if (!showMesh) {
-      // possibly remove mirror buddy if bones lie along X plane
-      if (dragTarget != null && dragTarget.bone.getMirrorBone() != null) {
-        final float snapToXDistance = 0.3f;
-        if (FastMath.abs(dragTarget.bone.getAttachPoint().x) < snapToXDistance && FastMath.abs(dragTarget.bone.getFreePoint().x) < snapToXDistance) {
-          removeBone(dragTarget.bone.getMirrorBone());
-          dragTarget.bone.getAttachPoint().x = 0;
-          dragTarget.bone.getFreePoint().x = 0;
-        }
-      }
-    }
     dragPlane = null;
-    dragPlanePreview = null;
     dragTarget = null;
   }
 
@@ -599,16 +587,9 @@ public class CharacterEditorApp extends SimpleApplication {
     Node n = new Node("AxisIndicators");
     float sz = 20;
     Mesh m = CharacterEditorUtils.makeGridMesh(sz, sz, 20, 20);
-    //n.attachChild(makeDragPlane(sz, m, makeLineMaterial(assetManager, ColorRGBA.Red), Vector3f.UNIT_Z, Vector3f.UNIT_X, Vector3f.ZERO));
     ColorRGBA color = new ColorRGBA(0.5f, 0.5f, 0, 0.2f);
     n.attachChild(CharacterEditorUtils.makeDragPlane(sz, m, makeLineMaterial(assetManager, color), Vector3f.UNIT_X, Vector3f.UNIT_Z, Vector3f.ZERO));
     return n;
-  }
-
-  private Spatial makeDragPlanePreview() {
-    float sz = 20;
-    Mesh m = CharacterEditorUtils.makeGridMesh(sz, sz, 50, 50);
-    return makeDragPlane(sz, m, makeLineMaterial(assetManager, ColorRGBA.Red));
   }
 
   private Spatial makeDragPlane() {
