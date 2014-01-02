@@ -194,6 +194,25 @@ public class CharacterEditorApp extends SimpleApplication {
     }
     rootNode.attachChild(boneSpatials);
 
+    loadBones();
+
+    activeBones = bones;
+    camTarget = bones.get(0);
+
+    for (MyBone bone : bones) {
+      addBoneSpatial(bone);
+    }
+
+    initRotateActions();
+    initResizeActions();
+    initClickActions();
+    initToggleGuidesAction();
+    initToggleMeshAction();
+    initBoneDeleteAction();
+    initBoneSelectActions();
+  }
+
+  private void loadBones() {
     try {
       bones = BoneSaveUtils.readBones(FileUtils.readFileToString(BONE_FILE, BONE_FILE_ENCODING));
     } catch (Exception e) {
@@ -204,114 +223,53 @@ public class CharacterEditorApp extends SimpleApplication {
       MyBone bone = new MyBone(new Vector3f(0, 2, 0), new Vector3f(0, -1, 2), 0.2f, SPHERE_MESH);
       bones.add(bone);
     }
+  }
 
-    activeBones = bones;
+  // <ACTION_MAPPINGS>
 
-    camTarget = bones.get(0);
-
-    for (MyBone bone : bones) {
-      addBoneSpatial(bone);
-    }
-
-    inputManager.addMapping(Actions.ROTATE_LEFT_MOUSE, new MouseAxisTrigger(MouseInput.AXIS_X, true));
-    inputManager.addMapping(Actions.ROTATE_RIGHT_MOUSE, new MouseAxisTrigger(MouseInput.AXIS_X, false));
-    inputManager.addMapping(Actions.ROTATE_UP_MOUSE, new MouseAxisTrigger(MouseInput.AXIS_Y, false));
-    inputManager.addMapping(Actions.ROTATE_DOWN_MOUSE, new MouseAxisTrigger(MouseInput.AXIS_Y, true));
-    inputManager.addListener(new AnalogListener() {
-      public static final float ROTATE_SPEED = 5;
-
-      @Override
-      public void onAnalog(String name, float value, float tpf) {
-        if (!cameraDragging) {
-          return;
-        }
-        float v = value * ROTATE_SPEED;
-        switch (name) {
-        case Actions.ROTATE_LEFT_MOUSE:
-          camAzimuth -= v;
-          break;
-        case Actions.ROTATE_RIGHT_MOUSE:
-          camAzimuth += v;
-          break;
-        case Actions.ROTATE_DOWN_MOUSE:
-          camElevation -= v;
-          if (camElevation < -FastMath.PI / 2) {
-            camElevation = -FastMath.PI / 2;
-          }
-          break;
-        case Actions.ROTATE_UP_MOUSE:
-          camElevation += v;
-          if (camElevation > FastMath.PI / 2) {
-            camElevation = FastMath.PI / 2;
-          }
-          break;
-        }
-      }
-    }, Actions.ROTATE_LEFT_MOUSE, Actions.ROTATE_RIGHT_MOUSE, Actions.ROTATE_UP_MOUSE, Actions.ROTATE_DOWN_MOUSE);
-
-    inputManager.addMapping(Actions.RESIZE_DOWN, new MouseAxisTrigger(MouseInput.AXIS_WHEEL, true));
-    inputManager.addMapping(Actions.RESIZE_UP, new MouseAxisTrigger(MouseInput.AXIS_WHEEL, false));
-    inputManager.addListener(new AnalogListener() {
-      @Override
-      public void onAnalog(String name, float value, float tpf) {
-        if (name.equals(Actions.RESIZE_DOWN)) {
-          value = -value;
-        }
-        MyBone bone = findCurrentBone();
-        if (bone != null) {
-          Transform oldTransform = boneTransform(bone);
-          bone.addThickness(value);
-          Transform newTransform = boneTransform(bone);
-          applyTransformToChildren(bone, oldTransform, newTransform);
-        }
-      }
-    }, Actions.RESIZE_DOWN, Actions.RESIZE_UP);
-
-    inputManager.addMapping(Actions.CLICK, new MouseButtonTrigger(MouseInput.BUTTON_LEFT));
-    inputManager.addMapping(Actions.CLICK_RMB, new MouseButtonTrigger(MouseInput.BUTTON_RIGHT));
+  private void initBoneSelectActions() {
+    inputManager.addMapping(Actions.SELECT_BONE_MESH_1, new KeyTrigger(KeyInput.KEY_1));
+    inputManager.addMapping(Actions.SELECT_BONE_MESH_2, new KeyTrigger(KeyInput.KEY_2));
+    inputManager.addMapping(Actions.SELECT_BONE_MESH_3, new KeyTrigger(KeyInput.KEY_3));
     inputManager.addListener(new ActionListener() {
       @Override
       public void onAction(String name, boolean isPressed, float tpf) {
-        if (isPressed) {
-          stopDragging();
-          if (name.equals(Actions.CLICK)) {
-            dragTarget = findDragTarget();
-          } else if (name.equals(Actions.CLICK_RMB) && !showMesh) {
-            MyBone attachBone = findCurrentBone();
-            Vector3f attachPoint = findBoneCollisionPoint();
-            if (attachPoint != null && attachBone != null) {
-              MyBone bone = createNewBone(attachPoint, attachBone);
-              dragTarget = new DragTarget(bone, false);
+        if (isPressed && !showMesh) {
+          MyBone bone = findCurrentBone();
+          if (bone != null) {
+            switch (name) {
+            case Actions.SELECT_BONE_MESH_1:
+              selectBoneMeshAndMirror(bone, BOX_MESH);
+              break;
+            case Actions.SELECT_BONE_MESH_2:
+              selectBoneMeshAndMirror(bone, SPHERE_MESH);
+              break;
+            case Actions.SELECT_BONE_MESH_3:
+              selectBoneMeshAndMirror(bone, BLOB_MESH);
+              break;
             }
           }
-          if (dragTarget != null) {
-            startDragging();
-          } else {
-            // start moving camera
-            cameraDragging = true;
-          }
-        } else {
-          stopDragging();
-          cameraDragging = false;
         }
       }
-    }, Actions.CLICK, Actions.CLICK_RMB);
+    }, Actions.SELECT_BONE_MESH_1, Actions.SELECT_BONE_MESH_2, Actions.SELECT_BONE_MESH_3);
+  }
 
-    inputManager.addMapping(Actions.SHOW_GUIDES, new KeyTrigger(KeyInput.KEY_RETURN));
+  private void initBoneDeleteAction() {
+    inputManager.addMapping(Actions.DELETE_BONE, new KeyTrigger(KeyInput.KEY_DELETE));
     inputManager.addListener(new ActionListener() {
       @Override
       public void onAction(String name, boolean isPressed, float tpf) {
-        if (isPressed) {
-          showGuides = !showGuides;
-          if (showGuides) {
-            rootNode.attachChild(axisIndicators);
-          } else {
-            rootNode.detachChild(axisIndicators);
+        if (isPressed && !showMesh) {
+          MyBone bone = findCurrentBone();
+          if (bone != null) {
+            removeBoneAndMirrorAndChildren(bone);
           }
         }
       }
-    }, Actions.SHOW_GUIDES);
+    }, Actions.DELETE_BONE);
+  }
 
+  private void initToggleMeshAction() {
     inputManager.addMapping(Actions.SHOW_MESH, new KeyTrigger(KeyInput.KEY_SPACE));
     inputManager.addListener(new ActionListener() {
       @Override
@@ -365,45 +323,116 @@ public class CharacterEditorApp extends SimpleApplication {
         }
       }
     }, Actions.SHOW_MESH);
+  }
 
-    inputManager.addMapping(Actions.DELETE_BONE, new KeyTrigger(KeyInput.KEY_DELETE));
+  private void initToggleGuidesAction() {
+    inputManager.addMapping(Actions.SHOW_GUIDES, new KeyTrigger(KeyInput.KEY_RETURN));
     inputManager.addListener(new ActionListener() {
       @Override
       public void onAction(String name, boolean isPressed, float tpf) {
-        if (isPressed && !showMesh) {
-          MyBone bone = findCurrentBone();
-          if (bone != null) {
-            removeBoneAndMirrorAndChildren(bone);
+        if (isPressed) {
+          showGuides = !showGuides;
+          if (showGuides) {
+            rootNode.attachChild(axisIndicators);
+          } else {
+            rootNode.detachChild(axisIndicators);
           }
         }
       }
-    }, Actions.DELETE_BONE);
+    }, Actions.SHOW_GUIDES);
+  }
 
-    inputManager.addMapping(Actions.SELECT_BONE_MESH_1, new KeyTrigger(KeyInput.KEY_1));
-    inputManager.addMapping(Actions.SELECT_BONE_MESH_2, new KeyTrigger(KeyInput.KEY_2));
-    inputManager.addMapping(Actions.SELECT_BONE_MESH_3, new KeyTrigger(KeyInput.KEY_3));
+  private void initClickActions() {
+    inputManager.addMapping(Actions.CLICK, new MouseButtonTrigger(MouseInput.BUTTON_LEFT));
+    inputManager.addMapping(Actions.CLICK_RMB, new MouseButtonTrigger(MouseInput.BUTTON_RIGHT));
     inputManager.addListener(new ActionListener() {
       @Override
       public void onAction(String name, boolean isPressed, float tpf) {
-        if (isPressed && !showMesh) {
-          MyBone bone = findCurrentBone();
-          if (bone != null) {
-            switch (name) {
-            case Actions.SELECT_BONE_MESH_1:
-              selectBoneMeshAndMirror(bone, BOX_MESH);
-              break;
-            case Actions.SELECT_BONE_MESH_2:
-              selectBoneMeshAndMirror(bone, SPHERE_MESH);
-              break;
-            case Actions.SELECT_BONE_MESH_3:
-              selectBoneMeshAndMirror(bone, BLOB_MESH);
-              break;
+        if (isPressed) {
+          stopDragging();
+          if (name.equals(Actions.CLICK)) {
+            dragTarget = findDragTarget();
+          } else if (name.equals(Actions.CLICK_RMB) && !showMesh) {
+            MyBone attachBone = findCurrentBone();
+            Vector3f attachPoint = findBoneCollisionPoint();
+            if (attachPoint != null && attachBone != null) {
+              MyBone bone = createNewBone(attachPoint, attachBone);
+              dragTarget = new DragTarget(bone, false);
             }
           }
+          if (dragTarget != null) {
+            startDragging();
+          } else {
+            // start moving camera
+            cameraDragging = true;
+          }
+        } else {
+          stopDragging();
+          cameraDragging = false;
         }
       }
-    }, Actions.SELECT_BONE_MESH_1, Actions.SELECT_BONE_MESH_2, Actions.SELECT_BONE_MESH_3);
+    }, Actions.CLICK, Actions.CLICK_RMB);
   }
+
+  private void initResizeActions() {
+    inputManager.addMapping(Actions.RESIZE_DOWN, new MouseAxisTrigger(MouseInput.AXIS_WHEEL, true));
+    inputManager.addMapping(Actions.RESIZE_UP, new MouseAxisTrigger(MouseInput.AXIS_WHEEL, false));
+    inputManager.addListener(new AnalogListener() {
+      @Override
+      public void onAnalog(String name, float value, float tpf) {
+        if (name.equals(Actions.RESIZE_DOWN)) {
+          value = -value;
+        }
+        MyBone bone = findCurrentBone();
+        if (bone != null) {
+          Transform oldTransform = boneTransform(bone);
+          bone.addThickness(value);
+          Transform newTransform = boneTransform(bone);
+          applyTransformToChildren(bone, oldTransform, newTransform);
+        }
+      }
+    }, Actions.RESIZE_DOWN, Actions.RESIZE_UP);
+  }
+
+  private void initRotateActions() {
+    inputManager.addMapping(Actions.ROTATE_LEFT_MOUSE, new MouseAxisTrigger(MouseInput.AXIS_X, true));
+    inputManager.addMapping(Actions.ROTATE_RIGHT_MOUSE, new MouseAxisTrigger(MouseInput.AXIS_X, false));
+    inputManager.addMapping(Actions.ROTATE_UP_MOUSE, new MouseAxisTrigger(MouseInput.AXIS_Y, false));
+    inputManager.addMapping(Actions.ROTATE_DOWN_MOUSE, new MouseAxisTrigger(MouseInput.AXIS_Y, true));
+    inputManager.addListener(new AnalogListener() {
+      public static final float ROTATE_SPEED = 5;
+
+      @Override
+      public void onAnalog(String name, float value, float tpf) {
+        if (!cameraDragging) {
+          return;
+        }
+        float v = value * ROTATE_SPEED;
+        switch (name) {
+        case Actions.ROTATE_LEFT_MOUSE:
+          camAzimuth -= v;
+          break;
+        case Actions.ROTATE_RIGHT_MOUSE:
+          camAzimuth += v;
+          break;
+        case Actions.ROTATE_DOWN_MOUSE:
+          camElevation -= v;
+          if (camElevation < -FastMath.PI / 2) {
+            camElevation = -FastMath.PI / 2;
+          }
+          break;
+        case Actions.ROTATE_UP_MOUSE:
+          camElevation += v;
+          if (camElevation > FastMath.PI / 2) {
+            camElevation = FastMath.PI / 2;
+          }
+          break;
+        }
+      }
+    }, Actions.ROTATE_LEFT_MOUSE, Actions.ROTATE_RIGHT_MOUSE, Actions.ROTATE_UP_MOUSE, Actions.ROTATE_DOWN_MOUSE);
+  }
+
+  // </ACTION_MAPPINGS>
 
   private Transform boneTransform(MyBone bone) {
     return showMesh ? BoneTransformUtils.boneTransform2(bone) : BoneTransformUtils.boneTransform(bone);
@@ -732,7 +761,7 @@ public class CharacterEditorApp extends SimpleApplication {
   @Override
   public void destroy() {
     super.destroy();
-    if (bones != null && false) {
+    if (bones != null) {
       try {
         FileUtils.writeStringToFile(BONE_FILE, BoneSaveUtils.saveBones(bones), BONE_FILE_ENCODING);
       } catch (IOException e) {
