@@ -31,10 +31,7 @@ import static fi.haju.haju3d.client.SimpleApplicationUtils.makeLineMaterial;
 
 /**
  * TODO:
- * - Drag point selection should be smarter..not select hidden drag points. Maybe use 3d distance instead of 2d distance
- * -- Show which point will be dragged if user clicks.
- * - Ability to attach bone to a new parent
- * - Ability to switch between "skeleton mode" and "free mode"; In "skeleton mode" you can't move the "attachPoint". Mesh preview is always in "skeleton mode".
+ * - better way to create center bones (ctrl+rmb)
  * - MeshToBone
  * - meshing: vertex sharing for marching cubes: ~1/3 number of vertices
  * - ability to edit bones while showing real mesh: mesh reconstructed on every change
@@ -44,11 +41,13 @@ import static fi.haju.haju3d.client.SimpleApplicationUtils.makeLineMaterial;
  * Backlog:
  * - fix "off by one or half"-issues in meshing. Rounding issues, MC grid placement etc.
  * - ability to create "fixed bones" that can't be animated. their only purpose is to add detail to the mesh.
+ * - Ability to attach bone to a new parent
  * - IK animation on bones
  * - ability to set constraints on mesh joints
  * - ability to quickly edit bone mesh
  * - ability to rotate bone mesh
  * - quick way to create a leg or an arm (both consist of 3 bones)
+ * - Maybe not useful: Ability to switch between "skeleton mode" and "free mode"; In "skeleton mode" you can't move the "attachPoint". Mesh preview is always in "skeleton mode".
  * Tough problems:
  * - boneTransform is not very robust, the rotation is random
  * - texturing
@@ -61,6 +60,8 @@ import static fi.haju.haju3d.client.SimpleApplicationUtils.makeLineMaterial;
  * - maybe endpoint should always be forced on surface, no free movement allowed?
  * <p/>
  * Done
+ * - Drag point selection should be smarter..not select hidden drag points. Maybe use 3d distance instead of 2d distance
+ * -- Show which point will be dragged if user clicks.
  * - When deleting a bone, its children should be deleted too
  * - IK movement of joints
  * -- each bone has parentBone (except root). It has "attachPoint" and "freePoint" instead of start/end.
@@ -112,6 +113,7 @@ public class CharacterEditorApp extends SimpleApplication {
   private List<Matrix4f> meshBoneBindPoseInverseTransforms;
   private float currentBoneThickness = 0.5f;
   private String currentBoneMeshName = BLOB_MESH;
+  private boolean clickModifier;
 
   private static class Actions {
     public static final String ROTATE_LEFT_MOUSE = "RotateLeftMouse";
@@ -128,6 +130,7 @@ public class CharacterEditorApp extends SimpleApplication {
     public static final String SELECT_BONE_MESH_1 = "SelectBoneMesh1";
     public static final String SELECT_BONE_MESH_2 = "SelectBoneMesh2";
     public static final String SELECT_BONE_MESH_3 = "SelectBoneMesh3";
+    public static final String MODIFY_CLICK = "ModifyClick";
   }
 
   private static final String SPHERE_MESH = "SPHERE";
@@ -343,6 +346,15 @@ public class CharacterEditorApp extends SimpleApplication {
   }
 
   private void initClickActions() {
+    inputManager.addMapping(Actions.MODIFY_CLICK, new KeyTrigger(KeyInput.KEY_LCONTROL), new KeyTrigger(KeyInput.KEY_RCONTROL));
+    inputManager.addListener(new ActionListener() {
+      @Override
+      public void onAction(String name, boolean isPressed, float tpf) {
+        clickModifier = isPressed;
+      }
+    }, Actions.MODIFY_CLICK);
+
+
     inputManager.addMapping(Actions.CLICK, new MouseButtonTrigger(MouseInput.BUTTON_LEFT));
     inputManager.addMapping(Actions.CLICK_RMB, new MouseButtonTrigger(MouseInput.BUTTON_RIGHT));
     inputManager.addListener(new ActionListener() {
@@ -562,22 +574,17 @@ public class CharacterEditorApp extends SimpleApplication {
   }
 
   private DragTarget findDragTarget() {
+    final boolean findAttachPoint = !showMesh && clickModifier;
+
     DragTarget best = null;
-    float bestDist = 20;
+    float bestDist = 1e9f;
     for (MyBone bone : activeBones) {
-      float distance;
-      // allow attach point dragging if mesh is not shown
-      if (!showMesh) {
-        distance = cursorDistanceTo(bone.getAttachPoint());
-        if (distance < bestDist) {
-          bestDist = distance;
-          best = new DragTarget(bone, true);
-        }
-      }
-      distance = cursorDistanceTo(bone.getFreePoint());
-      if (distance < bestDist) {
+      // pick the point that is closest to camera and near cursor
+      Vector3f pt = findAttachPoint ? bone.getAttachPoint() : bone.getFreePoint();
+      float distance = pt.distance(cam.getLocation());
+      if (cursorDistanceTo(pt) < 20 && distance < bestDist) {
         bestDist = distance;
-        best = new DragTarget(bone, false);
+        best = new DragTarget(bone, findAttachPoint);
       }
     }
     return best;
@@ -688,7 +695,6 @@ public class CharacterEditorApp extends SimpleApplication {
       } else {
         moved.add(c.getMirrorBone());
         c.setPosition(newTransform.transformVector(oldTransform.transformInverseVector(c.getAttachPoint(), null), null), true);
-        //c.setPosition(newTransform.transformVector(oldTransform.transformInverseVector(c.getFreePoint(), null), null), false);
       }
 
       Transform childNewTransform = boneTransform(c);
@@ -725,20 +731,21 @@ public class CharacterEditorApp extends SimpleApplication {
     }
 
     MyBone b = findCurrentBone();
-    if (b != null) {
-      Node gui = new Node();
-
+    final String ATTACH_POINT_SYMBOL = "X";
+    final String FREE_POINT_SYMBOL = "O";
+    if (b != null && !showMesh) {
       Vector3f screenFreePoint = cam.getScreenCoordinates(b.getFreePoint());
-      gui.attachChild(CharacterEditorUtils.makeSymbol(screenFreePoint, guiFont, "O", ColorRGBA.White));
+      Vector3f screenAttachPoint = cam.getScreenCoordinates(b.getAttachPoint());
+      guiNode.attachChild(CharacterEditorUtils.makeSymbol(screenFreePoint, guiFont, FREE_POINT_SYMBOL, ColorRGBA.Red, 0.3f));
+      guiNode.attachChild(CharacterEditorUtils.makeSymbol(screenAttachPoint, guiFont, ATTACH_POINT_SYMBOL, ColorRGBA.Red, 0.3f));
+      guiNode.attachChild(CharacterEditorUtils.makeLine(screenAttachPoint, screenFreePoint, makeLineMaterial(assetManager, ColorRGBA.Red)));
+    }
 
-      // allow attach point movement when mesh is not shown
-      if (!showMesh) {
-        Vector3f screenAttachPoint = cam.getScreenCoordinates(b.getAttachPoint());
-        gui.attachChild(CharacterEditorUtils.makeSymbol(screenAttachPoint, guiFont, "X", ColorRGBA.White));
-        gui.attachChild(CharacterEditorUtils.makeLine(screenAttachPoint, screenFreePoint, makeLineMaterial(assetManager, ColorRGBA.Green)));
-      }
-
-      guiNode.attachChild(gui);
+    DragTarget dt = findDragTarget();
+    if (dt != null) {
+      Vector3f screenFreePoint = cam.getScreenCoordinates(dt.getPosition());
+      String symbol = dt.isAttachPosition ? ATTACH_POINT_SYMBOL : FREE_POINT_SYMBOL;
+      guiNode.attachChild(CharacterEditorUtils.makeSymbol(screenFreePoint, guiFont, symbol, ColorRGBA.Green, 1.0f));
     }
 
   }

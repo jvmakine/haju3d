@@ -41,12 +41,13 @@ public final class CharacterEditorUtils {
     return node;
   }
 
-  public static BitmapText makeSymbol(Vector3f screenPos, BitmapFont guiFont1, String symbol, ColorRGBA color) {
+  public static BitmapText makeSymbol(Vector3f screenPos, BitmapFont guiFont1, String symbol, ColorRGBA color, float scale) {
     BitmapText text = new BitmapText(guiFont1, false);
     text.setColor(color);
     text.setSize(guiFont1.getCharSet().getRenderedSize() * 2);
     text.setText(symbol);
-    text.setLocalTranslation(screenPos.add(-text.getLineWidth() / 2, text.getLineHeight() / 2, 0));
+    text.setLocalTranslation(screenPos.add(-text.getLineWidth() / 2 * scale, text.getLineHeight() / 2 * scale, 0));
+    text.setLocalScale(scale);
     return text;
   }
 
