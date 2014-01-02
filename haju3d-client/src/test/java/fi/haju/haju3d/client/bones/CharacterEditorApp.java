@@ -90,7 +90,7 @@ public class CharacterEditorApp extends SimpleApplication {
   private static final Logger LOGGER = LoggerFactory.getLogger(CharacterEditorApp.class);
 
   public static final float MINIMUM_BONE_THICKNESS = 0.05f;
-  public static final File BONE_FILE = new File("bones4-fish.json");
+  public static final File BONE_FILE = new File("bones4-elephant.json");
   public static final Charset BONE_FILE_ENCODING = Charset.forName("UTF-8");
 
   private MyBone camTarget;
@@ -113,6 +113,7 @@ public class CharacterEditorApp extends SimpleApplication {
   private float currentBoneThickness = 0.5f;
   private String currentBoneMeshName = BLOB_MESH;
   private boolean clickModifier;
+  private long boneCreationTimeNanos;
 
   private static class Actions {
     public static final String ROTATE_LEFT_MOUSE = "RotateLeftMouse";
@@ -371,6 +372,7 @@ public class CharacterEditorApp extends SimpleApplication {
               MyBone bone = createNewBone(attachPoint, attachBone, mirrored);
               dragTarget = new DragTarget(bone, false);
             }
+            boneCreationTimeNanos = System.nanoTime();
           }
           if (dragTarget != null) {
             startDragging();
@@ -506,12 +508,29 @@ public class CharacterEditorApp extends SimpleApplication {
   }
 
   private void stopDragging() {
+    // if created bone is too tiny, remove it
+    if (boneCreationTimeNanos != 0) {
+      float dist = dragTarget.bone.getFreePoint().distance(dragTarget.bone.getAttachPoint());
+      if (dist < 0.3f) {
+        removeBoneAndMirrorAndChildren(dragTarget.bone);
+      }
+    }
+
+    // if user creates bone by accident with a fast click, remove the bone
+    if ((System.nanoTime() - boneCreationTimeNanos) / 1e9 < 0.2) {
+      removeBoneAndMirrorAndChildren(dragTarget.bone);
+    }
+
     // stop dragging
+    boneCreationTimeNanos = 0;
     dragPlane = null;
     dragTarget = null;
   }
 
   public void removeBoneAndMirrorAndChildren(MyBone bone) {
+    if (!bones.contains(bone)) {
+      return;
+    }
     if (bone.getMirrorBone() != null) {
       removeBone(bone.getMirrorBone());
     }
@@ -563,7 +582,15 @@ public class CharacterEditorApp extends SimpleApplication {
 
   private DragTarget findDragTarget() {
     final boolean findAttachPoint = !showMesh && clickModifier;
+    DragTarget best = findDragTarget(findAttachPoint);
+    if (best == null && !showMesh) {
+      // couldn't find the type of point we're looking for; try the other type
+      return findDragTarget(!findAttachPoint);
+    }
+    return best;
+  }
 
+  private DragTarget findDragTarget(boolean findAttachPoint) {
     DragTarget best = null;
     float bestDist = 1e9f;
     for (MyBone bone : activeBones) {
@@ -607,8 +634,13 @@ public class CharacterEditorApp extends SimpleApplication {
     // non-mirrored bones only dragged along X-plane
     if (!showMesh) {
       if (dragTarget.bone.getMirrorBone() == null) {
-        direction = Vector3f.UNIT_X;
-        left = Vector3f.UNIT_Z;
+        // If camera's "left" direction is very close to x-axis, then X-plane is almost straight out
+        // from camera and even tiny movement along that plane would radically change drag target's location.
+        // In that case normal drag plane is used.
+        if (FastMath.abs(cam.getLeft().normalize().x) < 0.9f) {
+          direction = Vector3f.UNIT_X;
+          left = Vector3f.UNIT_Z;
+        }
       }
     }
 
@@ -632,6 +664,9 @@ public class CharacterEditorApp extends SimpleApplication {
       CollisionResults results = new CollisionResults();
       if (dragPlane.collideWith(ray, results) > 0) {
         Vector3f newPosition = results.getCollision(0).getContactPoint();
+        if (!showMesh && dragTarget.bone.getMirrorBone() == null) {
+          newPosition.x = 0;
+        }
         Transform oldTransform = boneTransform(dragTarget.bone);
         if (showMesh) {
           // move mirrored bones individually when in showMesh mode
