@@ -31,6 +31,9 @@ import static fi.haju.haju3d.client.SimpleApplicationUtils.makeLineMaterial;
 
 /**
  * TODO:
+ * - Drag point selection should be smarter..not select hidden drag points. Maybe use 3d distance instead of 2d distance
+ * -- Show which point will be dragged if user clicks.
+ * - Ability to attach bone to a new parent
  * - Ability to switch between "skeleton mode" and "free mode"; In "skeleton mode" you can't move the "attachPoint". Mesh preview is always in "skeleton mode".
  * - MeshToBone
  * - meshing: vertex sharing for marching cubes: ~1/3 number of vertices
@@ -40,6 +43,7 @@ import static fi.haju.haju3d.client.SimpleApplicationUtils.makeLineMaterial;
  * <p/>
  * Backlog:
  * - fix "off by one or half"-issues in meshing. Rounding issues, MC grid placement etc.
+ * - ability to create "fixed bones" that can't be animated. their only purpose is to add detail to the mesh.
  * - IK animation on bones
  * - ability to set constraints on mesh joints
  * - ability to quickly edit bone mesh
@@ -57,6 +61,7 @@ import static fi.haju.haju3d.client.SimpleApplicationUtils.makeLineMaterial;
  * - maybe endpoint should always be forced on surface, no free movement allowed?
  * <p/>
  * Done
+ * - When deleting a bone, its children should be deleted too
  * - IK movement of joints
  * -- each bone has parentBone (except root). It has "attachPoint" and "freePoint" instead of start/end.
  * -- When a bone is moved, all its child bones move too. both their "freePoint" and "attachPoint".
@@ -84,7 +89,7 @@ public class CharacterEditorApp extends SimpleApplication {
   private static final Logger LOGGER = LoggerFactory.getLogger(CharacterEditorApp.class);
 
   public static final float MINIMUM_BONE_THICKNESS = 0.05f;
-  public static final File BONE_FILE = new File("bones4.json");
+  public static final File BONE_FILE = new File("bones4-ant.json");
   public static final Charset BONE_FILE_ENCODING = Charset.forName("UTF-8");
 
   private MyBone camTarget;
@@ -367,8 +372,8 @@ public class CharacterEditorApp extends SimpleApplication {
       public void onAction(String name, boolean isPressed, float tpf) {
         if (isPressed && !showMesh) {
           MyBone bone = findCurrentBone();
-          if (bone != null && bones.indexOf(bone) != 0) {
-            removeBoneAndMirror(bone);
+          if (bone != null) {
+            removeBoneAndMirrorAndChildren(bone);
           }
         }
       }
@@ -477,14 +482,25 @@ public class CharacterEditorApp extends SimpleApplication {
     dragTarget = null;
   }
 
-  public void removeBoneAndMirror(MyBone bone) {
+  public void removeBoneAndMirrorAndChildren(MyBone bone) {
     if (bone.getMirrorBone() != null) {
       removeBone(bone.getMirrorBone());
     }
     removeBone(bone);
+    for (MyBone c : getChildren(bone)) {
+      removeBoneAndMirrorAndChildren(c);
+    }
   }
 
   public void removeBone(MyBone bone) {
+    if (bone.getParentBone() == null) {
+      // can't remove root bone
+      return;
+    }
+    if (!bones.contains(bone)) {
+      return;
+    }
+    bone.setParentBone(null);
     bone.setMirrorBone(null);
     boneSpatials.detachChildAt(bones.indexOf(bone));
     bones.remove(bone);
@@ -643,7 +659,7 @@ public class CharacterEditorApp extends SimpleApplication {
       } else {
         moved.add(c.getMirrorBone());
         c.setPosition(newTransform.transformVector(oldTransform.transformInverseVector(c.getAttachPoint(), null), null), true);
-        c.setPosition(newTransform.transformVector(oldTransform.transformInverseVector(c.getFreePoint(), null), null), false);
+        //c.setPosition(newTransform.transformVector(oldTransform.transformInverseVector(c.getFreePoint(), null), null), false);
       }
 
       Transform childNewTransform = boneTransform(c);
@@ -716,7 +732,7 @@ public class CharacterEditorApp extends SimpleApplication {
   @Override
   public void destroy() {
     super.destroy();
-    if (bones != null) {
+    if (bones != null && false) {
       try {
         FileUtils.writeStringToFile(BONE_FILE, BoneSaveUtils.saveBones(bones), BONE_FILE_ENCODING);
       } catch (IOException e) {
