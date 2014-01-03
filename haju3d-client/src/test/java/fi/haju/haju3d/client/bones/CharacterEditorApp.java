@@ -31,13 +31,20 @@ import static fi.haju.haju3d.client.SimpleApplicationUtils.makeLineMaterial;
 
 /**
  * TODO:
- * - MeshToBone
+ * - simple planar UV map for model and test some normal+diffuse maps
+ * - cylinder UV map for each bone, and blend textures of adjacent bones together
+ * - animation:
+ * -- each bone has its 'natural position' and a spring pulls it back there. Thicker the bone, stronger the spring.
+ * -- automatically detect legs as bones that touch ground. leg root = first center bone parent.
+ * -- how to do different leg types: bend backward, bend forward, ant leg? default to human leg constraints.
+ * - setRoot(MyBone b) is possible..so if tail is accidentally the root, you can re-root at body.
  * - meshing: vertex sharing for marching cubes: ~1/3 number of vertices
  * - ability to edit bones while showing real mesh: mesh reconstructed on every change
  * -- optimizing for partial updates may not be worth it. One still has to update quickly when root bone
  *    is moved and almost full mesh needs to be reconstructed. First build low res mesh, then high res?
  * <p/>
  * Backlog:
+ * - MeshToBone
  * - fix "off by one or half"-issues in meshing. Rounding issues, MC grid placement etc.
  * - ability to create "fixed bones" that can't be animated. their only purpose is to add detail to the mesh.
  * - Ability to attach bone to a new parent
