@@ -42,7 +42,7 @@ public final class SimpleApplicationUtils {
     Node rootNode = app.getRootNode();
     DirectionalLight light = new DirectionalLight();
     light.setDirection(new Vector3f(-1, -2, -0.5f).normalizeLocal());
-    light.setColor(new ColorRGBA(1f, 1f, 1f, 1f).mult(1.0f));
+    light.setColor(new ColorRGBA(1f, 1f, 1f, 1f).mult(.8f));
     rootNode.addLight(light);
 
     DirectionalLight light2 = new DirectionalLight();

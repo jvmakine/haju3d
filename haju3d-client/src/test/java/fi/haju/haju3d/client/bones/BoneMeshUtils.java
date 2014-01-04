@@ -21,6 +21,7 @@ public final class BoneMeshUtils {
   }
 
   private static final int BONE_MESH_SIZE = 64;
+  private static final int HARDNESS = 8;
 
   public static Mesh makeBoneMesh(ByteArray3d boneMeshGrid) {
     final int sz = boneMeshGrid.getWidth();
@@ -39,7 +40,7 @@ public final class BoneMeshUtils {
         int bsz = sz / 3;
         float value = bsz - FastMath.sqrt(xd * xd + yd * yd + zd * zd);
 
-        value = (value * 4) + 64;
+        value = (value * HARDNESS) + 64;
         if (value < 0) value = 0;
         if (value > 127) value = 127;
         return (byte) value;
@@ -60,7 +61,7 @@ public final class BoneMeshUtils {
         int bsz = sz / 4;
         int value = bsz - Math.max(Math.max(xd, yd), zd);
 
-        value = (value * 4) + 64;
+        value = (value * HARDNESS) + 64;
         if (value < 0) value = 0;
         if (value > 127) value = 127;
         return (byte) value;
@@ -81,7 +82,7 @@ public final class BoneMeshUtils {
         int bsz = sz / 4;
         float value = bsz - Math.max(FastMath.sqrt(xd * xd + yd * yd), zd);
 
-        value = (value * 4) + 64;
+        value = (value * HARDNESS) + 64;
         if (value < 0) value = 0;
         if (value > 127) value = 127;
         return (byte) value;
@@ -108,7 +109,7 @@ public final class BoneMeshUtils {
         int bsz = sz / 3;
         float value = bsz - FastMath.sqrt(xd * xd + yd * yd + zd * zd);
 
-        value = (value * 6) + 64;
+        value = (value * HARDNESS * 1.5f) + 64;
 
         //x-symmetric noise
         value += noise.get(x, Math.abs(sz / 2 - y), z) * 6;
