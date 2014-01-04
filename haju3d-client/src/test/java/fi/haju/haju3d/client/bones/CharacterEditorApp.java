@@ -15,6 +15,7 @@ import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
 import com.jme3.scene.shape.Quad;
 import com.jme3.shader.VarType;
+import com.jme3.texture.Texture;
 import fi.haju.haju3d.client.SimpleApplicationUtils;
 import fi.haju.haju3d.protocol.world.ByteArray3d;
 import org.apache.commons.io.FileUtils;
@@ -293,6 +294,8 @@ public class CharacterEditorApp extends SimpleApplication {
       public void onAction(String name, boolean isPressed, float tpf) {
         if (isPressed) {
           showMesh = !showMesh;
+          updateGuideVisibility();
+
           if (showMesh) {
             LOGGER.info("Show mesh");
 
@@ -320,6 +323,11 @@ public class CharacterEditorApp extends SimpleApplication {
             Material meshMaterial = SimpleApplicationUtils.makeColorMaterial(assetManager, ColorRGBA.White);
             //meshMaterial.setBoolean("UseVertexColor", true);
             meshMaterial.setInt("NumberOfBones", activeBones.size());
+
+            Texture tex = assetManager.loadTexture("fi/haju/haju3d/client/textures/fur4.png");
+            tex.setWrap(Texture.WrapMode.Repeat);
+            meshMaterial.setTexture("DiffuseMap", tex);
+
             geom.setMaterial(meshMaterial);
             geom.setShadowMode(RenderQueue.ShadowMode.CastAndReceive);
 
@@ -349,14 +357,18 @@ public class CharacterEditorApp extends SimpleApplication {
       public void onAction(String name, boolean isPressed, float tpf) {
         if (isPressed) {
           showGuides = !showGuides;
-          if (showGuides) {
-            rootNode.attachChild(axisIndicators);
-          } else {
-            rootNode.detachChild(axisIndicators);
-          }
+          updateGuideVisibility();
         }
       }
     }, Actions.SHOW_GUIDES);
+  }
+
+  private void updateGuideVisibility() {
+    if (showGuides && !showMesh) {
+      rootNode.attachChild(axisIndicators);
+    } else {
+      rootNode.detachChild(axisIndicators);
+    }
   }
 
   private void initClickActions() {

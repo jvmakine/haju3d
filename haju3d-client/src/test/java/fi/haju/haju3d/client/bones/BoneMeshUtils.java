@@ -112,8 +112,8 @@ public final class BoneMeshUtils {
         value = (value * HARDNESS * 1.5f) + 64;
 
         //x-symmetric noise
-        value += noise.get(x, Math.abs(sz / 2 - y), z) * 6;
-        value -= 4;
+        value += noise.get(x, Math.abs(sz / 2 - y), z) * 12;
+        value -= 24;
         if (value < 0) value = 0;
         if (value > 127) value = 127;
         return (byte) value;

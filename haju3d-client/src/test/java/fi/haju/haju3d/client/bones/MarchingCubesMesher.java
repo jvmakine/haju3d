@@ -64,6 +64,7 @@ public final class MarchingCubesMesher {
     int faces = triangles.size();
     FloatBuffer vertexes = BufferUtils.createFloatBuffer(faces * 3 * 3);
     FloatBuffer vertexNormals = BufferUtils.createFloatBuffer(faces * 3 * 3);
+    FloatBuffer uvs = BufferUtils.createFloatBuffer(faces * 3 * 2);
     IntBuffer indexes = BufferUtils.createIntBuffer(faces * 3);
 
     Map<Vector3f, Vector3f> normalMap = new HashMap<>();
@@ -82,6 +83,8 @@ public final class MarchingCubesMesher {
         vertexes.put(v2.x).put(v2.y).put(v2.z);
         Vector3f n = normalMap.get(v).normalizeLocal();
         vertexNormals.put(n.x).put(n.y).put(n.z);
+
+        uvs.put(v2.x).put(v2.z);
       }
 
       indexes.put(ix).put(ix + 1).put(ix + 2);
@@ -92,6 +95,7 @@ public final class MarchingCubesMesher {
     m.setBuffer(VertexBuffer.Type.Position, 3, vertexes);
     m.setBuffer(VertexBuffer.Type.Normal, 3, vertexNormals);
     m.setBuffer(VertexBuffer.Type.Index, 1, indexes);
+    m.setBuffer(VertexBuffer.Type.TexCoord, 2, uvs);
     m.updateBound();
     m.setStatic();
     return m;
