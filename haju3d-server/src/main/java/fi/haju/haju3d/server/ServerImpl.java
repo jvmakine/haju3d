@@ -42,8 +42,8 @@ public class ServerImpl implements Server {
   }
 
   public void start() {
+    LOGGER.info("Starting the server");
     settings.init();
-
     Optional<WorldInfo> opt = saver.loadInfoIfOnDisk();
     if (!opt.isPresent()) {
       int seed = new Random().nextInt();
@@ -53,10 +53,13 @@ public class ServerImpl implements Server {
       saver.saveWorldInfo(info);
     }
     generator.setSeed(opt.get().getSeed());
-  }
-
-  public void shutdown() {
-    saver.shutdown();
+    Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+      @Override
+      public void run() {
+        LOGGER.info("Shutting down the server");
+        saver.shutdown();
+      }
+    }));
   }
 
   @Override
@@ -88,7 +91,7 @@ public class ServerImpl implements Server {
       int size = chunkCoordinateSystem.getChunkSize();
       Chunk newChunk = generator.generateChunk(position, size);
       world.setChunk(position, newChunk);
-      saver.saveChunk(newChunk);
+      saver.save(newChunk);
       return newChunk;
     }
   }
@@ -108,7 +111,7 @@ public class ServerImpl implements Server {
       Chunk chunk = getOrGenerateChunk(edit.getPosition().getChunkPosition());
       LocalTilePosition p = edit.getPosition().getTileWithinChunk();
       chunk.set(p.x, p.y, p.z, edit.getNewTile());
-      saver.saveChunk(chunk);
+      saver.save(chunk);
     }
     for (final Client client : loggedInClients) {
       asyncCall(client, new AsyncClientCall() {

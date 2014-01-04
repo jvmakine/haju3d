@@ -22,13 +22,6 @@ public class LocalClientRunner {
 
     ChunkRenderer app = clientInjector.getInstance(ChunkRenderer.class);
 
-    app.setCloseEventHandler(new CloseEventHandler() {
-      @Override
-      public void onClose() {
-        server.shutdown();
-      }
-    });
-
     Client client = new ClientImpl(app);
     server.login(client);
     app.start();

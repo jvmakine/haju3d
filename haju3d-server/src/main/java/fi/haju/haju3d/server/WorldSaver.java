@@ -3,12 +3,14 @@ package fi.haju.haju3d.server;
 import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+
 import fi.haju.haju3d.protocol.coordinate.ChunkPosition;
 import fi.haju.haju3d.protocol.world.Chunk;
 import fi.haju.haju3d.server.world.WorldInfo;
 import net.jpountz.lz4.LZ4Compressor;
 import net.jpountz.lz4.LZ4Factory;
 import net.jpountz.lz4.LZ4FastDecompressor;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.SerializationUtils;
@@ -20,8 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
-import java.util.Collections;
-import java.util.Set;
+import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
@@ -35,20 +36,19 @@ public class WorldSaver {
   private static final long MIN_SAVE_INTERVAL = 30000;
   private static final Logger LOGGER = LoggerFactory.getLogger(WorldSaver.class);
 
-  private Set<ChunkPosition> chunksToSave = Collections.newSetFromMap(new ConcurrentHashMap<ChunkPosition, Boolean>());
+  private Map<ChunkPosition, Chunk> chunksToSave = new ConcurrentHashMap<ChunkPosition, Chunk>();
   private Timer timer = new Timer();
 
   @Inject
   private ServerSettings settings;
 
-  public void saveChunk(final Chunk chunk) {
-    if (!chunksToSave.contains(chunk.getPosition())) {
-      chunksToSave.add(chunk.getPosition());
+  public void save(final Chunk chunk) {
+    if (!chunksToSave.keySet().contains(chunk.getPosition())) {
+      chunksToSave.put(chunk.getPosition(), chunk);
       timer.schedule(new TimerTask() {
         @Override
         public void run() {
-          LOGGER.debug("Saving chunk : " + chunk.getPosition());
-          writeObjectToFile(chunkFile(chunk.getPosition()), chunk);
+          saveChunkToDisk(chunk);
           chunksToSave.remove(chunk.getPosition());
         }
       }, MIN_SAVE_INTERVAL);
@@ -57,8 +57,17 @@ public class WorldSaver {
 
   public void shutdown() {
     timer.cancel();
+    LOGGER.info("Saving " + chunksToSave.size() + " chunks on shutdown");
+    for(Chunk chunk : chunksToSave.values()) {
+      saveChunkToDisk(chunk);
+    }
+  } 
+  
+  private void saveChunkToDisk(Chunk chunk) {
+    LOGGER.debug("Saving chunk : " + chunk.getPosition());
+    writeObjectToFile(chunkFile(chunk.getPosition()), chunk);
   }
-
+  
   public void saveWorldInfo(WorldInfo info) {
     writeObjectToFile(infoFile(), info);
   }
