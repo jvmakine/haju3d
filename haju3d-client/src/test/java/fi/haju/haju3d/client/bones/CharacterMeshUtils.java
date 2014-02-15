@@ -99,6 +99,7 @@ public final class CharacterMeshUtils {
               pos.set(x + offset.x, y + offset.y, z + offset.z);
               byte old = dataGrid.get(pos);
               int newValue = (int) old + (int) add;
+              //int newValue = Math.max((int) old, (int) add);
               if (newValue > 127) {
                 newValue = 127;
               }

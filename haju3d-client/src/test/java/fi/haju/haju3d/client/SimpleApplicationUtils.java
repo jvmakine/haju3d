@@ -52,7 +52,7 @@ public final class SimpleApplicationUtils {
 
     DirectionalLight light3 = new DirectionalLight();
     light3.setDirection(new Vector3f(-4, 2, 2).normalizeLocal());
-    light3.setColor(new ColorRGBA(0.6f, 0.2f, 0.3f, 1f).mult(1.0f));
+    light3.setColor(new ColorRGBA(0.2f, 0.4f, 0.8f, 1f).mult(1.0f));
     rootNode.addLight(light3);
 
     AmbientLight ambient = new AmbientLight();

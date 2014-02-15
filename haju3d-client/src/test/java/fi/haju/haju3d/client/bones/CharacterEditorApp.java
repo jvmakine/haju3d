@@ -98,7 +98,7 @@ public class CharacterEditorApp extends SimpleApplication {
   private static final Logger LOGGER = LoggerFactory.getLogger(CharacterEditorApp.class);
 
   public static final float MINIMUM_BONE_THICKNESS = 0.05f;
-  public static final File BONE_FILE = new File("bones4-ant.json");
+  public static final File BONE_FILE = new File("bones4-bird.json");
   public static final Charset BONE_FILE_ENCODING = Charset.forName("UTF-8");
 
   private MyBone camTarget;
@@ -534,6 +534,9 @@ public class CharacterEditorApp extends SimpleApplication {
   }
 
   private void stopDragging() {
+    if (dragTarget == null) {
+      return;
+    }
     // if created bone is too tiny, remove it
     if (boneCreationTimeNanos != 0) {
       float dist = dragTarget.bone.getFreePoint().distance(dragTarget.bone.getAttachPoint());
