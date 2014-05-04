@@ -12,7 +12,7 @@
   <url>https://github.com/jvmakine/haju3d</url>
 
   <properties>
-    <jMonkeyEngine.version>2013-10-11</jMonkeyEngine.version>
+    <jMonkeyEngine.version>3.0.0.20140325-SNAPSHOT</jMonkeyEngine.version>
     <maven.compiler.target>1.7</maven.compiler.target>
     <maven.compiler.source>1.7</maven.compiler.source>
     <logback.version>1.0.13</logback.version>
@@ -29,9 +29,9 @@
 
   <repositories>
     <repository>
-      <id>project-lib</id>
-      <name>project-local libraries</name>
-      <url>file:${main.basedir}${file.separator}libs</url>
+      <id>sonatype-public</id>
+      <name>sonatype public</name>
+      <url>https://oss.sonatype.org/content/groups/public/</url>
     </repository>
   </repositories>
 

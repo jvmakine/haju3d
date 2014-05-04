@@ -24,7 +24,7 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.jmonkeyengine</groupId>
+      <groupId>com.jme3</groupId>
       <artifactId>jME3-core</artifactId>
       <version>${jMonkeyEngine.version}</version>
     </dependency>
