@@ -32,10 +32,8 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
   @Override
   public void setSeed(int seed) {
     this.seed = seed;
-    //TODO : Proper initialization
-    Random random = new Random(seed);
-    this.generator = new PerlinNoiseGenerator(TERRAIN_FEATURE_SIZE, TERRAIN_SMOOTHNESS, random);
-    this.typeGenerator = new PerlinNoiseGenerator(2, TERRAIN_SMOOTHNESS, random);
+    this.generator = new PerlinNoiseGenerator(TERRAIN_FEATURE_SIZE, TERRAIN_SMOOTHNESS, seed);
+    this.typeGenerator = new PerlinNoiseGenerator(2, TERRAIN_SMOOTHNESS, seed);
   }
 
   private static Chunk filterFloaters(Chunk chunk) {
