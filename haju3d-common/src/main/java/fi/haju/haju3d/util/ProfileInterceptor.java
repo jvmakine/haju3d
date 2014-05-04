@@ -24,7 +24,7 @@ public class ProfileInterceptor implements MethodInterceptor {
     @Override
     public String toString() {
       long totTime = System.currentTimeMillis() - startTime;
-      return method + "\t" + (time / calls) + "\t" + calls + "\t" + time + "\t" + (time / totTime);
+      return method + "\t" + (time / calls) + "\t" + calls + "\t" + time + "\t" + (time / (double)totTime);
     }
   }
       
