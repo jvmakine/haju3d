@@ -57,7 +57,6 @@ public class ChunkRenderer extends SimpleApplication {
   private static final int WALL_CLIMB_LOOPS = 40;
   private static final float SELECTOR_DISTANCE = 10.0f;
   private static final float MOVE_SPEED = 40;
-  private static final int CHUNK_CUT_OFF = 3;
 
   private static final Vector3f LIGHT_DIR = new Vector3f(-0.9140114f, 0.29160172f, -0.2820493f).negate();
 
@@ -211,7 +210,7 @@ public class ChunkRenderer extends SimpleApplication {
     getFlyByCamera().setMoveSpeed(MOVE_SPEED);
     getFlyByCamera().setRotationSpeed(CharacterInputHandler.MOUSE_X_SPEED);
     getCamera().setLocation(worldManager.getGlobalPosition(new GlobalTilePosition(32, 62, 62)));
-    getCamera().setFrustumPerspective(45f, (float) getCamera().getWidth() / getCamera().getHeight(), 0.1f, 200f);
+    getCamera().setFrustumPerspective(45f, (float) getCamera().getWidth() / getCamera().getHeight(), 0.1f, clientSettings.getChunkRenderDistance() * worldManager.getChunkSize());
 
     guiFont = assetManager.loadFont("Interface/Fonts/Default.fnt");
     crossHair = new BitmapText(guiFont, false);
@@ -250,7 +249,8 @@ public class ChunkRenderer extends SimpleApplication {
   private void updateChunkSpatialVisibility() {
     ChunkPosition chunkPosition = getCurrentChunkPosition();
     terrainNode.detachAllChildren();
-    for (ChunkPosition pos : chunkPosition.getSurroundingPositions(CHUNK_CUT_OFF, CHUNK_CUT_OFF, CHUNK_CUT_OFF)) {
+    int dist = clientSettings.getChunkRenderDistance();
+    for (ChunkPosition pos : chunkPosition.getSurroundingPositions(dist, dist, dist)) {
       ChunkSpatial cs = worldManager.getChunkSpatial(pos);
       if (cs != null) {
         terrainNode.attachChild(pos.distanceTo(chunkPosition) <= 2 ? cs.highDetail : cs.lowDetail);
