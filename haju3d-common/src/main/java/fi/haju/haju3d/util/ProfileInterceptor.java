@@ -11,7 +11,7 @@ import com.google.common.collect.Maps;
 
 public class ProfileInterceptor implements MethodInterceptor {
 
-  private static class MethodProfile {
+  private class MethodProfile {
     public MethodProfile(String method, long time) {
       this.method = method;
       this.time = time;
@@ -23,13 +23,15 @@ public class ProfileInterceptor implements MethodInterceptor {
     
     @Override
     public String toString() {
-      return method + "\t" + (time / calls) + "\t" + calls + "\t" + time;
+      long totTime = System.currentTimeMillis() - startTime;
+      return method + "\t" + (time / calls) + "\t" + calls + "\t" + time + "\t" + (time / totTime);
     }
   }
       
   private static final long SAVE_INTERVAL = 30000; 
   
   private long lastSaveTime = System.currentTimeMillis();
+  private final long startTime = System.currentTimeMillis();
   
   private Map<String,MethodProfile> profiles = Maps.newHashMap();
 

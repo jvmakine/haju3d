@@ -89,6 +89,9 @@ public final class PerlinNoiseGenerator {
     this.levels = new NoiseLevel[levels];
   }
   
+  /**
+   * returns a value at the given coordinates
+   */
   public float getValueAt(int x, int y, int z) {
     float value = 0.0f;
     int sizeLog2 = baseMapSizeLog2;
@@ -105,14 +108,23 @@ public final class PerlinNoiseGenerator {
     return value;
   }
   
+  /**
+   * returns a value that is guaranteed to be above any value in the noise map  
+   */
   public float getMaxValue() {
     return (float)Math.pow(LEVEL_AMPLITUDE_MULTIPLIER, numberOfLevels);
   }
   
+  /**
+   * returns a value that is guaranteed to be below any value in the noise map  
+   */
   public float getMinValue() {
     return getMaxValue() * -1;
   }
   
+  /**
+   * returns a value that is guaranteed to be below any value within a cube with corner at given point and given edge length 
+   */
   public float getMinValue(Vector3i corner, int edge) {
     List<Vector3i> corners = getCorners(corner, edge);
     float sum = 0;
@@ -146,6 +158,9 @@ public final class PerlinNoiseGenerator {
     return sum;
   }
   
+  /**
+   * returns a value that is guaranteed to be abow any value within a cube with corner at given point and given edge length 
+   */
   public float getMaxValue(Vector3i corner, int edge) {
     List<Vector3i> corners = getCorners(corner, edge);
     float sum = 0;
