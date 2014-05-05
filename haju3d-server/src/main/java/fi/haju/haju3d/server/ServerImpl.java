@@ -88,8 +88,8 @@ public class ServerImpl implements Server {
         return opt.get();
       }
       LOGGER.info("generating chunk " + position);
-      int size = chunkCoordinateSystem.getChunkSize();
-      Chunk newChunk = generator.generateChunk(position, size);
+      int sizeLog2 = chunkCoordinateSystem.getChunkSizeLog2();
+      Chunk newChunk = generator.generateChunk(position, sizeLog2);
       world.setChunk(position, newChunk);
       saver.save(newChunk);
       return newChunk;

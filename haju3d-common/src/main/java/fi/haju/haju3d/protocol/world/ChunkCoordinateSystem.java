@@ -5,16 +5,16 @@ import fi.haju.haju3d.protocol.coordinate.GlobalTilePosition;
 import fi.haju.haju3d.protocol.coordinate.LocalTilePosition;
 
 public final class ChunkCoordinateSystem {
-  public static final ChunkCoordinateSystem DEFAULT = new ChunkCoordinateSystem(64);
+  public static final ChunkCoordinateSystem DEFAULT = new ChunkCoordinateSystem(6);
 
-  private final int chunkSize;
+  private final int chunkSizeLog2;
   private final int chunkOffsetIndex;
   private final int chunkOffsetWorld;
 
-  public ChunkCoordinateSystem(int chunkSize) {
-    this.chunkSize = chunkSize;
-    this.chunkOffsetIndex = Integer.MAX_VALUE / 2 / this.chunkSize;
-    this.chunkOffsetWorld = chunkOffsetIndex * this.chunkSize;
+  public ChunkCoordinateSystem(int chunkSizeLog2) {
+    this.chunkSizeLog2 = chunkSizeLog2;
+    this.chunkOffsetIndex = Integer.MAX_VALUE / 2 / getChunkSize();
+    this.chunkOffsetWorld = chunkOffsetIndex << chunkSizeLog2;
   }
 
   public LocalTilePosition getPositionWithinChunk(GlobalTilePosition position) {
@@ -36,14 +36,18 @@ public final class ChunkCoordinateSystem {
   }
 
   private int getChunkPosition(int worldPosition) {
-    return (worldPosition + chunkOffsetWorld) / chunkSize - chunkOffsetIndex;
+    return (worldPosition + chunkOffsetWorld) / getChunkSize() - chunkOffsetIndex;
   }
 
   private int getWorldPosition(int chunkPosition) {
-    return chunkPosition * chunkSize;
+    return chunkPosition * getChunkSize();
   }
 
   public int getChunkSize() {
-    return chunkSize;
+    return 1 << chunkSizeLog2;
+  }
+  
+  public int getChunkSizeLog2() {
+    return chunkSizeLog2;
   }
 }

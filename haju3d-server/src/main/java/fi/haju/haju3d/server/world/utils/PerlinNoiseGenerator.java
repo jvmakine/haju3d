@@ -92,7 +92,7 @@ public final class PerlinNoiseGenerator {
   /**
    * returns a value at the given coordinates
    */
-  public float getValueAt(int x, int y, int z) {
+  public final float getValueAt(int x, int y, int z) {
     float value = 0.0f;
     int sizeLog2 = baseMapSizeLog2;
     for(int level = 1; level <= numberOfLevels; ++level) {

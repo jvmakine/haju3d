@@ -20,9 +20,9 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
 
   @Override
   @Profiled
-  public Chunk generateChunk(ChunkPosition position, int size) {
+  public Chunk generateChunk(ChunkPosition position, int sizeLog2) {
     int realseed = seed ^ (position.x + position.y * 123 + position.z * 12347);
-    return makeChunk(size, realseed, position);
+    return makeChunk(sizeLog2, realseed, position);
   }
 
   @Override
@@ -38,8 +38,9 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
     return ground;
   }
 
-  private Chunk makeChunk(int size, int seed, ChunkPosition position) {
+  private Chunk makeChunk(int sizeLog2, int seed, ChunkPosition position) {
     boolean onlyAir = true;
+    int size = 1 << sizeLog2;
     Vector3i wp = position.mult(size);
     float minVal = generator.getMinValue(wp, size); 
     if(minVal + position.y*(size + 1) > TERRAIN_THRESHOLD) {
@@ -50,12 +51,15 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
       return new Chunk(size, seed, position, Tile.ROCK);
     }
     Chunk chunk = new Chunk(size, seed, position);
+    int sx = (position.x << sizeLog2);
+    int sy = (position.y << sizeLog2);
+    int sz = (position.z << sizeLog2);
     for (int x = 0; x < size; x++) {
+      int rx = x + sx;
       for (int y = 0; y < size; y++) {
+        int ry = y + sy;
         for (int z = 0; z < size; z++) {
-          int rx = x + position.x*size;
-          int ry = y + position.y*size;
-          int rz = z + position.z*size;
+          int rz = z + sz;
           float v = ry + generator.getValueAt(rx, ry, rz);
           float tv = typeGenerator.getValueAt(rx, ry, rz);
           Tile tile = v < TERRAIN_THRESHOLD ? getGround(tv) : Tile.AIR;
@@ -64,8 +68,6 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
           }
           chunk.set(x, y, z, tile);
           // TODO Color from noise
-          float col = 1.0f;
-          chunk.setColor(x, y, z, col);
         }
       }
     }
@@ -76,7 +78,7 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
     return chunk;
   }
   
-  private Tile getGround(float v) {
+  private final static Tile getGround(float v) {
     return v < 0 ? Tile.GROUND : Tile.ROCK;
   }
 
