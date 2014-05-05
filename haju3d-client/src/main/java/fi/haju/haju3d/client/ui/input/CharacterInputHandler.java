@@ -81,7 +81,7 @@ public class CharacterInputHandler {
       @Override
       public void onAction(String name, boolean isPressed, float tpf) {
         if (isPressed && canJump(character)) {
-          character.setVelocity(character.getVelocity().add(new Vector3f(0.0f, 0.5f, 0.0f)));
+          character.setVelocity(character.getVelocity().add(new Vector3f(0.0f, 0.2f, 0.0f)));
         }
       }
     }, InputActions.JUMP);

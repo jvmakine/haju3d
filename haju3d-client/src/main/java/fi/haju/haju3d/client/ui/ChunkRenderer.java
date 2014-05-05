@@ -52,7 +52,7 @@ import java.util.concurrent.Callable;
 public class ChunkRenderer extends SimpleApplication {
 
   private static final float GRAVITY_CONSTANT = 0.5f;
-  private static final int WALK_SPEED = 10;
+  private static final int WALK_SPEED = 5;
   private static final float WALL_CLIMB_ACCURACY = 0.01f;
   private static final int WALL_CLIMB_LOOPS = 40;
   private static final float SELECTOR_DISTANCE = 10.0f;

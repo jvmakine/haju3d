@@ -1,22 +1,18 @@
 package fi.haju.haju3d.server.world;
 
 import fi.haju.haju3d.protocol.coordinate.ChunkPosition;
-import fi.haju.haju3d.protocol.coordinate.LocalTilePosition;
 import fi.haju.haju3d.protocol.coordinate.Vector3i;
 import fi.haju.haju3d.protocol.world.Chunk;
 import fi.haju.haju3d.protocol.world.Tile;
 import fi.haju.haju3d.server.world.utils.FloodFiller;
 import fi.haju.haju3d.server.world.utils.PerlinNoiseGenerator;
-import fi.haju.haju3d.server.world.utils.WorldGenerationUtils;
 import fi.haju.haju3d.util.Profiled;
-
-import java.util.Random;
 
 public class PerlinNoiseWorldGenerator implements WorldGenerator {
   
-  private static final int TERRAIN_FEATURE_SIZE = 6;
+  private static final int TERRAIN_FEATURE_SIZE = 7;
   private static final int TERRAIN_SMOOTHNESS = 3;
-  private static final int TERRAIN_THRESHOLD = 32;
+  private static final int TERRAIN_THRESHOLD = 64;
   
   private int seed;
   private PerlinNoiseGenerator generator;
@@ -76,26 +72,12 @@ public class PerlinNoiseWorldGenerator implements WorldGenerator {
     if(onlyAir) {
       return new Chunk(size, seed, position, Tile.AIR);
     }
-    Random r = new Random(seed);
     chunk = filterFloaters(chunk);
-    generateTrees(chunk, r);
     return chunk;
   }
   
   private Tile getGround(float v) {
     return v < 0 ? Tile.GROUND : Tile.ROCK;
-  }
-
-  private void generateTrees(Chunk chunk, Random r) {
-    int size = chunk.getSize();
-    for (int i = 0; i < 4; ++i) {
-      int x = r.nextInt(size - 3);
-      int z = r.nextInt(size - 3);
-      int y = WorldGenerationUtils.findGround(chunk, size, x, z);
-      if (y >= 1 && y < size - 20 && chunk.get(x, y - 1, z) == Tile.GROUND) {
-        WorldGenerationUtils.makeTreeAt(chunk, r, new LocalTilePosition(x, y, z));
-      }
-    }
   }
 
 }
