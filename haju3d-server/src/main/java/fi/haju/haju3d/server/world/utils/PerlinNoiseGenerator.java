@@ -23,6 +23,7 @@ public final class PerlinNoiseGenerator {
     public final float amplitude;
     public final Map<Vector3i, FloatArray3d> data = Maps.newHashMap();
     public final int seed;
+    private final DataAccessor accessor = new DataAccessor();
     
     public NoiseLevel(int sizeLog2, float amplitude, int seed) {
       this.sizeLog2 = sizeLog2;
@@ -61,7 +62,6 @@ public final class PerlinNoiseGenerator {
       int xi = (int)Math.floor(x);
       int yi = (int)Math.floor(y);
       int zi = (int)Math.floor(z);
-      DataAccessor accessor = new DataAccessor();
       return InterpolationUtil.interpolateLinear3d(x - xi, y - yi, z - zi,
           accessor.getValueAt(xi, yi, zi),
           accessor.getValueAt(xi + 1, yi, zi),
