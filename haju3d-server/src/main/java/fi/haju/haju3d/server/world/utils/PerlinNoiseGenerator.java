@@ -94,16 +94,15 @@ public final class PerlinNoiseGenerator {
    */
   public final float getValueAt(int x, int y, int z) {
     float value = 0.0f;
-    int sizeLog2 = baseMapSizeLog2;
+    int size = 1 << baseMapSizeLog2;
     for(int level = 1; level <= numberOfLevels; ++level) {
       NoiseLevel noise = levels[level-1];
       if(noise == null) {
         noise = new NoiseLevel(4, level*LEVEL_AMPLITUDE_MULTIPLIER, seed ^ level);
         levels[level-1] = noise;
       }
-      int size = 1 << sizeLog2;
       value += noise.getValueAt(x/(float)(size), y/(float)(size), z/(float)(size));
-      sizeLog2 += 1;
+      size <<= 1;
     }
     return value;
   }
